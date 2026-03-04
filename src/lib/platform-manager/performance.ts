@@ -1,11 +1,13 @@
 /**
  * Performance Optimization Engine
- * 
+ *
  * Comprehensive performance analysis and optimization infrastructure for the SaviEdTech platform.
  * Provides query optimization, cache management, bundle analysis, and API performance monitoring.
- * 
+ *
  * @module platform-manager/performance
  */
+
+'use server';
 
 import { createAdminSupabaseClient } from '@/lib/supabase';
 import type { Database } from '@/types/supabase';
@@ -559,7 +561,7 @@ export async function implementQueryCache<T>(
 /**
  * Invalidate cache entries
  */
-export function invalidateCache(pattern?: string): void {
+export async function invalidateCache(pattern?: string): Promise<void> {
     if (!pattern) {
         queryCache.clear();
         return;
@@ -575,7 +577,7 @@ export function invalidateCache(pattern?: string): void {
 /**
  * Get cache size
  */
-export function getCacheSize(): number {
+export async function getCacheSize(): Promise<number> {
     return queryCache.size;
 }
 
