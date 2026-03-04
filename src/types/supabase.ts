@@ -1,0 +1,1258 @@
+export type Json =
+    | string
+    | number
+    | boolean
+    | null
+    | { [key: string]: Json | undefined }
+    | Json[];
+
+export interface Database {
+    public: {
+        Tables: {
+            profiles: {
+                Row: {
+                    id: string;
+                    email: string;
+                    full_name: string | null;
+                    phone: string | null;
+                    avatar_url: string | null;
+                    role: 'student' | 'admin' | 'content_manager';
+                    exam_target: 'JEE' | 'NEET' | 'Both' | null;
+                    class_level: '11' | '12' | 'Dropper' | null;
+                    city: string | null;
+                    state: string | null;
+                    created_at: string;
+                    updated_at: string;
+                    last_active_at: string;
+                    is_active: boolean;
+                };
+                Insert: {
+                    id: string;
+                    email: string;
+                    full_name?: string | null;
+                    phone?: string | null;
+                    avatar_url?: string | null;
+                    role?: 'student' | 'admin' | 'content_manager';
+                    exam_target?: 'JEE' | 'NEET' | 'Both' | null;
+                    class_level?: '11' | '12' | 'Dropper' | null;
+                    city?: string | null;
+                    state?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                    last_active_at?: string;
+                    is_active?: boolean;
+                };
+                Update: {
+                    id?: string;
+                    email?: string;
+                    full_name?: string | null;
+                    phone?: string | null;
+                    avatar_url?: string | null;
+                    role?: 'student' | 'admin' | 'content_manager';
+                    exam_target?: 'JEE' | 'NEET' | 'Both' | null;
+                    class_level?: '11' | '12' | 'Dropper' | null;
+                    city?: string | null;
+                    state?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                    last_active_at?: string;
+                    is_active?: boolean;
+                };
+            };
+            student_profiles: {
+                Row: {
+                    id: string;
+                    study_streak: number;
+                    longest_streak: number;
+                    total_study_minutes: number;
+                    rank_prediction: number | null;
+                    percentile_prediction: number | null;
+                    subscription_status: 'free' | 'basic' | 'premium';
+                    subscription_expires_at: string | null;
+                    preferred_subjects: string[];
+                    weak_topics: string[];
+                    strong_topics: string[];
+                };
+                Insert: {
+                    id: string;
+                    study_streak?: number;
+                    longest_streak?: number;
+                    total_study_minutes?: number;
+                    rank_prediction?: number | null;
+                    percentile_prediction?: number | null;
+                    subscription_status?: 'free' | 'basic' | 'premium';
+                    subscription_expires_at?: string | null;
+                    preferred_subjects?: string[];
+                    weak_topics?: string[];
+                    strong_topics?: string[];
+                };
+                Update: {
+                    id?: string;
+                    study_streak?: number;
+                    longest_streak?: number;
+                    total_study_minutes?: number;
+                    rank_prediction?: number | null;
+                    percentile_prediction?: number | null;
+                    subscription_status?: 'free' | 'basic' | 'premium';
+                    subscription_expires_at?: string | null;
+                    preferred_subjects?: string[];
+                    weak_topics?: string[];
+                    strong_topics?: string[];
+                };
+            };
+            user_sessions: {
+                Row: {
+                    id: string;
+                    user_id: string | null;
+                    session_token: string | null;
+                    ip_address: string | null;
+                    user_agent: string | null;
+                    started_at: string;
+                    ended_at: string | null;
+                    is_active: boolean;
+                };
+                Insert: {
+                    id?: string;
+                    user_id?: string | null;
+                    session_token?: string | null;
+                    ip_address?: string | null;
+                    user_agent?: string | null;
+                    started_at?: string;
+                    ended_at?: string | null;
+                    is_active?: boolean;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string | null;
+                    session_token?: string | null;
+                    ip_address?: string | null;
+                    user_agent?: string | null;
+                    started_at?: string;
+                    ended_at?: string | null;
+                    is_active?: boolean;
+                };
+            };
+            lead_forms: {
+                Row: {
+                    id: string;
+                    name: string;
+                    phone: string;
+                    email: string | null;
+                    exam_target: 'JEE' | 'NEET' | 'Both' | 'Other';
+                    class_level: '10' | '11' | '12' | 'Dropper';
+                    city: string | null;
+                    source: string;
+                    status: 'new' | 'contacted' | 'converted' | 'disqualified';
+                    converted_to_user_id: string | null;
+                    notes: string | null;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    name: string;
+                    phone: string;
+                    email?: string | null;
+                    exam_target?: 'JEE' | 'NEET' | 'Both' | 'Other';
+                    class_level?: '10' | '11' | '12' | 'Dropper';
+                    city?: string | null;
+                    source?: string;
+                    status?: 'new' | 'contacted' | 'converted' | 'disqualified';
+                    converted_to_user_id?: string | null;
+                    notes?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    name?: string;
+                    phone?: string;
+                    email?: string | null;
+                    exam_target?: 'JEE' | 'NEET' | 'Both' | 'Other';
+                    class_level?: '10' | '11' | '12' | 'Dropper';
+                    city?: string | null;
+                    source?: string;
+                    status?: 'new' | 'contacted' | 'converted' | 'disqualified';
+                    converted_to_user_id?: string | null;
+                    notes?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+            };
+            exams: {
+                Row: {
+                    id: string;
+                    name: string;
+                    code: string;
+                    description: string | null;
+                    subjects: string[];
+                    total_marks: number | null;
+                    duration_minutes: number | null;
+                    is_active: boolean;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    name: string;
+                    code: string;
+                    description?: string | null;
+                    subjects?: string[];
+                    total_marks?: number | null;
+                    duration_minutes?: number | null;
+                    is_active?: boolean;
+                    created_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    name?: string;
+                    code?: string;
+                    description?: string | null;
+                    subjects?: string[];
+                    total_marks?: number | null;
+                    duration_minutes?: number | null;
+                    is_active?: boolean;
+                    created_at?: string;
+                };
+            };
+            subjects: {
+                Row: {
+                    id: string;
+                    exam_id: string | null;
+                    name: string;
+                    code: string;
+                    faculty_id: string | null;
+                    description: string | null;
+                    color: string | null;
+                    icon: string | null;
+                    display_order: number;
+                    is_active: boolean;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    exam_id?: string | null;
+                    name: string;
+                    code: string;
+                    faculty_id?: string | null;
+                    description?: string | null;
+                    color?: string | null;
+                    icon?: string | null;
+                    display_order?: number;
+                    is_active?: boolean;
+                    created_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    exam_id?: string | null;
+                    name?: string;
+                    code?: string;
+                    faculty_id?: string | null;
+                    description?: string | null;
+                    color?: string | null;
+                    icon?: string | null;
+                    display_order?: number;
+                    is_active?: boolean;
+                    created_at?: string;
+                };
+            };
+            chapters: {
+                Row: {
+                    id: string;
+                    subject_id: string | null;
+                    name: string;
+                    code: string;
+                    description: string | null;
+                    display_order: number;
+                    estimated_hours: number | null;
+                    difficulty_level: 'easy' | 'medium' | 'hard' | null;
+                    is_active: boolean;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    subject_id?: string | null;
+                    name: string;
+                    code: string;
+                    description?: string | null;
+                    display_order?: number;
+                    estimated_hours?: number | null;
+                    difficulty_level?: 'easy' | 'medium' | 'hard' | null;
+                    is_active?: boolean;
+                    created_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    subject_id?: string | null;
+                    name?: string;
+                    code?: string;
+                    description?: string | null;
+                    display_order?: number;
+                    estimated_hours?: number | null;
+                    difficulty_level?: 'easy' | 'medium' | 'hard' | null;
+                    is_active?: boolean;
+                    created_at?: string;
+                };
+            };
+            topics: {
+                Row: {
+                    id: string;
+                    chapter_id: string | null;
+                    name: string;
+                    code: string;
+                    description: string | null;
+                    display_order: number;
+                    estimated_minutes: number | null;
+                    weightage_percent: number | null;
+                    is_active: boolean;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    chapter_id?: string | null;
+                    name: string;
+                    code: string;
+                    description?: string | null;
+                    display_order?: number;
+                    estimated_minutes?: number | null;
+                    weightage_percent?: number | null;
+                    is_active?: boolean;
+                    created_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    chapter_id?: string | null;
+                    name?: string;
+                    code?: string;
+                    description?: string | null;
+                    display_order?: number;
+                    estimated_minutes?: number | null;
+                    weightage_percent?: number | null;
+                    is_active?: boolean;
+                    created_at?: string;
+                };
+            };
+            faculties: {
+                Row: {
+                    id: string;
+                    name: string;
+                    code: string;
+                    subject: string;
+                    avatar_url: string | null;
+                    bio: string | null;
+                    teaching_style: string | null;
+                    qualifications: string[];
+                    experience_years: number | null;
+                    color_theme: string | null;
+                    is_active: boolean;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    name: string;
+                    code: string;
+                    subject: string;
+                    avatar_url?: string | null;
+                    bio?: string | null;
+                    teaching_style?: string | null;
+                    qualifications?: string[];
+                    experience_years?: number | null;
+                    color_theme?: string | null;
+                    is_active?: boolean;
+                    created_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    name?: string;
+                    code?: string;
+                    subject?: string;
+                    avatar_url?: string | null;
+                    bio?: string | null;
+                    teaching_style?: string | null;
+                    qualifications?: string[];
+                    experience_years?: number | null;
+                    color_theme?: string | null;
+                    is_active?: boolean;
+                    created_at?: string;
+                };
+            };
+            lectures: {
+                Row: {
+                    id: string;
+                    topic_id: string | null;
+                    faculty_id: string | null;
+                    title: string;
+                    description: string | null;
+                    video_url: string;
+                    video_duration: number | null;
+                    thumbnail_url: string | null;
+                    lecture_notes: string | null;
+                    attachments: Json;
+                    tags: string[];
+                    difficulty_level: 'easy' | 'medium' | 'hard' | null;
+                    view_count: number;
+                    like_count: number;
+                    is_published: boolean;
+                    published_at: string | null;
+                    scheduled_at: string | null;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    topic_id?: string | null;
+                    faculty_id?: string | null;
+                    title: string;
+                    description?: string | null;
+                    video_url: string;
+                    video_duration?: number | null;
+                    thumbnail_url?: string | null;
+                    lecture_notes?: string | null;
+                    attachments?: Json;
+                    tags?: string[];
+                    difficulty_level?: 'easy' | 'medium' | 'hard' | null;
+                    view_count?: number;
+                    like_count?: number;
+                    is_published?: boolean;
+                    published_at?: string | null;
+                    scheduled_at?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    topic_id?: string | null;
+                    faculty_id?: string | null;
+                    title?: string;
+                    description?: string | null;
+                    video_url?: string;
+                    video_duration?: number | null;
+                    thumbnail_url?: string | null;
+                    lecture_notes?: string | null;
+                    attachments?: Json;
+                    tags?: string[];
+                    difficulty_level?: 'easy' | 'medium' | 'hard' | null;
+                    view_count?: number;
+                    like_count?: number;
+                    is_published?: boolean;
+                    published_at?: string | null;
+                    scheduled_at?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+            };
+            lecture_progress: {
+                Row: {
+                    id: string;
+                    user_id: string | null;
+                    lecture_id: string | null;
+                    progress_percent: number;
+                    last_position: number;
+                    is_completed: boolean;
+                    completed_at: string | null;
+                    watch_count: number;
+                    first_started_at: string;
+                    last_watched_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    user_id?: string | null;
+                    lecture_id?: string | null;
+                    progress_percent?: number;
+                    last_position?: number;
+                    is_completed?: boolean;
+                    completed_at?: string | null;
+                    watch_count?: number;
+                    first_started_at?: string;
+                    last_watched_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string | null;
+                    lecture_id?: string | null;
+                    progress_percent?: number;
+                    last_position?: number;
+                    is_completed?: boolean;
+                    completed_at?: string | null;
+                    watch_count?: number;
+                    first_started_at?: string;
+                    last_watched_at?: string;
+                };
+            };
+            questions: {
+                Row: {
+                    id: string;
+                    topic_id: string | null;
+                    question_type: 'MCQ' | 'NUMERICAL' | 'ASSERTION_REASON';
+                    question_text: string;
+                    question_image_url: string | null;
+                    solution_text: string;
+                    solution_video_url: string | null;
+                    solution_image_url: string | null;
+                    correct_answer: string;
+                    marks: number;
+                    negative_marks: number;
+                    difficulty_level: 'easy' | 'medium' | 'hard' | null;
+                    estimated_time_minutes: number;
+                    average_solve_time: number | null;
+                    success_rate: number | null;
+                    attempt_count: number;
+                    correct_count: number;
+                    tags: string[];
+                    hint: string | null;
+                    is_published: boolean;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    topic_id?: string | null;
+                    question_type: 'MCQ' | 'NUMERICAL' | 'ASSERTION_REASON';
+                    question_text: string;
+                    question_image_url?: string | null;
+                    solution_text: string;
+                    solution_video_url?: string | null;
+                    solution_image_url?: string | null;
+                    correct_answer: string;
+                    marks?: number;
+                    negative_marks?: number;
+                    difficulty_level?: 'easy' | 'medium' | 'hard' | null;
+                    estimated_time_minutes?: number;
+                    average_solve_time?: number | null;
+                    success_rate?: number | null;
+                    attempt_count?: number;
+                    correct_count?: number;
+                    tags?: string[];
+                    hint?: string | null;
+                    is_published?: boolean;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    topic_id?: string | null;
+                    question_type?: 'MCQ' | 'NUMERICAL' | 'ASSERTION_REASON';
+                    question_text?: string;
+                    question_image_url?: string | null;
+                    solution_text?: string;
+                    solution_video_url?: string | null;
+                    solution_image_url?: string | null;
+                    correct_answer?: string;
+                    marks?: number;
+                    negative_marks?: number;
+                    difficulty_level?: 'easy' | 'medium' | 'hard' | null;
+                    estimated_time_minutes?: number;
+                    average_solve_time?: number | null;
+                    success_rate?: number | null;
+                    attempt_count?: number;
+                    correct_count?: number;
+                    tags?: string[];
+                    hint?: string | null;
+                    is_published?: boolean;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+            };
+            dpp_sets: {
+                Row: {
+                    id: string;
+                    title: string;
+                    exam_id: string | null;
+                    subject_id: string | null;
+                    topic_ids: string[];
+                    difficulty_mix: 'easy' | 'medium' | 'hard' | 'mixed';
+                    total_questions: number;
+                    time_limit_minutes: number;
+                    scheduled_date: string | null;
+                    is_published: boolean;
+                    published_at: string | null;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    title: string;
+                    exam_id?: string | null;
+                    subject_id?: string | null;
+                    topic_ids?: string[];
+                    difficulty_mix?: 'easy' | 'medium' | 'hard' | 'mixed';
+                    total_questions?: number;
+                    time_limit_minutes?: number;
+                    scheduled_date?: string | null;
+                    is_published?: boolean;
+                    published_at?: string | null;
+                    created_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    title?: string;
+                    exam_id?: string | null;
+                    subject_id?: string | null;
+                    topic_ids?: string[];
+                    difficulty_mix?: 'easy' | 'medium' | 'hard' | 'mixed';
+                    total_questions?: number;
+                    time_limit_minutes?: number;
+                    scheduled_date?: string | null;
+                    is_published?: boolean;
+                    published_at?: string | null;
+                    created_at?: string;
+                };
+            };
+            dpp_attempts: {
+                Row: {
+                    id: string;
+                    user_id: string | null;
+                    dpp_set_id: string | null;
+                    started_at: string;
+                    submitted_at: string | null;
+                    time_taken_seconds: number | null;
+                    total_score: number | null;
+                    max_score: number;
+                    accuracy_percent: number | null;
+                    status: 'in_progress' | 'completed' | 'abandoned';
+                    answers: Json;
+                };
+                Insert: {
+                    id?: string;
+                    user_id?: string | null;
+                    dpp_set_id?: string | null;
+                    started_at?: string;
+                    submitted_at?: string | null;
+                    time_taken_seconds?: number | null;
+                    total_score?: number | null;
+                    max_score?: number;
+                    accuracy_percent?: number | null;
+                    status?: 'in_progress' | 'completed' | 'abandoned';
+                    answers?: Json;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string | null;
+                    dpp_set_id?: string | null;
+                    started_at?: string;
+                    submitted_at?: string | null;
+                    time_taken_seconds?: number | null;
+                    total_score?: number | null;
+                    max_score?: number;
+                    accuracy_percent?: number | null;
+                    status?: 'in_progress' | 'completed' | 'abandoned';
+                    answers?: Json;
+                };
+            };
+            tests: {
+                Row: {
+                    id: string;
+                    exam_id: string | null;
+                    title: string;
+                    description: string | null;
+                    test_type: 'full_mock' | 'subject_test' | 'chapter_test' | 'custom';
+                    duration_minutes: number;
+                    total_marks: number;
+                    negative_marking: number;
+                    passing_percent: number;
+                    question_count: number;
+                    is_published: boolean;
+                    scheduled_at: string | null;
+                    start_time: string | null;
+                    end_time: string | null;
+                    allow_multiple_attempts: boolean;
+                    show_result_immediately: boolean;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    exam_id?: string | null;
+                    title: string;
+                    description?: string | null;
+                    test_type: 'full_mock' | 'subject_test' | 'chapter_test' | 'custom';
+                    duration_minutes: number;
+                    total_marks: number;
+                    negative_marking?: number;
+                    passing_percent?: number;
+                    question_count: number;
+                    is_published?: boolean;
+                    scheduled_at?: string | null;
+                    start_time?: string | null;
+                    end_time?: string | null;
+                    allow_multiple_attempts?: boolean;
+                    show_result_immediately?: boolean;
+                    created_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    exam_id?: string | null;
+                    title?: string;
+                    description?: string | null;
+                    test_type?: 'full_mock' | 'subject_test' | 'chapter_test' | 'custom';
+                    duration_minutes?: number;
+                    total_marks?: number;
+                    negative_marking?: number;
+                    passing_percent?: number;
+                    question_count?: number;
+                    is_published?: boolean;
+                    scheduled_at?: string | null;
+                    start_time?: string | null;
+                    end_time?: string | null;
+                    allow_multiple_attempts?: boolean;
+                    show_result_immediately?: boolean;
+                    created_at?: string;
+                };
+            };
+            test_attempts: {
+                Row: {
+                    id: string;
+                    user_id: string | null;
+                    test_id: string | null;
+                    attempt_number: number;
+                    started_at: string;
+                    submitted_at: string | null;
+                    time_taken_seconds: number | null;
+                    total_score: number | null;
+                    max_score: number;
+                    accuracy_percent: number | null;
+                    correct_count: number | null;
+                    incorrect_count: number | null;
+                    unattempted_count: number | null;
+                    percentile: number | null;
+                    rank: number | null;
+                    status: 'in_progress' | 'completed' | 'abandoned' | 'time_up';
+                    answers: Json;
+                    section_scores: Json;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    user_id?: string | null;
+                    test_id?: string | null;
+                    attempt_number?: number;
+                    started_at?: string;
+                    submitted_at?: string | null;
+                    time_taken_seconds?: number | null;
+                    total_score?: number | null;
+                    max_score?: number;
+                    accuracy_percent?: number | null;
+                    correct_count?: number | null;
+                    incorrect_count?: number | null;
+                    unattempted_count?: number | null;
+                    percentile?: number | null;
+                    rank?: number | null;
+                    status?: 'in_progress' | 'completed' | 'abandoned' | 'time_up';
+                    answers?: Json;
+                    section_scores?: Json;
+                    created_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string | null;
+                    test_id?: string | null;
+                    attempt_number?: number;
+                    started_at?: string;
+                    submitted_at?: string | null;
+                    time_taken_seconds?: number | null;
+                    total_score?: number | null;
+                    max_score?: number;
+                    accuracy_percent?: number | null;
+                    correct_count?: number | null;
+                    incorrect_count?: number | null;
+                    unattempted_count?: number | null;
+                    percentile?: number | null;
+                    rank?: number | null;
+                    status?: 'in_progress' | 'completed' | 'abandoned' | 'time_up';
+                    answers?: Json;
+                    section_scores?: Json;
+                    created_at?: string;
+                };
+            };
+            student_progress: {
+                Row: {
+                    id: string;
+                    user_id: string | null;
+                    subject_id: string | null;
+                    total_questions_attempted: number;
+                    correct_answers: number;
+                    incorrect_answers: number;
+                    accuracy_percent: number;
+                    average_time_per_question: number | null;
+                    total_study_minutes: number;
+                    tests_taken: number;
+                    average_test_score: number | null;
+                    best_rank: number | null;
+                    last_activity_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    user_id?: string | null;
+                    subject_id?: string | null;
+                    total_questions_attempted?: number;
+                    correct_answers?: number;
+                    incorrect_answers?: number;
+                    accuracy_percent?: number;
+                    average_time_per_question?: number | null;
+                    total_study_minutes?: number;
+                    tests_taken?: number;
+                    average_test_score?: number | null;
+                    best_rank?: number | null;
+                    last_activity_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string | null;
+                    subject_id?: string | null;
+                    total_questions_attempted?: number;
+                    correct_answers?: number;
+                    incorrect_answers?: number;
+                    accuracy_percent?: number;
+                    average_time_per_question?: number | null;
+                    total_study_minutes?: number;
+                    tests_taken?: number;
+                    average_test_score?: number | null;
+                    best_rank?: number | null;
+                    last_activity_at?: string;
+                    updated_at?: string;
+                };
+            };
+            topic_mastery: {
+                Row: {
+                    id: string;
+                    user_id: string | null;
+                    topic_id: string | null;
+                    mastery_level: number;
+                    questions_attempted: number;
+                    correct_answers: number;
+                    accuracy_percent: number;
+                    last_practiced_at: string | null;
+                    strength_status: 'weak' | 'average' | 'strong' | 'mastered' | null;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    user_id?: string | null;
+                    topic_id?: string | null;
+                    mastery_level?: number;
+                    questions_attempted?: number;
+                    correct_answers?: number;
+                    accuracy_percent?: number;
+                    last_practiced_at?: string | null;
+                    strength_status?: 'weak' | 'average' | 'strong' | 'mastered' | null;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string | null;
+                    topic_id?: string | null;
+                    mastery_level?: number;
+                    questions_attempted?: number;
+                    correct_answers?: number;
+                    accuracy_percent?: number;
+                    last_practiced_at?: string | null;
+                    strength_status?: 'weak' | 'average' | 'strong' | 'mastered' | null;
+                    updated_at?: string;
+                };
+            };
+            daily_challenges: {
+                Row: {
+                    id: string;
+                    exam_id: string | null;
+                    question_id: string | null;
+                    challenge_date: string;
+                    title: string | null;
+                    description: string | null;
+                    difficulty_level: string | null;
+                    total_participants: number;
+                    correct_participants: number;
+                    published_at: string;
+                    closes_at: string | null;
+                };
+                Insert: {
+                    id?: string;
+                    exam_id?: string | null;
+                    question_id?: string | null;
+                    challenge_date: string;
+                    title?: string | null;
+                    description?: string | null;
+                    difficulty_level?: string | null;
+                    total_participants?: number;
+                    correct_participants?: number;
+                    published_at?: string;
+                    closes_at?: string | null;
+                };
+                Update: {
+                    id?: string;
+                    exam_id?: string | null;
+                    question_id?: string | null;
+                    challenge_date?: string;
+                    title?: string | null;
+                    description?: string | null;
+                    difficulty_level?: string | null;
+                    total_participants?: number;
+                    correct_participants?: number;
+                    published_at?: string;
+                    closes_at?: string | null;
+                };
+            };
+            notifications: {
+                Row: {
+                    id: string;
+                    user_id: string | null;
+                    title: string;
+                    message: string;
+                    notification_type: 'dpp_ready' | 'revision_reminder' | 'test_reminder' | 'achievement' | 'challenge' | 'system';
+                    data: Json;
+                    is_read: boolean;
+                    read_at: string | null;
+                    action_url: string | null;
+                    sent_via: string[];
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    user_id?: string | null;
+                    title: string;
+                    message: string;
+                    notification_type?: 'dpp_ready' | 'revision_reminder' | 'test_reminder' | 'achievement' | 'challenge' | 'system';
+                    data?: Json;
+                    is_read?: boolean;
+                    read_at?: string | null;
+                    action_url?: string | null;
+                    sent_via?: string[];
+                    created_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string | null;
+                    title?: string;
+                    message?: string;
+                    notification_type?: 'dpp_ready' | 'revision_reminder' | 'test_reminder' | 'achievement' | 'challenge' | 'system';
+                    data?: Json;
+                    is_read?: boolean;
+                    read_at?: string | null;
+                    action_url?: string | null;
+                    sent_via?: string[];
+                    created_at?: string;
+                };
+            };
+            popup_ads: {
+                Row: {
+                    id: string;
+                    title: string;
+                    content: string | null;
+                    image_url: string | null;
+                    button_text: string | null;
+                    button_url: string | null;
+                    display_duration_seconds: number;
+                    start_date: string | null;
+                    end_date: string | null;
+                    priority: number;
+                    max_impressions: number | null;
+                    current_impressions: number;
+                    target_audience: Json;
+                    is_active: boolean;
+                    created_by: string | null;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    title: string;
+                    content?: string | null;
+                    image_url?: string | null;
+                    button_text?: string | null;
+                    button_url?: string | null;
+                    display_duration_seconds?: number;
+                    start_date?: string | null;
+                    end_date?: string | null;
+                    priority?: number;
+                    max_impressions?: number | null;
+                    current_impressions?: number;
+                    target_audience?: Json;
+                    is_active?: boolean;
+                    created_by?: string | null;
+                    created_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    title?: string;
+                    content?: string | null;
+                    image_url?: string | null;
+                    button_text?: string | null;
+                    button_url?: string | null;
+                    display_duration_seconds?: number;
+                    start_date?: string | null;
+                    end_date?: string | null;
+                    priority?: number;
+                    max_impressions?: number | null;
+                    current_impressions?: number;
+                    target_audience?: Json;
+                    is_active?: boolean;
+                    created_by?: string | null;
+                    created_at?: string;
+                };
+            };
+            system_health: {
+                Row: {
+                    id: string;
+                    check_name: string;
+                    status: 'healthy' | 'degraded' | 'critical';
+                    response_time_ms: number | null;
+                    error_count: number;
+                    details: Json;
+                    checked_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    check_name: string;
+                    status?: 'healthy' | 'degraded' | 'critical';
+                    response_time_ms?: number | null;
+                    error_count?: number;
+                    details?: Json;
+                    checked_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    check_name?: string;
+                    status?: 'healthy' | 'degraded' | 'critical';
+                    response_time_ms?: number | null;
+                    error_count?: number;
+                    details?: Json;
+                    checked_at?: string;
+                };
+            };
+            error_logs: {
+                Row: {
+                    id: string;
+                    error_type: string;
+                    error_message: string | null;
+                    stack_trace: string | null;
+                    user_id: string | null;
+                    request_path: string | null;
+                    request_method: string | null;
+                    user_agent: string | null;
+                    ip_address: string | null;
+                    metadata: Json;
+                    occurred_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    error_type: string;
+                    error_message?: string | null;
+                    stack_trace?: string | null;
+                    user_id?: string | null;
+                    request_path?: string | null;
+                    request_method?: string | null;
+                    user_agent?: string | null;
+                    ip_address?: string | null;
+                    metadata?: Json;
+                    occurred_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    error_type?: string;
+                    error_message?: string | null;
+                    stack_trace?: string | null;
+                    user_id?: string | null;
+                    request_path?: string | null;
+                    request_method?: string | null;
+                    user_agent?: string | null;
+                    ip_address?: string | null;
+                    metadata?: Json;
+                    occurred_at?: string;
+                };
+            };
+            rank_predictions: {
+                Row: {
+                    id: string;
+                    user_id: string;
+                    exam_id: string | null;
+                    prediction_date: string;
+                    predicted_rank: number | null;
+                    predicted_percentile: number | null;
+                    confidence_score: number | null;
+                    exam_readiness_percent: number | null;
+                    test_scores_avg: number | null;
+                    accuracy_avg: number | null;
+                    solve_time_avg: number | null;
+                    model_version: string | null;
+                    factors: Json;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    user_id: string;
+                    exam_id?: string | null;
+                    prediction_date: string;
+                    predicted_rank?: number | null;
+                    predicted_percentile?: number | null;
+                    confidence_score?: number | null;
+                    exam_readiness_percent?: number | null;
+                    test_scores_avg?: number | null;
+                    accuracy_avg?: number | null;
+                    solve_time_avg?: number | null;
+                    model_version?: string | null;
+                    factors?: Json;
+                    created_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string;
+                    exam_id?: string | null;
+                    prediction_date?: string;
+                    predicted_rank?: number | null;
+                    predicted_percentile?: number | null;
+                    confidence_score?: number | null;
+                    exam_readiness_percent?: number | null;
+                    test_scores_avg?: number | null;
+                    accuracy_avg?: number | null;
+                    solve_time_avg?: number | null;
+                    model_version?: string | null;
+                    factors?: Json;
+                    created_at?: string;
+                };
+            };
+            mistake_logs: {
+                Row: {
+                    id: string;
+                    user_id: string;
+                    question_id: string;
+                    mistake_type: 'conceptual' | 'calculation' | 'misread' | 'time_pressure' | 'guess';
+                    user_answer: string;
+                    correct_answer: string;
+                    topic_id: string | null;
+                    difficulty_level: string | null;
+                    occurred_at: string;
+                    is_reviewed: boolean;
+                    reviewed_at: string | null;
+                    notes: string | null;
+                };
+                Insert: {
+                    id?: string;
+                    user_id: string;
+                    question_id: string;
+                    mistake_type?: 'conceptual' | 'calculation' | 'misread' | 'time_pressure' | 'guess';
+                    user_answer: string;
+                    correct_answer: string;
+                    topic_id?: string | null;
+                    difficulty_level?: string | null;
+                    occurred_at?: string;
+                    is_reviewed?: boolean;
+                    reviewed_at?: string | null;
+                    notes?: string | null;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string;
+                    question_id?: string;
+                    mistake_type?: 'conceptual' | 'calculation' | 'misread' | 'time_pressure' | 'guess';
+                    user_answer?: string;
+                    correct_answer?: string;
+                    topic_id?: string | null;
+                    difficulty_level?: string | null;
+                    occurred_at?: string;
+                    is_reviewed?: boolean;
+                    reviewed_at?: string | null;
+                    notes?: string | null;
+                };
+            };
+            revision_tasks: {
+                Row: {
+                    id: string;
+                    user_id: string;
+                    topic_id: string;
+                    task_type: 'lecture_review' | 'practice_questions' | 'mock_test' | 'revision_set';
+                    priority: 'high' | 'medium' | 'low';
+                    scheduled_for: string | null;
+                    completed_at: string | null;
+                    status: 'pending' | 'completed' | 'skipped';
+                    related_mistake_ids: string[];
+                    recommended_questions: string[];
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    user_id: string;
+                    topic_id: string;
+                    task_type?: 'lecture_review' | 'practice_questions' | 'mock_test' | 'revision_set';
+                    priority?: 'high' | 'medium' | 'low';
+                    scheduled_for?: string | null;
+                    completed_at?: string | null;
+                    status?: 'pending' | 'completed' | 'skipped';
+                    related_mistake_ids?: string[];
+                    recommended_questions?: string[];
+                    created_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string;
+                    topic_id?: string;
+                    task_type?: 'lecture_review' | 'practice_questions' | 'mock_test' | 'revision_set';
+                    priority?: 'high' | 'medium' | 'low';
+                    scheduled_for?: string | null;
+                    completed_at?: string | null;
+                    status?: 'pending' | 'completed' | 'skipped';
+                    related_mistake_ids?: string[];
+                    recommended_questions?: string[];
+                    created_at?: string;
+                };
+            };
+            dpp_questions: {
+                Row: {
+                    id: string;
+                    dpp_set_id: string;
+                    question_id: string;
+                    display_order: number;
+                };
+                Insert: {
+                    id?: string;
+                    dpp_set_id: string;
+                    question_id: string;
+                    display_order: number;
+                };
+                Update: {
+                    id?: string;
+                    dpp_set_id?: string;
+                    question_id?: string;
+                    display_order?: number;
+                };
+            };
+            question_attempts: {
+                Row: {
+                    id: string;
+                    user_id: string;
+                    question_id: string;
+                    is_correct: boolean;
+                    time_taken_seconds: number | null;
+                    user_answer: string | null;
+                    correct_answer: string | null;
+                    occurred_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    user_id: string;
+                    question_id: string;
+                    is_correct: boolean;
+                    time_taken_seconds?: number | null;
+                    user_answer?: string | null;
+                    correct_answer?: string | null;
+                    occurred_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string;
+                    question_id?: string;
+                    is_correct?: boolean;
+                    time_taken_seconds?: number | null;
+                    user_answer?: string | null;
+                    correct_answer?: string | null;
+                    occurred_at?: string;
+                };
+            };
+        };
+        Views: {
+            [_ in never]: never;
+        };
+        Functions: {
+            [_ in never]: never;
+        };
+        Enums: {
+            [_ in never]: never;
+        };
+    };
+}

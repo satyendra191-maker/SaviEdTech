@@ -1,0 +1,98 @@
+{
+    "version": 2,
+    "buildCommand": "npm run build",
+    "devCommand": "npm run dev",
+    "installCommand": "npm install",
+    "framework": "nextjs",
+    "outputDirectory": ".next",
+    "regions": [
+        "bom1"
+    ],
+    "env": {
+        "NEXT_PUBLIC_APP_URL": "https://saviedutech.com"
+    },
+    "headers": [
+        {
+            "source": "/(.*)",
+            "headers": [
+                {
+                    "key": "X-Content-Type-Options",
+                    "value": "nosniff"
+                },
+                {
+                    "key": "X-Frame-Options",
+                    "value": "DENY"
+                },
+                {
+                    "key": "X-XSS-Protection",
+                    "value": "1; mode=block"
+                },
+                {
+                    "key": "Referrer-Policy",
+                    "value": "strict-origin-when-cross-origin"
+                },
+                {
+                    "key": "Permissions-Policy",
+                    "value": "camera=(), microphone=(), geolocation=()"
+                }
+            ]
+        },
+        {
+            "source": "/api/(.*)",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "no-store, max-age=0"
+                }
+            ]
+        },
+        {
+            "source": "/_next/static/(.*)",
+            "headers": [
+                {
+                    "key": "Cache-Control",
+                    "value": "public, max-age=31536000, immutable"
+                }
+            ]
+        }
+    ],
+    "rewrites": [
+        {
+            "source": "/sitemap.xml",
+            "destination": "/api/sitemap"
+        },
+        {
+            "source": "/robots.txt",
+            "destination": "/api/robots"
+        }
+    ],
+    "redirects": [
+        {
+            "source": "/admin",
+            "destination": "/admin/dashboard",
+            "permanent": true
+        }
+    ],
+    "crons": [
+        {
+            "path": "/api/cron/dpp-generator",
+            "schedule": "30 2 * * *"
+        },
+        {
+            "path": "/api/cron/lecture-publisher",
+            "schedule": "0 2 * * *"
+        },
+        {
+            "path": "/api/cron/revision-updater",
+            "schedule": "0 3 * * *"
+        },
+        {
+            "path": "/api/cron/daily-challenge",
+            "schedule": "0 0 * * *"
+        },
+        {
+            "path": "/api/cron/rank-prediction",
+            "schedule": "0 4 * * *"
+        }
+    ]
+}
