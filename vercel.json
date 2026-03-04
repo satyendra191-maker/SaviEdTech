@@ -96,11 +96,11 @@
         },
         {
             "path": "/api/cron/test-runner",
-            "schedule": "0 * * * *"
+            "schedule": "0 5 * * *"
         },
         {
             "path": "/api/cron/health-monitor",
-            "schedule": "*/5 * * * *"
+            "schedule": "0 6 * * *"
         }
     ]
 }
