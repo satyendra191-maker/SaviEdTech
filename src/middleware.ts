@@ -7,7 +7,7 @@ import type { Database } from '@/types/supabase';
 const protectedRoutes = ['/dashboard', '/admin'];
 
 // Routes that require admin role
-const adminRoutes = ['/admin'];
+const adminRoutes = ['/admin', '/super-admin'];
 
 // Public routes that authenticated users shouldn't access
 const authRoutes = ['/login', '/register'];

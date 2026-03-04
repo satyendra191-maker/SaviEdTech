@@ -499,6 +499,151 @@ export interface ApiResponse<T> {
     success: boolean;
 }
 
+// ============================================
+// PLATFORM MANAGER TYPES
+// ============================================
+
+export type HealthStatus = 'healthy' | 'degraded' | 'critical';
+
+// Error Log Types
+export interface ErrorLog {
+    id: string;
+    error_type: string;
+    error_message: string | null;
+    stack_trace: string | null;
+    user_id: string | null;
+    request_path: string | null;
+    request_method: string | null;
+    user_agent: string | null;
+    ip_address: string | null;
+    metadata: Record<string, unknown>;
+    occurred_at: string;
+}
+
+// System Health Types
+export interface SystemHealth {
+    id: string;
+    check_name: string;
+    status: HealthStatus;
+    response_time_ms: number | null;
+    error_count: number;
+    details: Record<string, unknown>;
+    checked_at: string;
+}
+
+// Cron Job Monitoring Types
+export interface CronJobStatus {
+    job_name: string;
+    last_run: string | null;
+    status: HealthStatus;
+    execution_time_ms: number | null;
+    error_count: number;
+    success_count: number;
+    last_error: string | null;
+}
+
+// Database Metrics Types
+export interface DatabaseMetrics {
+    total_connections: number;
+    active_connections: number;
+    idle_connections: number;
+    waiting_connections: number;
+    cache_hit_ratio: number;
+    query_stats: {
+        total_queries: number;
+        slow_queries: number;
+        avg_query_time_ms: number;
+    };
+    table_stats: {
+        table_name: string;
+        row_count: number;
+        size_bytes: number;
+    }[];
+}
+
+// Alert Types
+export type AlertSeverity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
+export type AlertStatus = 'active' | 'acknowledged' | 'resolved';
+
+export interface Alert {
+    id: string;
+    severity: AlertSeverity;
+    title: string;
+    message: string;
+    source: string;
+    status: AlertStatus;
+    metadata: Record<string, unknown>;
+    created_at: string;
+    acknowledged_at: string | null;
+    acknowledged_by: string | null;
+    resolved_at: string | null;
+}
+
+export type AlertConditionType =
+    | 'error_rate_threshold'
+    | 'error_count_threshold'
+    | 'health_check_failed'
+    | 'cron_job_failed'
+    | 'response_time_threshold'
+    | 'custom';
+
+export interface AlertCondition {
+    type: AlertConditionType;
+    threshold?: number;
+    timeWindowMinutes?: number;
+    checkName?: string;
+    cronJobName?: string;
+}
+
+export type NotificationChannel =
+    | { type: 'email'; recipients: string[] }
+    | { type: 'webhook'; url: string; headers?: Record<string, string> }
+    | { type: 'slack'; webhookUrl: string; channel?: string }
+    | { type: 'console' };
+
+export interface AlertRule {
+    id: string;
+    name: string;
+    description: string;
+    severity: AlertSeverity;
+    condition: AlertCondition;
+    is_enabled: boolean;
+    cooldown_minutes: number;
+    last_triggered_at: string | null;
+    notification_channels: NotificationChannel[];
+    created_at: string;
+    updated_at: string;
+}
+
+// Health Check Types
+export interface HealthCheckResult {
+    check_name: string;
+    status: HealthStatus;
+    response_time_ms: number;
+    message: string;
+    details: Record<string, unknown>;
+    timestamp: string;
+}
+
+export interface FullHealthReport {
+    overall_status: HealthStatus;
+    checks: HealthCheckResult[];
+    summary: {
+        total: number;
+        healthy: number;
+        degraded: number;
+        critical: number;
+    };
+    generated_at: string;
+}
+
+// Monitoring Configuration
+export interface MonitoringConfig {
+    errorLimit?: number;
+    timeWindowMinutes?: number;
+    includeResolved?: boolean;
+}
+
 export interface PaginatedResponse<T> {
     data: T[];
     total: number;
@@ -530,4 +675,273 @@ export interface StudentDashboardStats {
     pendingRevisions: number;
     todayDPPCompleted: boolean;
     todayChallengeCompleted: boolean;
+}
+
+// ============================================
+// PERFORMANCE OPTIMIZATION TYPES
+// ============================================
+
+export type PerformanceScore = number; // 0-100
+export type OptimizationPriority = 'critical' | 'high' | 'medium' | 'low';
+
+export interface SlowQuery {
+    queryid: string;
+    query: string;
+    calls: number;
+    total_time: number;
+    mean_time: number;
+    stddev_time: number;
+    rows: number;
+    shared_blks_hit: number;
+    shared_blks_read: number;
+    temp_blks_written: number;
+}
+
+export interface IndexRecommendation {
+    table: string;
+    column: string;
+    reason: string;
+    priority: OptimizationPriority;
+    estimatedImprovement: string;
+    suggestedIndex: string;
+}
+
+export interface TablePerformance {
+    tableName: string;
+    rowCount: number;
+    sizeBytes: number;
+    seqScanCount: number;
+    idxScanCount: number;
+    seqScanRatio: number;
+    deadTupleRatio: number;
+    bloatRatio: number;
+    recommendations: string[];
+}
+
+export interface QueryPerformanceReport {
+    slowQueries: SlowQuery[];
+    indexRecommendations: IndexRecommendation[];
+    tablePerformance: TablePerformance[];
+    summary: {
+        totalSlowQueries: number;
+        criticalQueries: number;
+        tablesNeedingOptimization: number;
+        overallQueryHealth: 'healthy' | 'degraded' | 'critical';
+    };
+}
+
+export interface CacheStats {
+    totalQueries: number;
+    cachedQueries: number;
+    cacheHits: number;
+    cacheMisses: number;
+    cacheHitRatio: number;
+    avgCacheResponseTime: number;
+    avgDbResponseTime: number;
+    cacheEfficiency: number;
+}
+
+export interface CacheStrategy {
+    queryPattern: string;
+    frequency: number;
+    avgResponseTime: number;
+    recommendedCacheDuration: number;
+    priority: OptimizationPriority;
+    estimatedMemoryUsage: string;
+}
+
+export interface CacheEfficiency {
+    hitRatio: number;
+    missRatio: number;
+    evictionRate: number;
+    memoryUtilization: number;
+    score: number;
+}
+
+export interface BundleFile {
+    name: string;
+    size: number;
+    gzipSize: number;
+    type: 'js' | 'css' | 'json' | 'other';
+    percentage: number;
+}
+
+export interface DependencyInfo {
+    name: string;
+    version: string;
+    size: number;
+    isDuplicate: boolean;
+    isUnused: boolean;
+}
+
+export interface UnusedCodeInfo {
+    file: string;
+    unusedExports: string[];
+    unusedImports: string[];
+    deadCode: string[];
+}
+
+export interface DuplicateCodeInfo {
+    modules: string[];
+    size: number;
+    occurrences: number;
+}
+
+export interface CodeSplittingRecommendation {
+    route: string;
+    currentSize: number;
+    suggestedChunks: string[];
+    potentialSavings: number;
+    priority: OptimizationPriority;
+}
+
+export interface BundleReport {
+    analysis: {
+        totalSize: number;
+        gzipSize: number;
+        files: BundleFile[];
+        dependencies: DependencyInfo[];
+        unusedCode: UnusedCodeInfo[];
+        duplicateCode: DuplicateCodeInfo[];
+    };
+    recommendations: CodeSplittingRecommendation[];
+    summary: {
+        totalSize: string;
+        gzipSize: string;
+        unusedCodeSize: string;
+        duplicateCodeSize: string;
+        potentialSavings: string;
+        score: number;
+    };
+}
+
+export interface APIEndpointPerformance {
+    endpoint: string;
+    method: string;
+    totalRequests: number;
+    avgResponseTime: number;
+    p50ResponseTime: number;
+    p95ResponseTime: number;
+    p99ResponseTime: number;
+    errorRate: number;
+    throughput: number;
+}
+
+export interface APIOptimizationRecommendation {
+    endpoint: string;
+    issue: string;
+    recommendation: string;
+    priority: OptimizationPriority;
+    estimatedImprovement: string;
+}
+
+export interface APIPerformanceReport {
+    endpoints: APIEndpointPerformance[];
+    recommendations: APIOptimizationRecommendation[];
+    summary: {
+        totalEndpoints: number;
+        slowEndpoints: number;
+        highErrorRateEndpoints: number;
+        overallAPIHealth: 'healthy' | 'degraded' | 'critical';
+    };
+}
+
+export interface OptimizationReport {
+    timestamp: string;
+    queryPerformance: QueryPerformanceReport;
+    cacheStats: CacheStats;
+    cacheStrategies: CacheStrategy[];
+    bundleReport: BundleReport;
+    apiPerformance: APIPerformanceReport;
+    overallScore: PerformanceScore;
+    criticalIssues: number;
+    highPriorityIssues: number;
+    mediumPriorityIssues: number;
+    lowPriorityIssues: number;
+}
+
+export interface PerformanceMetrics {
+    queryScore: number;
+    cacheScore: number;
+    bundleScore: number;
+    apiScore: number;
+    overallScore: number;
+}
+
+// ============================================
+// PAYMENT TYPES
+// ============================================
+
+export type PaymentGateway = 'razorpay' | 'stripe' | 'paypal';
+
+export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded' | 'cancelled';
+
+export interface Donation {
+    id: string;
+    gateway: PaymentGateway;
+    amount: number;
+    currency: string;
+    status: PaymentStatus;
+    donor_email: string | null;
+    donor_name: string | null;
+    donor_phone: string | null;
+    order_id: string | null;
+    payment_id: string | null;
+    gateway_response: Record<string, unknown> | null;
+    error_message: string | null;
+    metadata: Record<string, unknown> | null;
+    created_at: string;
+    updated_at: string;
+    completed_at: string | null;
+}
+
+export interface GatewayHealth {
+    gateway: PaymentGateway;
+    status: 'healthy' | 'degraded' | 'critical' | 'unknown';
+    responseTimeMs: number;
+    lastChecked: string;
+    successRate: number;
+    errorCount: number;
+    errorMessage?: string;
+}
+
+export interface Transaction {
+    id: string;
+    gateway: PaymentGateway;
+    amount: number;
+    currency: string;
+    status: PaymentStatus;
+    donorEmail?: string;
+    donorName?: string;
+    donorPhone?: string;
+    orderId?: string;
+    paymentId?: string;
+    gatewayResponse?: Record<string, unknown>;
+    errorMessage?: string;
+    metadata?: Record<string, unknown>;
+    createdAt: string;
+    updatedAt: string;
+    completedAt?: string;
+}
+
+export interface TransactionStats {
+    totalTransactions: number;
+    successfulTransactions: number;
+    failedTransactions: number;
+    pendingTransactions: number;
+    refundedTransactions: number;
+    totalRevenue: number;
+    refundedAmount: number;
+    netRevenue: number;
+    successRate: number;
+    averageTransactionAmount: number;
+    timeRange: {
+        start: string;
+        end: string;
+    };
+    gatewayBreakdown: Record<PaymentGateway, {
+        count: number;
+        revenue: number;
+        successRate: number;
+    }>;
 }
