@@ -15,6 +15,7 @@ import {
     LogOut,
     GraduationCap,
     Flame,
+    Clock,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { StreakDisplay } from '@/components/gamification';
@@ -26,6 +27,8 @@ const navItems = [
     { name: 'Mock Tests', href: '/dashboard/tests', icon: ClipboardList },
     { name: 'Daily Challenge', href: '/dashboard/challenge', icon: Trophy },
     { name: 'DPP', href: '/dashboard/dpp', icon: Calendar },
+    { name: 'Study Planner', href: '/dashboard/planner', icon: Clock },
+    { name: 'Ask Faculty', href: '/dashboard/doubts', icon: Trophy },
     { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
     { name: 'Revision', href: '/dashboard/revision', icon: RotateCcw },
     { name: 'Settings', href: '/dashboard/settings', icon: Settings },

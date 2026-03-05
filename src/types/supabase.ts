@@ -1145,6 +1145,166 @@ export interface Database {
                     created_at?: string;
                 };
             };
+            // Study Planner Tables
+            study_plans: {
+                Row: {
+                    id: string;
+                    user_id: string;
+                    title: string;
+                    description: string | null;
+                    start_date: string;
+                    end_date: string | null;
+                    is_active: boolean;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    user_id: string;
+                    title: string;
+                    description?: string | null;
+                    start_date: string;
+                    end_date?: string | null;
+                    is_active?: boolean;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string;
+                    title?: string;
+                    description?: string | null;
+                    start_date?: string;
+                    end_date?: string | null;
+                    is_active?: boolean;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+            };
+            study_plan_items: {
+                Row: {
+                    id: string;
+                    plan_id: string;
+                    title: string;
+                    description: string | null;
+                    subject: string | null;
+                    topic: string | null;
+                    scheduled_date: string;
+                    scheduled_time: string | null;
+                    duration_minutes: number | null;
+                    status: 'pending' | 'in_progress' | 'completed' | 'skipped';
+                    completed_at: string | null;
+                    lecture_id: string | null;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    plan_id: string;
+                    title: string;
+                    description?: string | null;
+                    subject?: string | null;
+                    topic?: string | null;
+                    scheduled_date: string;
+                    scheduled_time?: string | null;
+                    duration_minutes?: number | null;
+                    status?: 'pending' | 'in_progress' | 'completed' | 'skipped';
+                    completed_at?: string | null;
+                    lecture_id?: string | null;
+                    created_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    plan_id?: string;
+                    title?: string;
+                    description?: string | null;
+                    subject?: string | null;
+                    topic?: string | null;
+                    scheduled_date?: string;
+                    scheduled_time?: string | null;
+                    duration_minutes?: number | null;
+                    status?: 'pending' | 'in_progress' | 'completed' | 'skipped';
+                    completed_at?: string | null;
+                    lecture_id?: string | null;
+                    created_at?: string;
+                };
+            };
+            // Doubt System Tables
+            doubts: {
+                Row: {
+                    id: string;
+                    user_id: string;
+                    question: string;
+                    description: string | null;
+                    subject: string | null;
+                    topic: string | null;
+                    lecture_id: string | null;
+                    image_url: string | null;
+                    status: 'pending' | 'answered' | 'in_progress' | 'closed';
+                    priority: 'low' | 'medium' | 'high';
+                    assigned_faculty_id: string | null;
+                    created_at: string;
+                    answered_at: string | null;
+                };
+                Insert: {
+                    id?: string;
+                    user_id: string;
+                    question: string;
+                    description?: string | null;
+                    subject?: string | null;
+                    topic?: string | null;
+                    lecture_id?: string | null;
+                    image_url?: string | null;
+                    status?: 'pending' | 'answered' | 'in_progress' | 'closed';
+                    priority?: 'low' | 'medium' | 'high';
+                    assigned_faculty_id?: string | null;
+                    created_at?: string;
+                    answered_at?: string | null;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string;
+                    question?: string;
+                    description?: string | null;
+                    subject?: string | null;
+                    topic?: string | null;
+                    lecture_id?: string | null;
+                    image_url?: string | null;
+                    status?: 'pending' | 'answered' | 'in_progress' | 'closed';
+                    priority?: 'low' | 'medium' | 'high';
+                    assigned_faculty_id?: string | null;
+                    created_at?: string;
+                    answered_at?: string | null;
+                };
+            };
+            doubt_responses: {
+                Row: {
+                    id: string;
+                    doubt_id: string;
+                    faculty_id: string;
+                    response: string;
+                    video_url: string | null;
+                    document_url: string | null;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    doubt_id: string;
+                    faculty_id: string;
+                    response: string;
+                    video_url?: string | null;
+                    document_url?: string | null;
+                    created_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    doubt_id?: string;
+                    faculty_id?: string;
+                    response?: string;
+                    video_url?: string | null;
+                    document_url?: string | null;
+                    created_at?: string;
+                };
+            };
             system_health: {
                 Row: {
                     id: string;
@@ -2049,3 +2209,8 @@ export type WebhookLog = Tables<'webhook_logs'>;
 export type UserSession = Tables<'user_sessions'>;
 export type LeadForm = Tables<'lead_forms'>;
 export type DppQuestion = Tables<'dpp_questions'>;
+// New types for Study Planner and Doubt System
+export type StudyPlan = Tables<'study_plans'>;
+export type StudyPlanItem = Tables<'study_plan_items'>;
+export type Doubt = Tables<'doubts'>;
+export type DoubtResponse = Tables<'doubt_responses'>;
