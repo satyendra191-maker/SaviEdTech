@@ -10,11 +10,21 @@ import { passwordResetTemplate } from './templates/password-reset';
 import { weeklyDigestTemplate } from './templates/weekly-digest';
 import { courseCompletionTemplate } from './templates/course-completion';
 
-// Initialize Resend client
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 // Default sender email
 const DEFAULT_FROM = process.env.EMAIL_FROM || 'noreply@saviedutech.com';
+
+// Lazy initialization of Resend client to avoid build-time errors
+let resendInstance: Resend | null = null;
+const getResend = (): Resend => {
+    if (!resendInstance) {
+        const apiKey = process.env.RESEND_API_KEY;
+        if (!apiKey) {
+            throw new Error('RESEND_API_KEY is not configured');
+        }
+        resendInstance = new Resend(apiKey);
+    }
+    return resendInstance;
+};
 
 // Email types
 export type EmailType =
@@ -128,6 +138,7 @@ export async function sendEmail(
         const { html, text } = generateEmailContent(type, data);
 
         // Send email via Resend
+        const resend = getResend();
         const { data: response, error } = await resend.emails.send({
             from: options.from || DEFAULT_FROM,
             to: options.to,
