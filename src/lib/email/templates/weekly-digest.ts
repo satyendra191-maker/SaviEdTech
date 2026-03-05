@@ -1,8 +1,3 @@
-/**
- * Weekly Digest Email Template
- * Sent weekly with progress summary
- */
-
 import { baseTemplate } from './base';
 
 export interface WeeklyDigestData {
@@ -49,7 +44,6 @@ export function weeklyDigestTemplate(data: WeeklyDigestData): { html: string; te
         Hi ${data.userName}, here's how you performed this week:
       </p>
       
-      <!-- Stats Grid -->
       <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-bottom: 24px;">
         <div style="background: linear-gradient(135deg, #dbeafe, #bfdbfe); border-radius: 12px; padding: 20px; text-align: center;">
           <div style="font-size: 32px; font-weight: 700; color: #1e40af; margin-bottom: 4px;">
@@ -80,7 +74,6 @@ export function weeklyDigestTemplate(data: WeeklyDigestData): { html: string; te
         </div>
       </div>
       
-      <!-- Upcoming Tests -->
       <div style="background: #f8fafc; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
         <h3 style="color: #0f172a; font-size: 16px; margin: 0 0 16px 0;">
           📅 Upcoming Tests

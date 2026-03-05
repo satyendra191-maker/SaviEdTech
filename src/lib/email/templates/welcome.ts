@@ -1,8 +1,3 @@
-/**
- * Welcome Email Template
- * Sent to new users upon registration
- */
-
 import { baseTemplate } from './base';
 
 export interface WelcomeEmailData {

@@ -1,8 +1,3 @@
-/**
- * Password Reset Email Template
- * Sent when user requests password reset
- */
-
 import { baseTemplate } from './base';
 
 export interface PasswordResetData {

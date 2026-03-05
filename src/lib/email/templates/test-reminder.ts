@@ -1,8 +1,3 @@
-/**
- * Test Reminder Email Template
- * Sent to users before scheduled tests
- */
-
 import { baseTemplate } from './base';
 
 export interface TestReminderData {

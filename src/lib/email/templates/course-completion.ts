@@ -1,8 +1,3 @@
-/**
- * Course Completion Email Template
- * Sent when user completes a course
- */
-
 import { baseTemplate } from './base';
 
 export interface CourseCompletionData {

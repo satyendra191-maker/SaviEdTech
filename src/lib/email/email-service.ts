@@ -1,8 +1,3 @@
-/**
- * Email Service
- * Resend integration for sending transactional emails
- */
-
 import { Resend } from 'resend';
 import { welcomeTemplate } from './templates/welcome';
 import { testReminderTemplate } from './templates/test-reminder';
@@ -10,10 +5,8 @@ import { passwordResetTemplate } from './templates/password-reset';
 import { weeklyDigestTemplate } from './templates/weekly-digest';
 import { courseCompletionTemplate } from './templates/course-completion';
 
-// Default sender email
 const DEFAULT_FROM = process.env.EMAIL_FROM || 'noreply@saviedutech.com';
 
-// Lazy initialization of Resend client to avoid build-time errors
 let resendInstance: Resend | null = null;
 const getResend = (): Resend => {
     if (!resendInstance) {
@@ -26,7 +19,6 @@ const getResend = (): Resend => {
     return resendInstance;
 };
 
-// Email types
 export type EmailType =
     | 'welcome'
     | 'test-reminder'
@@ -35,7 +27,6 @@ export type EmailType =
     | 'course-completion'
     | 'custom';
 
-// Base email options
 export interface EmailOptions {
     to: string | string[];
     subject: string;
@@ -50,7 +41,6 @@ export interface EmailOptions {
     }>;
 }
 
-// Template-specific data
 export interface WelcomeEmailData {
     userName: string;
     dashboardUrl: string;
@@ -105,39 +95,30 @@ export type EmailData =
     | CourseCompletionData
     | CustomEmailData;
 
-// Email result
 export interface EmailResult {
     success: boolean;
     messageId?: string;
     error?: string;
 }
 
-// Batch email result
 export interface BatchEmailResult {
     successful: number;
     failed: number;
     results: EmailResult[];
 }
 
-/**
- * Send a single email
- */
 export async function sendEmail(
     type: EmailType,
     options: EmailOptions,
     data: EmailData
 ): Promise<EmailResult> {
     try {
-        // Validate API key
         if (!process.env.RESEND_API_KEY) {
             console.error('RESEND_API_KEY is not configured');
             return { success: false, error: 'Email service not configured' };
         }
 
-        // Generate email content based on type
         const { html, text } = generateEmailContent(type, data);
-
-        // Send email via Resend
         const resend = getResend();
         const { data: response, error } = await resend.emails.send({
             from: options.from || DEFAULT_FROM,
@@ -165,9 +146,6 @@ export async function sendEmail(
     }
 }
 
-/**
- * Send emails to multiple recipients (batch)
- */
 export async function sendBatchEmails(
     type: EmailType,
     recipients: Array<{ email: string; data: EmailData }>,
@@ -178,7 +156,6 @@ export async function sendBatchEmails(
     let successful = 0;
     let failed = 0;
 
-    // Process in batches of 10 to avoid rate limiting
     const batchSize = 10;
     for (let i = 0; i < recipients.length; i += batchSize) {
         const batch = recipients.slice(i, i + batchSize);
@@ -202,7 +179,6 @@ export async function sendBatchEmails(
         const batchResults = await Promise.all(batchPromises);
         results.push(...batchResults);
 
-        // Small delay between batches
         if (i + batchSize < recipients.length) {
             await new Promise(resolve => setTimeout(resolve, 1000));
         }
@@ -211,9 +187,6 @@ export async function sendBatchEmails(
     return { successful, failed, results };
 }
 
-/**
- * Send welcome email to new user
- */
 export async function sendWelcomeEmail(
     email: string,
     userName: string
@@ -233,9 +206,6 @@ export async function sendWelcomeEmail(
     );
 }
 
-/**
- * Send test reminder email
- */
 export async function sendTestReminderEmail(
     email: string,
     data: TestReminderData
@@ -250,9 +220,6 @@ export async function sendTestReminderEmail(
     );
 }
 
-/**
- * Send password reset email
- */
 export async function sendPasswordResetEmail(
     email: string,
     userName: string,
@@ -274,9 +241,6 @@ export async function sendPasswordResetEmail(
     );
 }
 
-/**
- * Send weekly digest email
- */
 export async function sendWeeklyDigestEmail(
     email: string,
     data: WeeklyDigestData
@@ -291,9 +255,6 @@ export async function sendWeeklyDigestEmail(
     );
 }
 
-/**
- * Send course completion email
- */
 export async function sendCourseCompletionEmail(
     email: string,
     data: CourseCompletionData
@@ -308,9 +269,6 @@ export async function sendCourseCompletionEmail(
     );
 }
 
-/**
- * Generate email content based on type
- */
 function generateEmailContent(
     type: EmailType,
     data: EmailData
@@ -337,17 +295,11 @@ function generateEmailContent(
     }
 }
 
-/**
- * Validate email address format
- */
 export function validateEmail(email: string): boolean {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     return emailRegex.test(email);
 }
 
-/**
- * Get email sending statistics (mock for now, can be enhanced with Resend analytics)
- */
 export async function getEmailStats(): Promise<{
     sent: number;
     delivered: number;
@@ -356,7 +308,6 @@ export async function getEmailStats(): Promise<{
     bounced: number;
     complained: number;
 }> {
-    // In production, this could fetch from Resend API or database
     return {
         sent: 0,
         delivered: 0,
