@@ -32,7 +32,6 @@ const footerLinks = {
         { name: 'NEET Preparation', href: '/neet' },
         { name: 'Study Material', href: '/materials' },
         { name: 'Previous Year Papers', href: '/papers' },
-        { name: 'Revision Notes', href: '/notes' },
     ],
     company: [
         { name: 'About Us', href: '/about' },
