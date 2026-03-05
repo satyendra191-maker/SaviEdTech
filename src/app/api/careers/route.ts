@@ -80,8 +80,20 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ jobs: data });
     } catch (error) {
         console.error('Error in careers API:', error);
+
+        // Provide more specific error messages for debugging
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+        // Check if it's a table not found error
+        if (errorMessage.includes('relation') || errorMessage.includes('table')) {
+            return NextResponse.json(
+                { error: 'Database tables not configured', jobs: [], message: 'No job listings available at this time' },
+                { status: 200 }
+            );
+        }
+
         return NextResponse.json(
-            { error: 'Internal server error' },
+            { error: 'Internal server error', message: errorMessage },
             { status: 500 }
         );
     }
