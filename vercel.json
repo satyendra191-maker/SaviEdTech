@@ -56,23 +56,6 @@
             ]
         }
     ],
-    "rewrites": [
-        {
-            "source": "/sitemap.xml",
-            "destination": "/api/sitemap"
-        },
-        {
-            "source": "/robots.txt",
-            "destination": "/api/robots"
-        }
-    ],
-    "redirects": [
-        {
-            "source": "/admin",
-            "destination": "/admin/dashboard",
-            "permanent": true
-        }
-    ],
     "crons": [
         {
             "path": "/api/cron/dpp-generator",

@@ -1,4 +1,21 @@
-import { User, Bell, Shield, HelpCircle, ChevronRight, LogOut } from 'lucide-react';
+'use client';
+
+import { useEffect, useState } from 'react';
+import { User, Bell, Shield, HelpCircle, ChevronRight, LogOut, Loader2, AlertCircle } from 'lucide-react';
+import { getSupabaseBrowserClient } from '@/lib/supabase';
+import { useAuth } from '@/hooks/useAuth';
+import { useRouter } from 'next/navigation';
+
+interface SettingsData {
+  profile: {
+    full_name: string;
+    email: string;
+    avatar_url: string | null;
+    role: string;
+    exam_target: string | null;
+    class_level: string | null;
+  } | null;
+}
 
 const menuItems = [
   { icon: User, label: 'Edit Profile', description: 'Update your personal information', href: '#' },
@@ -8,6 +25,84 @@ const menuItems = [
 ];
 
 export default function SettingsPage() {
+  const { user, isLoading: authLoading, signOut } = useAuth();
+  const router = useRouter();
+  const [data, setData] = useState<SettingsData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
+
+  useEffect(() => {
+    async function fetchSettingsData() {
+      if (!user) return;
+
+      try {
+        const supabase = getSupabaseBrowserClient();
+
+        // Fetch user profile
+        const { data: profileData, error: profileError } = await supabase
+          .from('profiles')
+          .select('full_name, email, avatar_url, role, exam_target, class_level')
+          .eq('id', user.id)
+          .single();
+
+        if (profileError) {
+          throw profileError;
+        }
+
+        setData({
+          profile: profileData as SettingsData['profile'],
+        });
+      } catch (err) {
+        console.error('Error fetching settings data:', err);
+        setError('Failed to load settings. Please try again.');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    if (!authLoading) {
+      fetchSettingsData();
+    }
+  }, [user, authLoading]);
+
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    try {
+      await signOut();
+      router.push('/login');
+    } catch (err) {
+      console.error('Error signing out:', err);
+      setSigningOut(false);
+    }
+  };
+
+  if (authLoading || loading) {
+    return <SettingsSkeleton />;
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+        <AlertCircle className="w-16 h-16 text-red-500" />
+        <h2 className="text-xl font-semibold text-slate-900">Something went wrong</h2>
+        <p className="text-slate-500">{error}</p>
+        <button
+          onClick={() => window.location.reload()}
+          className="px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors"
+        >
+          Try Again
+        </button>
+      </div>
+    );
+  }
+
+  const profile = data?.profile;
+  const initials = profile?.full_name?.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase() || 'S';
+  const displayName = profile?.full_name || 'Student';
+  const examTarget = profile?.exam_target || 'JEE Aspirant';
+  const classLevel = profile?.class_level || 'Class 12';
+
   return (
     <div className="space-y-6">
       <div>
@@ -18,18 +113,26 @@ export default function SettingsPage() {
       {/* Profile Card */}
       <div className="bg-white rounded-2xl border border-slate-100 p-6">
         <div className="flex items-center gap-4">
-          <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white text-2xl font-bold">
-            S
-          </div>
+          {profile?.avatar_url ? (
+            <img
+              src={profile.avatar_url}
+              alt={displayName}
+              className="w-20 h-20 rounded-full object-cover"
+            />
+          ) : (
+            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-primary-500 to-primary-600 flex items-center justify-center text-white text-2xl font-bold">
+              {initials}
+            </div>
+          )}
           <div>
-            <h2 className="text-xl font-bold text-slate-900">Student Name</h2>
-            <p className="text-slate-500">student@example.com</p>
+            <h2 className="text-xl font-bold text-slate-900">{displayName}</h2>
+            <p className="text-slate-500">{profile?.email || 'student@example.com'}</p>
             <div className="flex items-center gap-2 mt-2">
               <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full">
-                JEE Aspirant
+                {examTarget}
               </span>
               <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-medium rounded-full">
-                Class 12
+                {classLevel}
               </span>
             </div>
           </div>
@@ -84,10 +187,76 @@ export default function SettingsPage() {
       </div>
 
       {/* Logout */}
-      <button className="w-full flex items-center justify-center gap-2 p-4 bg-red-50 text-red-600 rounded-2xl font-medium hover:bg-red-100 transition-colors">
-        <LogOut className="w-5 h-5" />
-        Sign Out
+      <button
+        onClick={handleSignOut}
+        disabled={signingOut}
+        className="w-full flex items-center justify-center gap-2 p-4 bg-red-50 text-red-600 rounded-2xl font-medium hover:bg-red-100 transition-colors disabled:opacity-50"
+      >
+        {signingOut ? (
+          <>
+            <Loader2 className="w-5 h-5 animate-spin" />
+            Signing Out...
+          </>
+        ) : (
+          <>
+            <LogOut className="w-5 h-5" />
+            Sign Out
+          </>
+        )}
       </button>
+    </div>
+  );
+}
+
+function SettingsSkeleton() {
+  return (
+    <div className="space-y-6 animate-pulse">
+      <div>
+        <div className="h-8 bg-slate-200 rounded w-32 mb-2"></div>
+        <div className="h-4 bg-slate-200 rounded w-64"></div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-slate-100 p-6">
+        <div className="flex items-center gap-4">
+          <div className="w-20 h-20 bg-slate-200 rounded-full"></div>
+          <div className="space-y-2">
+            <div className="h-6 bg-slate-200 rounded w-48"></div>
+            <div className="h-4 bg-slate-200 rounded w-64"></div>
+            <div className="flex gap-2 mt-2">
+              <div className="h-6 bg-slate-200 rounded w-24"></div>
+              <div className="h-6 bg-slate-200 rounded w-20"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="flex items-center justify-between p-4 border-b border-slate-100 last:border-b-0 h-20">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 bg-slate-200 rounded-lg"></div>
+              <div className="space-y-2">
+                <div className="h-4 bg-slate-200 rounded w-32"></div>
+                <div className="h-3 bg-slate-200 rounded w-48"></div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="bg-white rounded-2xl border border-slate-100 p-6">
+        <div className="h-5 bg-slate-200 rounded w-16 mb-4"></div>
+        <div className="space-y-3">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="flex justify-between h-4">
+              <div className="bg-slate-200 rounded w-32"></div>
+              <div className="bg-slate-200 rounded w-20"></div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="h-14 bg-slate-200 rounded-2xl"></div>
     </div>
   );
 }

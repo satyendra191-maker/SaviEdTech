@@ -53,9 +53,9 @@ export default async function SuperAdminLayout({ children }: SuperAdminLayoutPro
         redirect('/dashboard?error=profile_not_found');
     }
 
-    // Only allow admin role
-    if (profile.role !== 'admin') {
-        console.error('Access denied: User is not an admin');
+    // Only allow admin or super_admin roles
+    if (profile.role !== 'admin' && profile.role !== 'super_admin') {
+        console.error('Access denied: User is not an admin or super_admin');
         redirect('/dashboard?error=insufficient_permissions');
     }
 

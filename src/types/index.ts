@@ -1,6 +1,12 @@
 // User Types
 export type UserRole = 'student' | 'admin' | 'content_manager';
 
+// Exam target types
+export type ExamTarget = 'JEE' | 'NEET' | 'Both' | 'JEE Mains' | 'JEE Advanced' | 'CBSE Board' | 'Foundation';
+
+// Class level types
+export type ClassLevel = '9' | '10' | '11' | '12' | 'Dropper' | 'Class 9' | 'Class 10' | 'Class 11' | 'Class 12';
+
 export interface User {
     id: string;
     email: string;
@@ -8,8 +14,8 @@ export interface User {
     phone: string | null;
     avatar_url: string | null;
     role: UserRole;
-    exam_target: 'JEE' | 'NEET' | 'Both' | null;
-    class_level: '11' | '12' | 'Dropper' | null;
+    exam_target: ExamTarget | null;
+    class_level: ClassLevel | null;
     city: string | null;
     state: string | null;
     created_at: string;
@@ -37,8 +43,8 @@ export interface LeadForm {
     name: string;
     phone: string;
     email: string | null;
-    exam_target: 'JEE' | 'NEET' | 'Both' | 'Other';
-    class_level: '10' | '11' | '12' | 'Dropper';
+    exam_target: ExamTarget | 'Other';
+    class_level: ClassLevel;
     city: string | null;
     source: string;
     status: 'new' | 'contacted' | 'converted' | 'disqualified';

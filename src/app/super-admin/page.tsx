@@ -224,6 +224,14 @@ export default function SuperAdminDashboardPage() {
         showActionMessage('success', 'Report exported successfully');
     };
 
+    /**
+     * Trigger a cron job securely via the admin API
+     *
+     * SECURITY: This function uses the server-side API at /api/admin/cron-trigger
+     * instead of directly calling cron endpoints with NEXT_PUBLIC_CRON_SECRET.
+     * The CRON_SECRET is now only accessed server-side, preventing exposure in
+     * browser code.
+     */
     const handleTriggerCronJob = async () => {
         if (!selectedCronJob) return;
 
@@ -232,19 +240,27 @@ export default function SuperAdminDashboardPage() {
             const job = CRON_JOBS.find(j => j.id === selectedCronJob);
             if (!job) return;
 
-            const response = await fetch(job.path, {
-                method: 'GET',
-                headers: { 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_CRON_SECRET || ''}` },
+            // Use secure admin API instead of direct cron endpoint
+            // This ensures CRON_SECRET is never exposed in browser
+            const response = await fetch('/api/admin/cron-trigger', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ jobId: job.id }),
             });
 
-            if (response.ok) {
+            const result = await response.json();
+
+            if (response.ok && result.success) {
                 showActionMessage('success', `${job.name} triggered successfully`);
                 await fetchDashboardData();
             } else {
-                throw new Error('Cron job failed');
+                const errorMsg = result.message || 'Cron job failed';
+                throw new Error(errorMsg);
             }
         } catch (error) {
-            showActionMessage('error', 'Failed to trigger cron job');
+            showActionMessage('error', error instanceof Error ? error.message : 'Failed to trigger cron job');
         } finally {
             setRefreshing(false);
             setSelectedCronJob('');

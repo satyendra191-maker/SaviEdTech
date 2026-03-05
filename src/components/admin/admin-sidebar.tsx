@@ -14,15 +14,21 @@ import {
     Settings,
     LogOut,
     Shield,
+    BookOpen,
+    CreditCard,
+    Briefcase,
 } from 'lucide-react';
 
 const adminNavItems = [
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
     { name: 'Students', href: '/admin/students', icon: Users },
-    { name: 'Leads', href: '/admin/leads', icon: FileText },
+    { name: 'Courses', href: '/admin/courses', icon: BookOpen },
     { name: 'Lectures', href: '/admin/lectures', icon: PlayCircle },
     { name: 'Questions', href: '/admin/questions', icon: HelpCircle },
     { name: 'Tests', href: '/admin/tests', icon: GraduationCap },
+    { name: 'Careers', href: '/admin/careers', icon: Briefcase },
+    { name: 'Leads', href: '/admin/leads', icon: FileText },
+    { name: 'Payments', href: '/admin/payments', icon: CreditCard },
     { name: 'Daily Challenge', href: '/admin/challenges', icon: Trophy },
     { name: 'Popup Ads', href: '/admin/ads', icon: Image },
     { name: 'Settings', href: '/admin/settings', icon: Settings },

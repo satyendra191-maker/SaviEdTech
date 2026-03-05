@@ -16,15 +16,19 @@ export interface Database {
                     full_name: string | null;
                     phone: string | null;
                     avatar_url: string | null;
-                    role: 'student' | 'admin' | 'content_manager';
-                    exam_target: 'JEE' | 'NEET' | 'Both' | null;
-                    class_level: '11' | '12' | 'Dropper' | null;
+                    role: 'student' | 'admin' | 'content_manager' | 'super_admin';
+                    exam_target: 'JEE' | 'NEET' | 'Both' | 'JEE Mains' | 'JEE Advanced' | 'CBSE Board' | 'Foundation' | null;
+                    class_level: '11' | '12' | 'Dropper' | 'Class 9' | 'Class 10' | 'Class 11' | 'Class 12' | null;
                     city: string | null;
                     state: string | null;
                     created_at: string;
                     updated_at: string;
                     last_active_at: string;
                     is_active: boolean;
+                    reminder_sent_24h: boolean;
+                    reminder_sent_1h: boolean;
+                    last_weekly_digest: string | null;
+                    welcome_email_sent: boolean;
                 };
                 Insert: {
                     id: string;
@@ -32,15 +36,19 @@ export interface Database {
                     full_name?: string | null;
                     phone?: string | null;
                     avatar_url?: string | null;
-                    role?: 'student' | 'admin' | 'content_manager';
-                    exam_target?: 'JEE' | 'NEET' | 'Both' | null;
-                    class_level?: '11' | '12' | 'Dropper' | null;
+                    role?: 'student' | 'admin' | 'content_manager' | 'super_admin';
+                    exam_target?: 'JEE' | 'NEET' | 'Both' | 'JEE Mains' | 'JEE Advanced' | 'CBSE Board' | 'Foundation' | null;
+                    class_level?: '11' | '12' | 'Dropper' | 'Class 9' | 'Class 10' | 'Class 11' | 'Class 12' | null;
                     city?: string | null;
                     state?: string | null;
                     created_at?: string;
                     updated_at?: string;
                     last_active_at?: string;
                     is_active?: boolean;
+                    reminder_sent_24h?: boolean;
+                    reminder_sent_1h?: boolean;
+                    last_weekly_digest?: string | null;
+                    welcome_email_sent?: boolean;
                 };
                 Update: {
                     id?: string;
@@ -48,15 +56,19 @@ export interface Database {
                     full_name?: string | null;
                     phone?: string | null;
                     avatar_url?: string | null;
-                    role?: 'student' | 'admin' | 'content_manager';
-                    exam_target?: 'JEE' | 'NEET' | 'Both' | null;
-                    class_level?: '11' | '12' | 'Dropper' | null;
+                    role?: 'student' | 'admin' | 'content_manager' | 'super_admin';
+                    exam_target?: 'JEE' | 'NEET' | 'Both' | 'JEE Mains' | 'JEE Advanced' | 'CBSE Board' | 'Foundation' | null;
+                    class_level?: '11' | '12' | 'Dropper' | 'Class 9' | 'Class 10' | 'Class 11' | 'Class 12' | null;
                     city?: string | null;
                     state?: string | null;
                     created_at?: string;
                     updated_at?: string;
                     last_active_at?: string;
                     is_active?: boolean;
+                    reminder_sent_24h?: boolean;
+                    reminder_sent_1h?: boolean;
+                    last_weekly_digest?: string | null;
+                    welcome_email_sent?: boolean;
                 };
             };
             student_profiles: {
@@ -72,6 +84,10 @@ export interface Database {
                     preferred_subjects: string[];
                     weak_topics: string[];
                     strong_topics: string[];
+                    last_activity_at: string | null;
+                    streak_freeze_used_at: string | null;
+                    total_points: number;
+                    updated_at: string;
                 };
                 Insert: {
                     id: string;
@@ -85,6 +101,10 @@ export interface Database {
                     preferred_subjects?: string[];
                     weak_topics?: string[];
                     strong_topics?: string[];
+                    last_activity_at?: string | null;
+                    streak_freeze_used_at?: string | null;
+                    total_points?: number;
+                    updated_at?: string;
                 };
                 Update: {
                     id?: string;
@@ -98,6 +118,10 @@ export interface Database {
                     preferred_subjects?: string[];
                     weak_topics?: string[];
                     strong_topics?: string[];
+                    last_activity_at?: string | null;
+                    streak_freeze_used_at?: string | null;
+                    total_points?: number;
+                    updated_at?: string;
                 };
             };
             user_sessions: {
@@ -138,8 +162,8 @@ export interface Database {
                     name: string;
                     phone: string;
                     email: string | null;
-                    exam_target: 'JEE' | 'NEET' | 'Both' | 'Other';
-                    class_level: '10' | '11' | '12' | 'Dropper';
+                    exam_target: 'JEE' | 'NEET' | 'Both' | 'JEE Mains' | 'JEE Advanced' | 'CBSE Board' | 'Foundation' | 'Other';
+                    class_level: '10' | '11' | '12' | 'Dropper' | 'Class 9' | 'Class 10' | 'Class 11' | 'Class 12';
                     city: string | null;
                     source: string;
                     status: 'new' | 'contacted' | 'converted' | 'disqualified';
@@ -153,8 +177,8 @@ export interface Database {
                     name: string;
                     phone: string;
                     email?: string | null;
-                    exam_target?: 'JEE' | 'NEET' | 'Both' | 'Other';
-                    class_level?: '10' | '11' | '12' | 'Dropper';
+                    exam_target?: 'JEE' | 'NEET' | 'Both' | 'JEE Mains' | 'JEE Advanced' | 'CBSE Board' | 'Foundation' | 'Other';
+                    class_level?: '10' | '11' | '12' | 'Dropper' | 'Class 9' | 'Class 10' | 'Class 11' | 'Class 12';
                     city?: string | null;
                     source?: string;
                     status?: 'new' | 'contacted' | 'converted' | 'disqualified';
@@ -168,8 +192,8 @@ export interface Database {
                     name?: string;
                     phone?: string;
                     email?: string | null;
-                    exam_target?: 'JEE' | 'NEET' | 'Both' | 'Other';
-                    class_level?: '10' | '11' | '12' | 'Dropper';
+                    exam_target?: 'JEE' | 'NEET' | 'Both' | 'JEE Mains' | 'JEE Advanced' | 'CBSE Board' | 'Foundation' | 'Other';
+                    class_level?: '10' | '11' | '12' | 'Dropper' | 'Class 9' | 'Class 10' | 'Class 11' | 'Class 12';
                     city?: string | null;
                     source?: string;
                     status?: 'new' | 'contacted' | 'converted' | 'disqualified';
@@ -552,6 +576,38 @@ export interface Database {
                     updated_at?: string;
                 };
             };
+            options: {
+                Row: {
+                    id: string;
+                    question_id: string | null;
+                    option_text: string;
+                    option_image_url: string | null;
+                    option_label: string;
+                    display_order: number;
+                    is_correct: boolean;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    question_id?: string | null;
+                    option_text: string;
+                    option_image_url?: string | null;
+                    option_label: string;
+                    display_order?: number;
+                    is_correct?: boolean;
+                    created_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    question_id?: string | null;
+                    option_text?: string;
+                    option_image_url?: string | null;
+                    option_label?: string;
+                    display_order?: number;
+                    is_correct?: boolean;
+                    created_at?: string;
+                };
+            };
             dpp_sets: {
                 Row: {
                     id: string;
@@ -594,6 +650,26 @@ export interface Database {
                     is_published?: boolean;
                     published_at?: string | null;
                     created_at?: string;
+                };
+            };
+            dpp_questions: {
+                Row: {
+                    id: string;
+                    dpp_set_id: string;
+                    question_id: string;
+                    display_order: number;
+                };
+                Insert: {
+                    id?: string;
+                    dpp_set_id: string;
+                    question_id: string;
+                    display_order: number;
+                };
+                Update: {
+                    id?: string;
+                    dpp_set_id?: string;
+                    question_id?: string;
+                    display_order?: number;
                 };
             };
             dpp_attempts: {
@@ -656,6 +732,10 @@ export interface Database {
                     allow_multiple_attempts: boolean;
                     show_result_immediately: boolean;
                     created_at: string;
+                    updated_at: string;
+                    difficulty_distribution: Json;
+                    section_config: Json;
+                    created_by: string | null;
                 };
                 Insert: {
                     id?: string;
@@ -675,6 +755,10 @@ export interface Database {
                     allow_multiple_attempts?: boolean;
                     show_result_immediately?: boolean;
                     created_at?: string;
+                    updated_at?: string;
+                    difficulty_distribution?: Json;
+                    section_config?: Json;
+                    created_by?: string | null;
                 };
                 Update: {
                     id?: string;
@@ -693,6 +777,42 @@ export interface Database {
                     end_time?: string | null;
                     allow_multiple_attempts?: boolean;
                     show_result_immediately?: boolean;
+                    created_at?: string;
+                    updated_at?: string;
+                    difficulty_distribution?: Json;
+                    section_config?: Json;
+                    created_by?: string | null;
+                };
+            };
+            test_questions: {
+                Row: {
+                    id: string;
+                    test_id: string | null;
+                    question_id: string | null;
+                    display_order: number;
+                    marks: number;
+                    negative_marks: number | null;
+                    section: string | null;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    test_id?: string | null;
+                    question_id?: string | null;
+                    display_order?: number;
+                    marks?: number;
+                    negative_marks?: number | null;
+                    section?: string | null;
+                    created_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    test_id?: string | null;
+                    question_id?: string | null;
+                    display_order?: number;
+                    marks?: number;
+                    negative_marks?: number | null;
+                    section?: string | null;
                     created_at?: string;
                 };
             };
@@ -717,6 +837,7 @@ export interface Database {
                     answers: Json;
                     section_scores: Json;
                     created_at: string;
+                    updated_at: string;
                 };
                 Insert: {
                     id?: string;
@@ -738,6 +859,7 @@ export interface Database {
                     answers?: Json;
                     section_scores?: Json;
                     created_at?: string;
+                    updated_at?: string;
                 };
                 Update: {
                     id?: string;
@@ -759,6 +881,42 @@ export interface Database {
                     answers?: Json;
                     section_scores?: Json;
                     created_at?: string;
+                    updated_at?: string;
+                };
+            };
+            test_answers: {
+                Row: {
+                    id: string;
+                    attempt_id: string | null;
+                    question_id: string | null;
+                    selected_answer: string | null;
+                    is_correct: boolean | null;
+                    marks_obtained: number | null;
+                    time_spent_seconds: number | null;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    attempt_id?: string | null;
+                    question_id?: string | null;
+                    selected_answer?: string | null;
+                    is_correct?: boolean | null;
+                    marks_obtained?: number | null;
+                    time_spent_seconds?: number | null;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    attempt_id?: string | null;
+                    question_id?: string | null;
+                    selected_answer?: string | null;
+                    is_correct?: boolean | null;
+                    marks_obtained?: number | null;
+                    time_spent_seconds?: number | null;
+                    created_at?: string;
+                    updated_at?: string;
                 };
             };
             student_progress: {
@@ -1192,26 +1350,6 @@ export interface Database {
                     created_at?: string;
                 };
             };
-            dpp_questions: {
-                Row: {
-                    id: string;
-                    dpp_set_id: string;
-                    question_id: string;
-                    display_order: number;
-                };
-                Insert: {
-                    id?: string;
-                    dpp_set_id: string;
-                    question_id: string;
-                    display_order: number;
-                };
-                Update: {
-                    id?: string;
-                    dpp_set_id?: string;
-                    question_id?: string;
-                    display_order?: number;
-                };
-            };
             question_attempts: {
                 Row: {
                     id: string;
@@ -1309,6 +1447,544 @@ export interface Database {
                     completed_at?: string | null;
                 };
             };
+            payment_transactions: {
+                Row: {
+                    id: string;
+                    user_id: string | null;
+                    gateway: 'razorpay' | 'stripe' | 'paypal';
+                    amount: number;
+                    currency: string;
+                    status: 'pending' | 'completed' | 'failed' | 'refunded';
+                    order_id: string | null;
+                    payment_id: string | null;
+                    metadata: Json;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    user_id?: string | null;
+                    gateway: 'razorpay' | 'stripe' | 'paypal';
+                    amount: number;
+                    currency?: string;
+                    status?: 'pending' | 'completed' | 'failed' | 'refunded';
+                    order_id?: string | null;
+                    payment_id?: string | null;
+                    metadata?: Json;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string | null;
+                    gateway?: 'razorpay' | 'stripe' | 'paypal';
+                    amount?: number;
+                    currency?: string;
+                    status?: 'pending' | 'completed' | 'failed' | 'refunded';
+                    order_id?: string | null;
+                    payment_id?: string | null;
+                    metadata?: Json;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+            };
+            webhook_logs: {
+                Row: {
+                    id: string;
+                    gateway: string;
+                    event_type: string;
+                    payload: Json;
+                    signature: string | null;
+                    status: 'success' | 'failed' | 'pending';
+                    processed_at: string | null;
+                    error_message: string | null;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    gateway: string;
+                    event_type: string;
+                    payload?: Json;
+                    signature?: string | null;
+                    status?: 'success' | 'failed' | 'pending';
+                    processed_at?: string | null;
+                    error_message?: string | null;
+                    created_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    gateway?: string;
+                    event_type?: string;
+                    payload?: Json;
+                    signature?: string | null;
+                    status?: 'success' | 'failed' | 'pending';
+                    processed_at?: string | null;
+                    error_message?: string | null;
+                    created_at?: string;
+                };
+            };
+            user_stats: {
+                Row: {
+                    id: string;
+                    user_id: string;
+                    rank: number;
+                    streak_days: number;
+                    total_points: number;
+                    tests_completed: number;
+                    average_score: number;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    user_id: string;
+                    rank?: number;
+                    streak_days?: number;
+                    total_points?: number;
+                    tests_completed?: number;
+                    average_score?: number;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string;
+                    rank?: number;
+                    streak_days?: number;
+                    total_points?: number;
+                    tests_completed?: number;
+                    average_score?: number;
+                    updated_at?: string;
+                };
+            };
+            job_listings: {
+                Row: {
+                    id: string;
+                    title: string;
+                    department: string;
+                    location: string;
+                    type: 'full_time' | 'part_time' | 'contract' | 'internship';
+                    experience_level: 'entry' | 'mid' | 'senior' | 'lead';
+                    salary_min: number | null;
+                    salary_max: number | null;
+                    description: string;
+                    requirements: string[];
+                    responsibilities: string[];
+                    skills: string[];
+                    benefits: string[];
+                    deadline: string | null;
+                    is_active: boolean;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    title: string;
+                    department: string;
+                    location: string;
+                    type?: 'full_time' | 'part_time' | 'contract' | 'internship';
+                    experience_level?: 'entry' | 'mid' | 'senior' | 'lead';
+                    salary_min?: number | null;
+                    salary_max?: number | null;
+                    description: string;
+                    requirements?: string[];
+                    responsibilities?: string[];
+                    skills?: string[];
+                    benefits?: string[];
+                    deadline?: string | null;
+                    is_active?: boolean;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    title?: string;
+                    department?: string;
+                    location?: string;
+                    type?: 'full_time' | 'part_time' | 'contract' | 'internship';
+                    experience_level?: 'entry' | 'mid' | 'senior' | 'lead';
+                    salary_min?: number | null;
+                    salary_max?: number | null;
+                    description?: string;
+                    requirements?: string[];
+                    responsibilities?: string[];
+                    skills?: string[];
+                    benefits?: string[];
+                    deadline?: string | null;
+                    is_active?: boolean;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+            };
+            job_applications: {
+                Row: {
+                    id: string;
+                    job_id: string | null;
+                    full_name: string;
+                    email: string;
+                    phone: string | null;
+                    linkedin: string | null;
+                    portfolio: string | null;
+                    current_company: string | null;
+                    years_of_experience: number | null;
+                    current_ctc: number | null;
+                    expected_ctc: number | null;
+                    notice_period: string | null;
+                    cover_letter: string | null;
+                    resume_url: string | null;
+                    additional_info: Json;
+                    status: 'new' | 'reviewing' | 'shortlisted' | 'rejected' | 'hired';
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    job_id?: string | null;
+                    full_name: string;
+                    email: string;
+                    phone?: string | null;
+                    linkedin?: string | null;
+                    portfolio?: string | null;
+                    current_company?: string | null;
+                    years_of_experience?: number | null;
+                    current_ctc?: number | null;
+                    expected_ctc?: number | null;
+                    notice_period?: string | null;
+                    cover_letter?: string | null;
+                    resume_url?: string | null;
+                    additional_info?: Json;
+                    status?: 'new' | 'reviewing' | 'shortlisted' | 'rejected' | 'hired';
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    job_id?: string | null;
+                    full_name?: string;
+                    email?: string;
+                    phone?: string | null;
+                    linkedin?: string | null;
+                    portfolio?: string | null;
+                    current_company?: string | null;
+                    years_of_experience?: number | null;
+                    current_ctc?: number | null;
+                    expected_ctc?: number | null;
+                    notice_period?: string | null;
+                    cover_letter?: string | null;
+                    resume_url?: string | null;
+                    additional_info?: Json;
+                    status?: 'new' | 'reviewing' | 'shortlisted' | 'rejected' | 'hired';
+                    created_at?: string;
+                    updated_at?: string;
+                };
+            };
+            user_achievements: {
+                Row: {
+                    id: string;
+                    user_id: string | null;
+                    achievement_id: string;
+                    earned_at: string;
+                    seen_at: string | null;
+                };
+                Insert: {
+                    id?: string;
+                    user_id?: string | null;
+                    achievement_id: string;
+                    earned_at?: string;
+                    seen_at?: string | null;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string | null;
+                    achievement_id?: string;
+                    earned_at?: string;
+                    seen_at?: string | null;
+                };
+            };
+            user_points: {
+                Row: {
+                    id: string;
+                    user_id: string | null;
+                    total_points: number;
+                    activity_type?: string;
+                    points?: number;
+                    description?: string;
+                    metadata?: Json;
+                    created_at?: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    user_id?: string | null;
+                    total_points?: number;
+                    activity_type?: string;
+                    points?: number;
+                    description?: string;
+                    metadata?: Json;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string | null;
+                    total_points?: number;
+                    activity_type?: string;
+                    points?: number;
+                    description?: string;
+                    metadata?: Json;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+            };
+            point_transactions: {
+                Row: {
+                    id: string;
+                    user_id: string | null;
+                    activity_type: string;
+                    points: number;
+                    description: string;
+                    metadata: Json;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    user_id?: string | null;
+                    activity_type: string;
+                    points: number;
+                    description: string;
+                    metadata?: Json;
+                    created_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string | null;
+                    activity_type?: string;
+                    points?: number;
+                    description?: string;
+                    metadata?: Json;
+                    created_at?: string;
+                };
+            };
+            study_streaks: {
+                Row: {
+                    id: string;
+                    user_id: string | null;
+                    streak_date: string;
+                    study_minutes: number;
+                    activities_count: number;
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    user_id?: string | null;
+                    streak_date?: string;
+                    study_minutes?: number;
+                    activities_count?: number;
+                    created_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string | null;
+                    streak_date?: string;
+                    study_minutes?: number;
+                    activities_count?: number;
+                    created_at?: string;
+                };
+            };
+            biweekly_registrations: {
+                Row: {
+                    id: string;
+                    biweekly_test_id: string | null;
+                    test_id: string | null;
+                    user_id: string | null;
+                    exam_id: string | null;
+                    registered_at: string;
+                    status: 'registered' | 'reminder_sent' | 'completed' | 'no_show';
+                    user_email: string;
+                    user_name: string | null;
+                    user_phone: string | null;
+                    target_exam: string | null;
+                    reminder_sent: boolean;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    biweekly_test_id?: string | null;
+                    test_id?: string | null;
+                    user_id?: string | null;
+                    exam_id?: string | null;
+                    registered_at?: string;
+                    status?: 'registered' | 'reminder_sent' | 'completed' | 'no_show';
+                    user_email: string;
+                    user_name?: string | null;
+                    user_phone?: string | null;
+                    target_exam?: string | null;
+                    reminder_sent?: boolean;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    biweekly_test_id?: string | null;
+                    test_id?: string | null;
+                    user_id?: string | null;
+                    exam_id?: string | null;
+                    registered_at?: string;
+                    status?: 'registered' | 'reminder_sent' | 'completed' | 'no_show';
+                    user_email?: string;
+                    user_name?: string | null;
+                    user_phone?: string | null;
+                    target_exam?: string | null;
+                    reminder_sent?: boolean;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+            };
+            biweekly_tests: {
+                Row: {
+                    id: string;
+                    test_id: string | null;
+                    exam_id: string | null;
+                    scheduled_date: string;
+                    registration_opens_at: string;
+                    registration_closes_at: string;
+                    max_registrations: number;
+                    current_registrations: number;
+                    status: 'draft' | 'open' | 'closed' | 'in_progress' | 'completed';
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    test_id?: string | null;
+                    exam_id?: string | null;
+                    scheduled_date: string;
+                    registration_opens_at?: string;
+                    registration_closes_at?: string;
+                    max_registrations?: number;
+                    current_registrations?: number;
+                    status?: 'draft' | 'open' | 'closed' | 'in_progress' | 'completed';
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    test_id?: string | null;
+                    exam_id?: string | null;
+                    scheduled_date?: string;
+                    registration_opens_at?: string;
+                    registration_closes_at?: string;
+                    max_registrations?: number;
+                    current_registrations?: number;
+                    status?: 'draft' | 'open' | 'closed' | 'in_progress' | 'completed';
+                    created_at?: string;
+                    updated_at?: string;
+                };
+            };
+            cron_logs: {
+                Row: {
+                    id: string;
+                    job_name: string;
+                    job_id: string;
+                    timestamp: string;
+                    duration_ms: number;
+                    result: Json;
+                    errors: string[];
+                    status: 'success' | 'partial' | 'failed';
+                    created_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    job_name: string;
+                    job_id: string;
+                    timestamp?: string;
+                    duration_ms?: number;
+                    result?: Json;
+                    errors?: string[];
+                    status?: 'success' | 'partial' | 'failed';
+                    created_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    job_name?: string;
+                    job_id?: string;
+                    timestamp?: string;
+                    duration_ms?: number;
+                    result?: Json;
+                    errors?: string[];
+                    status?: 'success' | 'partial' | 'failed';
+                    created_at?: string;
+                };
+            };
+            leaderboard_snapshots: {
+                Row: {
+                    id: string;
+                    period: string;
+                    entries: Json;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    period: string;
+                    entries?: Json;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    period?: string;
+                    entries?: Json;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+            };
+            email_notifications: {
+                Row: {
+                    id: string;
+                    user_id: string | null;
+                    email_type: string;
+                    subject: string;
+                    content: string;
+                    status: 'pending' | 'sent' | 'failed' | 'bounced';
+                    sent_at: string | null;
+                    message_id: string | null;
+                    error_message: string | null;
+                    retry_count: number;
+                    scheduled_at: string | null;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    user_id?: string | null;
+                    email_type: string;
+                    subject: string;
+                    content: string;
+                    status?: 'pending' | 'sent' | 'failed' | 'bounced';
+                    sent_at?: string | null;
+                    message_id?: string | null;
+                    error_message?: string | null;
+                    retry_count?: number;
+                    scheduled_at?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string | null;
+                    email_type?: string;
+                    subject?: string;
+                    content?: string;
+                    status?: 'pending' | 'sent' | 'failed' | 'bounced';
+                    sent_at?: string | null;
+                    message_id?: string | null;
+                    error_message?: string | null;
+                    retry_count?: number;
+                    scheduled_at?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+            };
         };
         Views: {
             [_ in never]: never;
@@ -1321,3 +1997,55 @@ export interface Database {
         };
     };
 }
+
+// Helper types for common operations
+export type Tables<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Row'];
+export type Inserts<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Insert'];
+export type Updates<T extends keyof Database['public']['Tables']> = Database['public']['Tables'][T]['Update'];
+
+// Common table row types
+export type Profile = Tables<'profiles'>;
+export type StudentProfile = Tables<'student_profiles'>;
+export type Exam = Tables<'exams'>;
+export type Subject = Tables<'subjects'>;
+export type Chapter = Tables<'chapters'>;
+export type Topic = Tables<'topics'>;
+export type Faculty = Tables<'faculties'>;
+export type Lecture = Tables<'lectures'>;
+export type LectureProgress = Tables<'lecture_progress'>;
+export type Question = Tables<'questions'>;
+export type Option = Tables<'options'>;
+export type Test = Tables<'tests'>;
+export type TestQuestion = Tables<'test_questions'>;
+export type TestAttempt = Tables<'test_attempts'>;
+export type TestAnswer = Tables<'test_answers'>;
+export type DppSet = Tables<'dpp_sets'>;
+export type DppAttempt = Tables<'dpp_attempts'>;
+export type Notification = Tables<'notifications'>;
+export type JobListing = Tables<'job_listings'>;
+export type JobApplication = Tables<'job_applications'>;
+export type Donation = Tables<'donations'>;
+export type PaymentTransaction = Tables<'payment_transactions'>;
+export type UserAchievement = Tables<'user_achievements'>;
+export type UserPoints = Tables<'user_points'>;
+export type PointTransaction = Tables<'point_transactions'>;
+export type StudyStreak = Tables<'study_streaks'>;
+export type BiweeklyRegistration = Tables<'biweekly_registrations'>;
+export type BiweeklyTest = Tables<'biweekly_tests'>;
+export type CronLog = Tables<'cron_logs'>;
+export type LeaderboardSnapshot = Tables<'leaderboard_snapshots'>;
+export type EmailNotification = Tables<'email_notifications'>;
+export type SystemHealth = Tables<'system_health'>;
+export type ErrorLog = Tables<'error_logs'>;
+export type RankPrediction = Tables<'rank_predictions'>;
+export type MistakeLog = Tables<'mistake_logs'>;
+export type RevisionTask = Tables<'revision_tasks'>;
+export type QuestionAttempt = Tables<'question_attempts'>;
+export type StudentProgress = Tables<'student_progress'>;
+export type TopicMastery = Tables<'topic_mastery'>;
+export type DailyChallenge = Tables<'daily_challenges'>;
+export type PopupAd = Tables<'popup_ads'>;
+export type WebhookLog = Tables<'webhook_logs'>;
+export type UserSession = Tables<'user_sessions'>;
+export type LeadForm = Tables<'lead_forms'>;
+export type DppQuestion = Tables<'dpp_questions'>;

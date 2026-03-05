@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
-import type { User, UserRole } from '@/types';
+import type { User, UserRole, ExamTarget, ClassLevel } from '@/types';
 
 interface AuthState {
     user: User | null;
@@ -12,11 +12,21 @@ interface AuthState {
     isAuthenticated: boolean;
 }
 
+interface SignUpUserData {
+    full_name?: string;
+    phone?: string;
+    exam_target?: ExamTarget;
+    class_level?: ClassLevel;
+    city?: string;
+}
+
 interface UseAuthReturn extends AuthState {
     signIn: (email: string, password: string) => Promise<{ error: string | null }>;
-    signUp: (email: string, password: string, userData: Partial<User>) => Promise<{ error: string | null }>;
+    signUp: (email: string, password: string, userData: SignUpUserData) => Promise<{ error: string | null }>;
     signOut: () => Promise<void>;
     refreshUser: () => Promise<void>;
+    resetPassword: (email: string) => Promise<{ error: string | null }>;
+    updatePassword: (newPassword: string) => Promise<{ error: string | null }>;
 }
 
 export function useAuth(): UseAuthReturn {
@@ -110,6 +120,13 @@ export function useAuth(): UseAuthReturn {
             });
 
             if (error) {
+                // Provide user-friendly error messages
+                if (error.message.includes('Invalid login credentials')) {
+                    return { error: 'Invalid email or password. Please try again.' };
+                }
+                if (error.message.includes('Email not confirmed')) {
+                    return { error: 'Please verify your email before signing in.' };
+                }
                 return { error: error.message };
             }
 
@@ -123,10 +140,11 @@ export function useAuth(): UseAuthReturn {
     const signUp = async (
         email: string,
         password: string,
-        userData: Partial<User>
+        userData: SignUpUserData
     ): Promise<{ error: string | null }> => {
         try {
-            const { error } = await supabase.auth.signUp({
+            // Step 1: Sign up with Supabase Auth
+            const { data: authData, error: authError } = await supabase.auth.signUp({
                 email,
                 password,
                 options: {
@@ -137,22 +155,132 @@ export function useAuth(): UseAuthReturn {
                         class_level: userData.class_level,
                         city: userData.city,
                     },
+                    emailRedirectTo: `${window.location.origin}/login`,
                 },
             });
 
+            if (authError) {
+                // Handle specific Supabase errors
+                if (authError.message.includes('User already registered')) {
+                    return { error: 'An account with this email already exists. Please sign in instead.' };
+                }
+                if (authError.message.includes('Password should be')) {
+                    return { error: 'Password is too weak. Please use a stronger password.' };
+                }
+                if (authError.message.includes('Unable to validate')) {
+                    return { error: 'Invalid email format. Please check your email address.' };
+                }
+                return { error: authError.message };
+            }
+
+            if (!authData.user) {
+                return { error: 'Registration failed. Please try again.' };
+            }
+
+            // Step 2: Create profile record - using type assertion due to Supabase type complexity
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const profileQuery = supabase.from('profiles') as any;
+            const { error: profileError } = await profileQuery.insert({
+                id: authData.user.id,
+                email: email,
+                full_name: userData.full_name || null,
+                phone: userData.phone || null,
+                role: 'student',
+                exam_target: userData.exam_target || null,
+                class_level: userData.class_level || null,
+                city: userData.city || null,
+                is_active: true,
+            });
+
+            if (profileError) {
+                console.error('Error creating profile:', profileError);
+                // Don't fail registration if profile creation fails - user can be created later
+                // But log it for monitoring
+            }
+
+            // Step 3: Create student profile record - using type assertion due to Supabase type complexity
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const studentProfileQuery = supabase.from('student_profiles') as any;
+            const { error: studentProfileError } = await studentProfileQuery.insert({
+                id: authData.user.id,
+                study_streak: 0,
+                longest_streak: 0,
+                total_study_minutes: 0,
+                subscription_status: 'free',
+                preferred_subjects: [],
+                weak_topics: [],
+                strong_topics: [],
+            });
+
+            if (studentProfileError) {
+                console.error('Error creating student profile:', studentProfileError);
+                // Don't fail registration if student profile creation fails
+            }
+
+            return { error: null };
+        } catch (err) {
+            console.error('Sign up error:', err);
+            return { error: err instanceof Error ? err.message : 'Sign up failed. Please try again.' };
+        }
+    };
+
+    const signOut = async (): Promise<void> => {
+        try {
+            const { error } = await supabase.auth.signOut();
             if (error) {
+                console.error('Sign out error:', error);
+            }
+        } catch (err) {
+            console.error('Sign out error:', err);
+        } finally {
+            // Always clear state and redirect, even if API call fails
+            setState({
+                user: null,
+                role: null,
+                isLoading: false,
+                isAuthenticated: false,
+            });
+            router.push('/');
+            router.refresh();
+        }
+    };
+
+    const resetPassword = async (email: string): Promise<{ error: string | null }> => {
+        try {
+            const { error } = await supabase.auth.resetPasswordForEmail(email, {
+                redirectTo: `${window.location.origin}/reset-password`,
+            });
+
+            if (error) {
+                if (error.message.includes('Email not found')) {
+                    return { error: 'No account found with this email address.' };
+                }
                 return { error: error.message };
             }
 
             return { error: null };
         } catch (err) {
-            return { error: err instanceof Error ? err.message : 'Sign up failed' };
+            return { error: err instanceof Error ? err.message : 'Password reset failed' };
         }
     };
 
-    const signOut = async (): Promise<void> => {
-        await supabase.auth.signOut();
-        router.push('/');
+    const updatePassword = async (newPassword: string): Promise<{ error: string | null }> => {
+        try {
+            const { error } = await supabase.auth.updateUser({
+                password: newPassword,
+            });
+
+            if (error) {
+                if (error.message.includes('Password should be')) {
+                    return { error: 'Password is too weak. Please use a stronger password.' };
+                }
+                return { error: error.message };
+            }
+
+            return { error: null };
+        } catch (err) {
+            return { error: err instanceof Error ? err.message : 'Password update failed' };
+        }
     };
 
     const refreshUser = async (): Promise<void> => {
@@ -165,5 +293,7 @@ export function useAuth(): UseAuthReturn {
         signUp,
         signOut,
         refreshUser,
+        resetPassword,
+        updatePassword,
     };
 }
