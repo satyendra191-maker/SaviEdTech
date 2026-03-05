@@ -32,24 +32,35 @@ import type { Database } from '@/types/supabase';
 
 type DatabaseClient = Database['public'];
 
-// Environment variables - validated at runtime
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+// Environment variables - validated at runtime (lazy evaluation to prevent build failures)
+const getSupabaseUrl = () => {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (!url) {
+        throw new Error('NEXT_PUBLIC_SUPABASE_URL is required');
+    }
+    return url;
+};
+
+const getSupabaseAnonKey = () => {
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!key) {
+        throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY is required');
+    }
+    return key;
+};
 
 /**
  * SERVER-ONLY: Service role key
  * This key has full database access and bypasses RLS.
  * WARNING: Never expose this to the client!
  */
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-
-// Validate required environment variables
-if (!supabaseUrl) {
-    throw new Error('NEXT_PUBLIC_SUPABASE_URL is required');
-}
-if (!supabaseAnonKey) {
-    throw new Error('NEXT_PUBLIC_SUPABASE_ANON_KEY is required');
-}
+const getSupabaseServiceKey = () => {
+    const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    if (!key) {
+        throw new Error('SUPABASE_SERVICE_ROLE_KEY is required for admin operations');
+    }
+    return key;
+};
 
 /**
  * Browser client for client-side operations
@@ -62,7 +73,7 @@ if (!supabaseAnonKey) {
  * const { data } = await supabase.from('profiles').select('*');
  */
 export const createBrowserSupabaseClient = () => {
-    return createBrowserClient<Database>(supabaseUrl, supabaseAnonKey);
+    return createBrowserClient<Database>(getSupabaseUrl(), getSupabaseAnonKey());
 };
 
 /**
@@ -79,7 +90,7 @@ export const createBrowserSupabaseClient = () => {
  * const { data: { user } } = await supabase.auth.getUser();
  */
 export const createServerSupabaseClient = () => {
-    return createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
+    return createServerClient<Database>(getSupabaseUrl(), getSupabaseAnonKey(), {
         cookies: {
             get(name: string) {
                 // In actual server context (API routes), cookies will be provided via request
@@ -137,17 +148,10 @@ export const createAdminSupabaseClient = () => {
         );
     }
 
-    if (!supabaseServiceKey) {
-        throw new Error(
-            'SUPABASE_SERVICE_ROLE_KEY is required for admin operations. ' +
-            'Ensure this environment variable is set in your server environment.'
-        );
-    }
-
     // Log admin client creation for security auditing
     console.log(`[Security] Admin Supabase client created at ${new Date().toISOString()}`);
 
-    return createClient<Database>(supabaseUrl, supabaseServiceKey, {
+    return createClient<Database>(getSupabaseUrl(), getSupabaseServiceKey(), {
         auth: {
             autoRefreshToken: false,
             persistSession: false,
@@ -176,11 +180,11 @@ export const getSupabaseBrowserClient = () => {
     // The real client will be created on the client side after hydration
     if (typeof window === 'undefined') {
         // Return a minimal mock that won't throw during prerender
-        return createBrowserClient<Database>(supabaseUrl, supabaseAnonKey);
+        return createBrowserClient<Database>(getSupabaseUrl(), getSupabaseAnonKey());
     }
 
     if (!browserClient) {
-        browserClient = createBrowserClient<Database>(supabaseUrl, supabaseAnonKey);
+        browserClient = createBrowserClient<Database>(getSupabaseUrl(), getSupabaseAnonKey());
     }
 
     return browserClient;
