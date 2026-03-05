@@ -878,7 +878,7 @@ export interface PerformanceMetrics {
 // PAYMENT TYPES
 // ============================================
 
-export type PaymentGateway = 'razorpay' | 'stripe' | 'paypal';
+export type PaymentGateway = 'razorpay';
 
 export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded' | 'cancelled';
 

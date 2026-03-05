@@ -1385,7 +1385,7 @@ export interface Database {
             donations: {
                 Row: {
                     id: string;
-                    gateway: 'razorpay' | 'stripe' | 'paypal';
+                    gateway: 'razorpay';
                     amount: number;
                     currency: string;
                     status: 'pending' | 'completed' | 'failed' | 'refunded' | 'cancelled';
@@ -1406,7 +1406,7 @@ export interface Database {
                 };
                 Insert: {
                     id?: string;
-                    gateway: 'razorpay' | 'stripe' | 'paypal';
+                    gateway: 'razorpay';
                     amount: number;
                     currency?: string;
                     status?: 'pending' | 'completed' | 'failed' | 'refunded' | 'cancelled';
@@ -1451,7 +1451,7 @@ export interface Database {
                 Row: {
                     id: string;
                     user_id: string | null;
-                    gateway: 'razorpay' | 'stripe' | 'paypal';
+                    gateway: 'razorpay';
                     amount: number;
                     currency: string;
                     status: 'pending' | 'completed' | 'failed' | 'refunded';
@@ -1464,7 +1464,7 @@ export interface Database {
                 Insert: {
                     id?: string;
                     user_id?: string | null;
-                    gateway: 'razorpay' | 'stripe' | 'paypal';
+                    gateway: 'razorpay';
                     amount: number;
                     currency?: string;
                     status?: 'pending' | 'completed' | 'failed' | 'refunded';

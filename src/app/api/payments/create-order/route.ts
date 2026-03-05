@@ -2,18 +2,16 @@
  * Payment Order Creation API
  * 
  * POST /api/payments/create-order
- * Creates a payment order for Razorpay, Stripe, or PayPal
+ * Creates a payment order for Razorpay
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import * as razorpay from '@/lib/payments/razorpay';
-import * as stripe from '@/lib/payments/stripe';
-import * as paypal from '@/lib/payments/paypal';
 import { z } from 'zod';
 
 // Validation schema
 const createOrderSchema = z.object({
-    gateway: z.enum(['razorpay', 'stripe', 'paypal']),
+    gateway: z.literal('razorpay'),
     amount: z.number().positive(),
     currency: z.string().optional(),
     donorEmail: z.string().email().optional(),
@@ -41,7 +39,6 @@ export interface CreateOrderResponse {
  */
 export async function POST(request: NextRequest): Promise<NextResponse<CreateOrderResponse>> {
     try {
-        // Parse and validate request body
         const body = await request.json();
         const validationResult = createOrderSchema.safeParse(body);
 
@@ -56,130 +53,43 @@ export async function POST(request: NextRequest): Promise<NextResponse<CreateOrd
         }
 
         const { 
-            gateway, 
             amount, 
             currency, 
             donorEmail, 
             donorName, 
             donorPhone,
             description,
-            successUrl,
-            cancelUrl,
             metadata,
         } = validationResult.data;
 
-        // Determine currency based on gateway and location
-        const defaultCurrency = gateway === 'razorpay' ? 'INR' : 
-                               gateway === 'paypal' ? 'USD' : 'usd';
-        const selectedCurrency = currency || defaultCurrency;
-
-        // Convert amount to smallest currency unit
+        const selectedCurrency = currency || 'INR';
         const amountInSmallestUnit = Math.round(amount * 100);
 
-        let result: CreateOrderResponse;
-
-        switch (gateway) {
-            case 'razorpay': {
-                // Check if Razorpay is configured
-                if (!razorpay.isConfigured()) {
-                    return NextResponse.json(
-                        { success: false, error: 'Razorpay is not configured' },
-                        { status: 503 }
-                    );
-                }
-
-                const razorpayResult = await razorpay.createOrder({
-                    amount: amountInSmallestUnit,
-                    currency: selectedCurrency as razorpay.RazorpayCurrency,
-                    donorEmail,
-                    donorName,
-                    donorPhone,
-                    notes: {
-                        description: description || 'Donation',
-                        ...metadata,
-                    },
-                });
-
-                result = {
-                    success: razorpayResult.success,
-                    orderId: razorpayResult.orderId,
-                    order: razorpayResult.order,
-                    error: razorpayResult.error,
-                };
-                break;
-            }
-
-            case 'stripe': {
-                // Check if Stripe is configured
-                if (!stripe.isConfigured()) {
-                    return NextResponse.json(
-                        { success: false, error: 'Stripe is not configured' },
-                        { status: 503 }
-                    );
-                }
-
-                // For Stripe, we can create either a payment intent or checkout session
-                // Using checkout session for better UX
-                const stripeResult = await stripe.createCheckoutSession({
-                    amount: amountInSmallestUnit,
-                    currency: selectedCurrency.toLowerCase() as stripe.StripeCurrency,
-                    successUrl: successUrl || `${process.env.NEXT_PUBLIC_APP_URL}/donate/success?session_id={CHECKOUT_SESSION_ID}`,
-                    cancelUrl: cancelUrl || `${process.env.NEXT_PUBLIC_APP_URL}/donate/cancel`,
-                    donorEmail,
-                    donorName,
-                    donorPhone,
-                    metadata: {
-                        description: description || 'Donation',
-                        ...metadata,
-                    },
-                });
-
-                result = {
-                    success: stripeResult.success,
-                    orderId: stripeResult.sessionId,
-                    checkoutUrl: stripeResult.checkoutUrl,
-                    order: stripeResult.session,
-                    error: stripeResult.error,
-                };
-                break;
-            }
-
-            case 'paypal': {
-                // Check if PayPal is configured
-                if (!paypal.isConfigured()) {
-                    return NextResponse.json(
-                        { success: false, error: 'PayPal is not configured' },
-                        { status: 503 }
-                    );
-                }
-
-                const paypalResult = await paypal.createOrder({
-                    amount,
-                    currency: selectedCurrency.toUpperCase() as paypal.PayPalCurrency,
-                    description: description || 'Donation to SaviEduTech',
-                    donorEmail,
-                    donorName,
-                    donorPhone,
-                    returnUrl: successUrl,
-                    cancelUrl: cancelUrl,
-                });
-
-                result = {
-                    success: paypalResult.success,
-                    orderId: paypalResult.orderId,
-                    checkoutUrl: paypalResult.approvalUrl,
-                    order: paypalResult.order,
-                    error: paypalResult.error,
-                };
-                break;
-            }
-
-            default:
-                return NextResponse.json(
-                    { success: false, error: 'Invalid payment gateway' },
-                    { status: 400 }
-                );
+        if (!razorpay.isConfigured()) {
+            return NextResponse.json(
+                { success: false, error: 'Razorpay is not configured' },
+                { status: 503 }
+            );
         }
+
+        const razorpayResult = await razorpay.createOrder({
+            amount: amountInSmallestUnit,
+            currency: selectedCurrency as razorpay.RazorpayCurrency,
+            donorEmail,
+            donorName,
+            donorPhone,
+            notes: {
+                description: description || 'Donation',
+                ...metadata,
+            },
+        });
+
+        const result: CreateOrderResponse = {
+            success: razorpayResult.success,
+            orderId: razorpayResult.orderId,
+            order: razorpayResult.order,
+            error: razorpayResult.error,
+        };
 
         if (!result.success) {
             return NextResponse.json(
@@ -210,14 +120,6 @@ export async function GET(): Promise<NextResponse> {
         razorpay: {
             configured: razorpay.isConfigured(),
             config: razorpay.getConfig(),
-        },
-        stripe: {
-            configured: stripe.isConfigured(),
-            config: stripe.getConfig(),
-        },
-        paypal: {
-            configured: paypal.isConfigured(),
-            config: paypal.getConfig(),
         },
     };
 

@@ -43,7 +43,7 @@ const footerLinks = {
     ],
     support: [
         { name: 'Help Center', href: '/help' },
-        { name: 'FAQs', href: '/faqs' },
+        { name: 'FAQs', href: '/faq' },
         { name: 'Privacy Policy', href: '/privacy' },
         { name: 'Terms of Service', href: '/terms' },
         { name: 'Refund Policy', href: '/refund' },
