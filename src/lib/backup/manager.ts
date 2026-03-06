@@ -7,10 +7,21 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+let supabase: ReturnType<typeof createClient> | null = null;
 
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
+function getSupabaseClient() {
+    if (!supabase) {
+        const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+        const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        
+        if (!supabaseUrl || !supabaseServiceKey) {
+            throw new Error('Supabase environment variables are not configured');
+        }
+        
+        supabase = createClient(supabaseUrl, supabaseServiceKey);
+    }
+    return supabase;
+}
 
 export interface BackupRecord {
     id?: string;
@@ -41,7 +52,7 @@ export async function createBackup(options: BackupOptions = {}): Promise<BackupR
     const fileName = `backup_${backupType}_${timestamp}.json`;
     
     // Create backup record
-    const { data: backup, error: createError } = await supabase
+    const { data: backup, error: createError } = await (getSupabaseClient() as any)
         .from('backups')
         .insert({
             backup_type: backupType,
@@ -64,7 +75,7 @@ export async function createBackup(options: BackupOptions = {}): Promise<BackupR
         const blob = new Blob([jsonData], { type: 'application/json' });
         
         // Upload to storage
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError } = await getSupabaseClient().storage
             .from('backups')
             .upload(fileName, blob, {
                 contentType: 'application/json',
@@ -76,12 +87,12 @@ export async function createBackup(options: BackupOptions = {}): Promise<BackupR
         }
 
         // Get public URL
-        const { data: urlData } = supabase.storage
+        const { data: urlData } = getSupabaseClient().storage
             .from('backups')
             .getPublicUrl(fileName);
 
         // Update backup record as completed
-        const { data: updatedBackup, error: updateError } = await supabase
+        const { data: updatedBackup, error: updateError } = await (getSupabaseClient() as any)
             .from('backups')
             .update({
                 status: 'completed',
@@ -91,7 +102,7 @@ export async function createBackup(options: BackupOptions = {}): Promise<BackupR
                 row_count: exportData.totalRows || 0,
                 completed_at: new Date().toISOString(),
             })
-            .eq('id', backup.id)
+            .eq('id', backup?.id)
             .select()
             .single();
 
@@ -102,14 +113,14 @@ export async function createBackup(options: BackupOptions = {}): Promise<BackupR
         return updatedBackup;
     } catch (error: any) {
         // Update backup record as failed
-        await supabase
+        await (getSupabaseClient() as any)
             .from('backups')
             .update({
                 status: 'failed',
                 error_message: error.message,
                 completed_at: new Date().toISOString(),
             })
-            .eq('id', backup.id);
+            .eq('id', backup?.id);
 
         throw error;
     }
@@ -232,7 +243,7 @@ export async function getBackupStats(): Promise<{
     totalSize: number;
     lastBackup: string | null;
 }> {
-    const { data, error } = await supabase
+    const { data, error } = await (getSupabaseClient() as any)
         .from('backups')
         .select('status, file_size_bytes, created_at');
 
