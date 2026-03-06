@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { StreakDisplay, AchievementBadge } from '@/components/gamification';
+import { StreakDisplay, AchievementBadge, UserPointsDisplay } from '@/components/gamification';
 import { CompactLeaderboard } from '@/components/gamification/Leaderboard';
 import { useAuth } from '@/hooks/useAuth';
 import { Trophy, Target, Flame, Star } from 'lucide-react';
@@ -108,42 +108,6 @@ export function GamificationWidget({ variant = 'full', className }: Gamification
             <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
                 <CompactLeaderboard userId={user.id} limit={5} />
             </div>
-        </div>
-    );
-}
-
-// User Points Display Component
-function UserPointsDisplay({ userId }: { userId: string }) {
-    const [points, setPoints] = React.useState<number | null>(null);
-    const [loading, setLoading] = React.useState(true);
-
-    React.useEffect(() => {
-        async function fetchPoints() {
-            try {
-                const response = await fetch('/api/gamification/track-activity', {
-                    method: 'GET',
-                    headers: { 'Content-Type': 'application/json' },
-                });
-                if (response.ok) {
-                    const data = await response.json();
-                    setPoints(data.totalPoints || 0);
-                }
-            } catch (error) {
-                console.error('Error fetching points:', error);
-            } finally {
-                setLoading(false);
-            }
-        }
-        fetchPoints();
-    }, [userId]);
-
-    if (loading) {
-        return <div className="h-6 bg-slate-200 rounded animate-pulse w-16" />;
-    }
-
-    return (
-        <div className="text-2xl font-bold text-slate-900">
-            {points?.toLocaleString() || '0'}
         </div>
     );
 }

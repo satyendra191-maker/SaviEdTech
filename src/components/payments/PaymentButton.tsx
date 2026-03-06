@@ -17,8 +17,7 @@ function cn(...inputs: ClassValue[]) {
     return twMerge(clsx(inputs));
 }
 
-// Payment gateway types
-export type PaymentGateway = 'razorpay' | 'stripe' | 'paypal';
+export type PaymentGateway = 'razorpay';
 
 // Payment status types
 export type PaymentStatus = 'idle' | 'loading' | 'processing' | 'success' | 'error';
@@ -133,7 +132,7 @@ export function PaymentButton({
             body: JSON.stringify({
                 gateway: selectedGateway,
                 amount,
-                currency: selectedGateway === 'paypal' ? currency.toUpperCase() : currency,
+                currency: currency,
                 donorEmail,
                 donorName,
                 donorPhone,
@@ -241,30 +240,6 @@ export function PaymentButton({
         razorpayInstance.open();
     }, [amount, currency, description, donorEmail, donorName, donorPhone, loadRazorpayScript, onCancel, onError, onSuccess, verifyPayment]);
 
-    // Handle Stripe payment
-    const handleStripePayment = useCallback(async (checkoutUrl?: string) => {
-        if (checkoutUrl) {
-            // Redirect to Stripe checkout
-            window.location.href = checkoutUrl;
-        } else {
-            setError('Invalid Stripe checkout URL');
-            setStatus('error');
-            onError?.('Invalid Stripe checkout URL');
-        }
-    }, [onError]);
-
-    // Handle PayPal payment
-    const handlePayPalPayment = useCallback(async (approvalUrl?: string) => {
-        if (approvalUrl) {
-            // Redirect to PayPal approval
-            window.location.href = approvalUrl;
-        } else {
-            setError('Invalid PayPal approval URL');
-            setStatus('error');
-            onError?.('Invalid PayPal approval URL');
-        }
-    }, [onError]);
-
     // Main payment handler
     const handlePayment = useCallback(async () => {
         setStatus('loading');
@@ -286,12 +261,6 @@ export function PaymentButton({
                 case 'razorpay':
                     await handleRazorpayPayment(orderResult.orderId!);
                     break;
-                case 'stripe':
-                    await handleStripePayment(orderResult.checkoutUrl);
-                    break;
-                case 'paypal':
-                    await handlePayPalPayment(orderResult.checkoutUrl);
-                    break;
             }
         } catch (err) {
             const errorMessage = err instanceof Error ? err.message : 'Payment failed';
@@ -299,17 +268,14 @@ export function PaymentButton({
             setStatus('error');
             onError?.(errorMessage);
         }
-    }, [createOrder, handleRazorpayPayment, handleStripePayment, handlePayPalPayment, onError, selectedGateway]);
+    }, [createOrder, handleRazorpayPayment, onError, selectedGateway]);
+
 
     // Get gateway icon
     const getGatewayIcon = (gw: PaymentGateway) => {
         switch (gw) {
             case 'razorpay':
                 return <Wallet className="w-4 h-4" />;
-            case 'stripe':
-                return <CreditCard className="w-4 h-4" />;
-            case 'paypal':
-                return <Globe className="w-4 h-4" />;
         }
     };
 
@@ -318,10 +284,6 @@ export function PaymentButton({
         switch (gw) {
             case 'razorpay':
                 return 'Razorpay (India)';
-            case 'stripe':
-                return 'Stripe (International)';
-            case 'paypal':
-                return 'PayPal';
         }
     };
 
@@ -330,7 +292,7 @@ export function PaymentButton({
             {/* Gateway Selector */}
             {showGatewaySelector && (
                 <div className="flex flex-wrap gap-2">
-                    {(['razorpay', 'stripe', 'paypal'] as PaymentGateway[]).map((gw) => (
+                    {(['razorpay'] as PaymentGateway[]).map((gw) => (
                         <button
                             key={gw}
                             onClick={() => setSelectedGateway(gw)}
@@ -394,32 +356,11 @@ export function PaymentButton({
     );
 }
 
-// Export individual gateway buttons for specific use cases
 export function RazorpayButton(props: Omit<PaymentButtonProps, 'gateway' | 'showGatewaySelector'>) {
     return (
         <PaymentButton
             {...props}
             gateway="razorpay"
-            showGatewaySelector={false}
-        />
-    );
-}
-
-export function StripeButton(props: Omit<PaymentButtonProps, 'gateway' | 'showGatewaySelector'>) {
-    return (
-        <PaymentButton
-            {...props}
-            gateway="stripe"
-            showGatewaySelector={false}
-        />
-    );
-}
-
-export function PayPalButton(props: Omit<PaymentButtonProps, 'gateway' | 'showGatewaySelector'>) {
-    return (
-        <PaymentButton
-            {...props}
-            gateway="paypal"
             showGatewaySelector={false}
         />
     );

@@ -1,23 +1,9 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter, Poppins } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/components/providers';
 import { NoticeBar } from '@/components/notice-bar';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
-
-const inter = Inter({
-    subsets: ['latin'],
-    variable: '--font-inter',
-    display: 'swap',
-});
-
-const poppins = Poppins({
-    subsets: ['latin'],
-    weight: ['400', '500', '600', '700', '800'],
-    variable: '--font-poppins',
-    display: 'swap',
-});
 
 export const metadata: Metadata = {
     title: {
@@ -86,7 +72,7 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="en" className={`${inter.variable} ${poppins.variable}`}>
+        <html lang="en">
             <body className="min-h-screen bg-background font-sans antialiased">
                 <Providers>
                     <div className="flex flex-col min-h-screen">

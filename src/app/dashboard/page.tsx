@@ -19,8 +19,9 @@ import {
 import Link from 'next/link';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
-import { StreakDisplay, AchievementBadge } from '@/components/gamification';
+import { StreakDisplay, AchievementBadge, UserPointsDisplay } from '@/components/gamification';
 import { CompactLeaderboard } from '@/components/gamification/Leaderboard';
+import { formatTimeAgo, formatUpcomingDate } from '@/lib/utils';
 
 interface DashboardData {
     profile: {
@@ -415,7 +416,7 @@ export default function DashboardPage() {
                                     <UpcomingTestCard
                                         key={test.id}
                                         title={test.title}
-                                        date={formatDate(test.scheduled_at)}
+                                        date={formatUpcomingDate(test.scheduled_at)}
                                         duration={`${test.duration_minutes} Minutes`}
                                         questions={test.question_count.toString()}
                                     />
@@ -648,68 +649,3 @@ function UpcomingTestCard({
     );
 }
 
-// User Points Display Component
-function UserPointsDisplay({ userId }: { userId: string }) {
-    const [points, setPoints] = useState<number | null>(null);
-    const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        async function fetchPoints() {
-            try {
-                const response = await fetch('/api/gamification/user-stats');
-                if (response.ok) {
-                    const data = await response.json();
-                    setPoints(data.totalPoints || 0);
-                }
-            } catch (error) {
-                console.error('Error fetching points:', error);
-            } finally {
-                setLoading(false);
-            }
-        }
-        fetchPoints();
-    }, [userId]);
-
-    if (loading) {
-        return <div className="h-6 bg-slate-200 rounded animate-pulse w-16" />;
-    }
-
-    return (
-        <div className="text-xl font-bold text-slate-900">
-            {points?.toLocaleString() || '0'}
-        </div>
-    );
-}
-
-// Helper functions
-function formatTimeAgo(dateString: string): string {
-    const date = new Date(dateString);
-    const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHours = Math.floor(diffMs / 3600000);
-    const diffDays = Math.floor(diffMs / 86400000);
-
-    if (diffMins < 60) return `${diffMins} mins ago`;
-    if (diffHours < 24) return `${diffHours} hours ago`;
-    if (diffDays === 1) return 'Yesterday';
-    return `${diffDays} days ago`;
-}
-
-function formatDate(dateString: string): string {
-    const date = new Date(dateString);
-    const now = new Date();
-    const tomorrow = new Date(now);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    if (date.toDateString() === tomorrow.toDateString()) {
-        return `Tomorrow, ${date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}`;
-    }
-
-    return date.toLocaleDateString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-}

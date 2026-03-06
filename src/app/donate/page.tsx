@@ -21,8 +21,6 @@ const impactStats = [
 
 const paymentGateways: { id: PaymentGateway; name: string; description: string; icon: string }[] = [
   { id: 'razorpay', name: 'Razorpay', description: 'Best for India (UPI, Cards, NetBanking)', icon: '🇮🇳' },
-  { id: 'stripe', name: 'Stripe', description: 'Best for International (Cards, Apple Pay)', icon: '🌍' },
-  { id: 'paypal', name: 'PayPal', description: 'Global payments with buyer protection', icon: '💳' },
 ];
 
 export default function DonatePage() {
@@ -71,10 +69,6 @@ export default function DonatePage() {
     switch (gateway) {
       case 'razorpay':
         return 'INR';
-      case 'stripe':
-        return 'USD';
-      case 'paypal':
-        return 'USD';
       default:
         return 'INR';
     }

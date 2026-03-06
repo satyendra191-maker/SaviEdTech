@@ -24,3 +24,5 @@ export {
     CompactLeaderboard,
     UserRankCard,
 } from './Leaderboard';
+
+export { UserPointsDisplay } from './UserPointsDisplay';

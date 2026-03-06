@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSupabaseBrowserClient } from '@/lib/supabase';
+import { getSupabaseBrowserClient, createAdminSupabaseClient } from '@/lib/supabase';
 import type { User, UserRole, ExamTarget, ClassLevel } from '@/types';
 
 interface AuthState {
@@ -18,6 +18,7 @@ interface SignUpUserData {
     exam_target?: ExamTarget;
     class_level?: ClassLevel;
     city?: string;
+    role?: string;
 }
 
 interface UseAuthReturn extends AuthState {
@@ -153,14 +154,14 @@ export function useAuth(): UseAuthReturn {
                         phone: userData.phone,
                         exam_target: userData.exam_target,
                         class_level: userData.class_level,
-                        city: userData.city,
+                        role: userData.role || 'student',
                     },
                     emailRedirectTo: `${window.location.origin}/login`,
                 },
             });
 
             if (authError) {
-                // Handle specific Supabase errors
+                console.error('Auth error:', authError.message);
                 if (authError.message.includes('User already registered')) {
                     return { error: 'An account with this email already exists. Please sign in instead.' };
                 }
@@ -177,44 +178,42 @@ export function useAuth(): UseAuthReturn {
                 return { error: 'Registration failed. Please try again.' };
             }
 
-            // Step 2: Create profile record - using type assertion due to Supabase type complexity
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const profileQuery = supabase.from('profiles') as any;
-            const { error: profileError } = await profileQuery.insert({
-                id: authData.user.id,
-                email: email,
-                full_name: userData.full_name || null,
-                phone: userData.phone || null,
-                role: 'student',
-                exam_target: userData.exam_target || null,
-                class_level: userData.class_level || null,
-                city: userData.city || null,
-                is_active: true,
-            });
+            // Step 2: Create profile using admin client (service role key)
+            try {
+                const roleValue = userData.role || 'student';
+                const examValue = userData.exam_target || null;
+                const classValue = userData.class_level || null;
+                
+                // Use admin client for profile creation
+                const adminClient = createAdminSupabaseClient();
+                
+                const { error: profileError } = await (adminClient.from('profiles') as any).insert({
+                    id: authData.user.id,
+                    email: email,
+                    full_name: userData.full_name || 'User',
+                    phone: userData.phone || null,
+                    role: roleValue,
+                    exam_target: examValue,
+                    class_level: classValue,
+                    is_active: true,
+                });
 
-            if (profileError) {
-                console.error('Error creating profile:', profileError);
-                // Don't fail registration if profile creation fails - user can be created later
-                // But log it for monitoring
-            }
+                if (profileError) {
+                    console.error('Profile creation error:', profileError.message);
+                }
 
-            // Step 3: Create student profile record - using type assertion due to Supabase type complexity
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const studentProfileQuery = supabase.from('student_profiles') as any;
-            const { error: studentProfileError } = await studentProfileQuery.insert({
-                id: authData.user.id,
-                study_streak: 0,
-                longest_streak: 0,
-                total_study_minutes: 0,
-                subscription_status: 'free',
-                preferred_subjects: [],
-                weak_topics: [],
-                strong_topics: [],
-            });
-
-            if (studentProfileError) {
-                console.error('Error creating student profile:', studentProfileError);
-                // Don't fail registration if student profile creation fails
+                // Step 3: Create student profile only for students
+                if (roleValue === 'student') {
+                    await (adminClient.from('student_profiles') as any).insert({
+                        id: authData.user.id,
+                        study_streak: 0,
+                        longest_streak: 0,
+                        total_study_minutes: 0,
+                        subscription_status: 'free',
+                    }).catch(() => {});
+                }
+            } catch (profileErr) {
+                console.error('Profile creation error:', profileErr);
             }
 
             return { error: null };

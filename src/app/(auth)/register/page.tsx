@@ -19,38 +19,25 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Eye, EyeOff, Mail, Lock, User, Phone, GraduationCap, Loader2, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Phone, GraduationCap, Loader2, CheckCircle, Shield, Users, BookOpen } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { emailSchema, passwordSchema, phoneSchema, containsSuspiciousPatterns, sanitizeInput } from '@/lib/security';
 
-// Enhanced Zod validation schema with security module schemas
+type UserType = 'student' | 'admin' | 'faculty';
+
+// Basic validation schema
 const registerSchema = z.object({
   fullName: z.string()
     .min(2, 'Full name must be at least 2 characters')
-    .max(100, 'Full name is too long')
-    .regex(/^[a-zA-Z\s'-]+$/, 'Name should only contain letters, spaces, hyphens and apostrophes')
-    .transform((val) => sanitizeInput(val)), // Sanitize on validation
-  email: emailSchema,
-  phone: phoneSchema,
-  password: passwordSchema,
+    .max(100, 'Full name is too long'),
+  email: z.string().email('Invalid email address'),
+  phone: z.string().optional(),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
   confirmPassword: z.string(),
-  targetExam: z.enum(['JEE Mains', 'JEE Advanced', 'NEET', 'CBSE Board', 'Foundation'], {
-    required_error: 'Please select your target exam',
-  }),
-  currentClass: z.enum(['Class 9', 'Class 10', 'Class 11', 'Class 12', 'Dropper'], {
-    required_error: 'Please select your current class',
-  }),
+  targetExam: z.string().optional(),
+  currentClass: z.string().optional(),
 }).refine((data) => data.password === data.confirmPassword, {
   message: 'Passwords do not match',
   path: ['confirmPassword'],
-}).refine((data) => {
-  // Security check for suspicious patterns in any field
-  return !containsSuspiciousPatterns(data.fullName) &&
-    !containsSuspiciousPatterns(data.email) &&
-    !containsSuspiciousPatterns(data.phone);
-}, {
-  message: 'Invalid characters detected in form data',
-  path: ['fullName'], // Show error on first field
 });
 
 type RegisterFormData = z.infer<typeof registerSchema>;
@@ -81,6 +68,7 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [showVerificationMessage, setShowVerificationMessage] = useState(false);
+  const [userType, setUserType] = useState<UserType>('student');
 
   const {
     register,
@@ -96,11 +84,40 @@ export default function RegisterPage() {
     setSubmitError('');
 
     try {
+      const role = userType === 'admin' ? 'admin' : userType === 'faculty' ? 'content_manager' : 'student';
+      
+      // Map exam values to database format
+      let examTarget: string | null = null;
+      if (userType === 'student' && data.targetExam) {
+        if (data.targetExam === 'JEE Mains' || data.targetExam === 'JEE Advanced' || data.targetExam === 'Foundation') {
+          examTarget = 'JEE';
+        } else if (data.targetExam === 'NEET') {
+          examTarget = 'NEET';
+        } else if (data.targetExam === 'CBSE Board') {
+          examTarget = 'Both';
+        }
+      }
+      
+      // Map class values to database format
+      let classLevel: string | null = null;
+      if (userType === 'student' && data.currentClass) {
+        if (data.currentClass === 'Class 9' || data.currentClass === 'Class 10') {
+          classLevel = '11';
+        } else if (data.currentClass === 'Class 11') {
+          classLevel = '11';
+        } else if (data.currentClass === 'Class 12') {
+          classLevel = '12';
+        } else if (data.currentClass === 'Dropper') {
+          classLevel = 'Dropper';
+        }
+      }
+      
       const { error } = await signUp(data.email, data.password, {
         full_name: data.fullName,
-        phone: data.phone,
-        exam_target: data.targetExam,
-        class_level: data.currentClass,
+        phone: data.phone || undefined,
+        exam_target: examTarget as any,
+        class_level: classLevel as any,
+        role: role,
       });
 
       if (error) {
@@ -258,7 +275,7 @@ export default function RegisterPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Phone <span className="text-red-500">*</span>
+                  Phone {userType === 'student' && <span className="text-red-500">*</span>}
                 </label>
                 <div className="relative">
                   <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
@@ -346,7 +363,53 @@ export default function RegisterPage() {
               )}
             </div>
 
-            {/* Target Exam and Class */}
+            {/* User Type Selector */}
+            <div>
+              <label className="block text-sm font-medium text-slate-700 mb-2">
+                Register as <span className="text-red-500">*</span>
+              </label>
+              <div className="grid grid-cols-3 gap-3">
+                <button
+                  type="button"
+                  onClick={() => setUserType('student')}
+                  className={`p-3 rounded-xl border-2 transition-all text-center ${
+                    userType === 'student'
+                      ? 'border-blue-500 bg-blue-50'
+                      : 'border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  <Users className={`w-6 h-6 mx-auto mb-1 ${userType === 'student' ? 'text-blue-600' : 'text-slate-400'}`} />
+                  <span className={`text-sm font-medium ${userType === 'student' ? 'text-blue-700' : 'text-slate-600'}`}>Student</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUserType('admin')}
+                  className={`p-3 rounded-xl border-2 transition-all text-center ${
+                    userType === 'admin'
+                      ? 'border-purple-500 bg-purple-50'
+                      : 'border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  <Shield className={`w-6 h-6 mx-auto mb-1 ${userType === 'admin' ? 'text-purple-600' : 'text-slate-400'}`} />
+                  <span className={`text-sm font-medium ${userType === 'admin' ? 'text-purple-700' : 'text-slate-600'}`}>Admin</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setUserType('faculty')}
+                  className={`p-3 rounded-xl border-2 transition-all text-center ${
+                    userType === 'faculty'
+                      ? 'border-emerald-500 bg-emerald-50'
+                      : 'border-slate-200 hover:border-slate-300'
+                  }`}
+                >
+                  <BookOpen className={`w-6 h-6 mx-auto mb-1 ${userType === 'faculty' ? 'text-emerald-600' : 'text-slate-400'}`} />
+                  <span className={`text-sm font-medium ${userType === 'faculty' ? 'text-emerald-700' : 'text-slate-600'}`}>Faculty</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Target Exam and Class - Only for Students */}
+            {userType === 'student' && (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -395,6 +458,7 @@ export default function RegisterPage() {
                 )}
               </div>
             </div>
+            )}
 
             <button
               type="submit"
