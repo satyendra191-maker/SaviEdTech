@@ -2,7 +2,8 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { GraduationCap, Menu, X, Heart } from 'lucide-react';
+import { Menu, X, Heart } from 'lucide-react';
+import { AnimatedLogo } from './AnimatedLogo';
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -20,15 +21,7 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-9 h-9 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center">
-              <GraduationCap className="w-5 h-5 text-white" />
-            </div>
-            <div>
-              <span className="font-bold text-slate-900">Savi</span>
-              <span className="font-bold text-primary-600">EduTech</span>
-            </div>
-          </Link>
+          <AnimatedLogo size="md" showText={true} />
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">

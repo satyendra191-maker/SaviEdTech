@@ -23,7 +23,7 @@ import {
 } from '@/lib/security';
 
 // Routes that require authentication
-const protectedRoutes = ['/dashboard', '/admin'];
+const protectedRoutes = ['/dashboard', '/admin', '/parent'];
 
 // Routes that require admin role
 const adminRoutes = ['/admin', '/super-admin'];

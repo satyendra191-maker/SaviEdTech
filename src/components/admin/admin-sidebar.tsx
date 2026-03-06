@@ -17,7 +17,9 @@ import {
     BookOpen,
     CreditCard,
     Briefcase,
+    Database,
 } from 'lucide-react';
+import { AnimatedLogo } from '@/components/AnimatedLogo';
 
 const adminNavItems = [
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
@@ -31,6 +33,7 @@ const adminNavItems = [
     { name: 'Payments', href: '/admin/payments', icon: CreditCard },
     { name: 'Daily Challenge', href: '/admin/challenges', icon: Trophy },
     { name: 'Popup Ads', href: '/admin/ads', icon: Image },
+    { name: 'Backups', href: '/admin/backups', icon: Database },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
 ];
 
@@ -40,10 +43,8 @@ export function AdminSidebar() {
     return (
         <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-slate-900 text-white">
             {/* Logo */}
-            <div className="flex items-center gap-2 px-6 h-16 border-b border-slate-800">
-                <div className="w-9 h-9 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center">
-                    <Shield className="w-5 h-5 text-white" />
-                </div>
+            <div className="flex items-center gap-2 px-4 h-16 border-b border-slate-800">
+                <AnimatedLogo size="sm" showText={false} />
                 <div>
                     <span className="font-bold text-white">Admin</span>
                     <span className="font-bold text-primary-400">Panel</span>

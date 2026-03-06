@@ -16,9 +16,11 @@ import {
     GraduationCap,
     Flame,
     Clock,
+    Users,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { StreakDisplay } from '@/components/gamification';
+import { AnimatedLogo } from '@/components/AnimatedLogo';
 
 const navItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -31,6 +33,7 @@ const navItems = [
     { name: 'Ask Faculty', href: '/dashboard/doubts', icon: Trophy },
     { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
     { name: 'Revision', href: '/dashboard/revision', icon: RotateCcw },
+    { name: 'Parent Portal', href: '/dashboard/parent', icon: Users },
     { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
@@ -41,14 +44,8 @@ export function Sidebar() {
     return (
         <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-white border-r border-slate-200">
             {/* Logo */}
-            <div className="flex items-center gap-2 px-6 h-16 border-b border-slate-100">
-                <div className="w-9 h-9 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center">
-                    <GraduationCap className="w-5 h-5 text-white" />
-                </div>
-                <div>
-                    <span className="font-bold text-slate-900">Savi</span>
-                    <span className="font-bold text-primary-600">EduTech</span>
-                </div>
+            <div className="flex items-center gap-2 px-4 h-16 border-b border-slate-100">
+                <AnimatedLogo size="sm" showText={true} />
             </div>
 
             {/* Navigation */}
