@@ -14,9 +14,13 @@ import {
     Award,
     Loader2,
     AlertCircle,
-    Star
+    Star,
+    Users,
+    PlayCircle,
+    HelpCircle,
 } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
 import { StreakDisplay, AchievementBadge, UserPointsDisplay } from '@/components/gamification';
@@ -78,22 +82,47 @@ interface DashboardData {
 }
 
 export default function DashboardPage() {
-    const { user, isLoading: authLoading } = useAuth();
+    const { user, role, isLoading: authLoading } = useAuth();
+    const router = useRouter();
+
+    if (authLoading) {
+        return <DashboardSkeleton />;
+    }
+
+    if (!user) {
+        return null;
+    }
+
+    // Role-based component switching
+    switch (role) {
+        case 'faculty':
+            return <FacultyDashboard user={user} />;
+        case 'admin':
+        case 'super_admin':
+            router.push(role === 'super_admin' ? '/super-admin' : '/admin');
+            return null;
+        case 'parent':
+            router.push('/dashboard/parent');
+            return null;
+        default:
+            return <StudentDashboard user={user} />;
+    }
+}
+
+function StudentDashboard({ user }: { user: any }) {
     const [data, setData] = useState<DashboardData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         async function fetchDashboardData() {
-            if (!user) return;
-
             try {
                 const supabase = getSupabaseBrowserClient();
 
                 // Fetch profile and student profile
                 const [{ data: profile }, { data: studentProfile }] = await Promise.all([
-                    supabase.from('profiles').select('full_name, exam_target').eq('id', user.id).single(),
-                    supabase.from('student_profiles').select('*').eq('id', user.id).single()
+                    supabase.from('profiles').select('full_name, exam_target').eq('id', user.id).maybeSingle(),
+                    supabase.from('student_profiles').select('*').eq('id', user.id).maybeSingle()
                 ]);
 
                 // Fetch recent lectures with progress
@@ -130,14 +159,14 @@ export default function DashboardPage() {
                     .select('id, title, subject_id, total_questions, time_limit_minutes, subjects:subject_id (name)')
                     .eq('scheduled_date', today)
                     .eq('is_published', true)
-                    .single();
+                    .maybeSingle();
 
                 // Fetch today's daily challenge
                 const { data: dailyChallenge } = await supabase
                     .from('daily_challenges')
                     .select('id, title, total_participants, closes_at')
                     .eq('challenge_date', today)
-                    .single();
+                    .maybeSingle();
 
                 // Fetch student progress stats
                 const { data: progressStats } = await supabase
@@ -233,12 +262,10 @@ export default function DashboardPage() {
             }
         }
 
-        if (!authLoading) {
-            fetchDashboardData();
-        }
-    }, [user, authLoading]);
+        fetchDashboardData();
+    }, [user.id]);
 
-    if (authLoading || loading) {
+    if (loading) {
         return <DashboardSkeleton />;
     }
 
@@ -644,6 +671,106 @@ function UpcomingTestCard({
                 <span>{duration}</span>
                 <span>•</span>
                 <span>{questions} Questions</span>
+            </div>
+        </div>
+    );
+}
+
+function FacultyDashboard({ user }: { user: any }) {
+    const displayName = user?.full_name?.split(' ')[0] || 'Faculty';
+    
+    return (
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-slate-900">Welcome back, {displayName}!</h1>
+                    <p className="text-slate-500">Here's an overview of your teaching sessions</p>
+                </div>
+                <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-xl shadow-sm">
+                    <Users className="w-5 h-5" />
+                    <span className="font-semibold">Professional Faculty</span>
+                </div>
+            </div>
+
+            {/* Stats Grid */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <StatCard
+                    icon={PlayCircle}
+                    label="My Lectures"
+                    value="12"
+                    trend="+2 this week"
+                    color="blue"
+                />
+                <StatCard
+                    icon={HelpCircle}
+                    label="Student Doubts"
+                    value="8"
+                    trend="Requires attention"
+                    color="amber"
+                />
+                <StatCard
+                    icon={TrendingUp}
+                    label="Student Mastery"
+                    value="72%"
+                    trend="+4.2%"
+                    color="green"
+                />
+                <StatCard
+                    icon={Clock}
+                    label="Class Hours"
+                    value="124h"
+                    trend="This year"
+                    color="purple"
+                />
+            </div>
+
+            <div className="grid lg:grid-cols-3 gap-6">
+                {/* Schedule */}
+                <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                    <div className="flex items-center justify-between mb-6">
+                        <h2 className="text-lg font-semibold text-slate-900">Teaching Schedule</h2>
+                        <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                            Manage Calendar
+                        </button>
+                    </div>
+
+                    <div className="text-center py-12 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+                        <Calendar className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+                        <h3 className="text-slate-900 font-medium">No classes today</h3>
+                        <p className="text-slate-500 text-sm mt-1">Enjoy your free time or prepare for upcoming sessions!</p>
+                        <button className="mt-4 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                            Schedule Session
+                        </button>
+                    </div>
+                </div>
+
+                {/* Right sidebar for faculty */}
+                <div className="space-y-6">
+                    <section className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                        <h2 className="text-lg font-semibold text-slate-900 mb-4">Quick Actions</h2>
+                        <div className="space-y-2">
+                            <button className="w-full flex items-center gap-3 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors text-left group">
+                                <div className="p-2 bg-blue-100 rounded-lg text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                    <PlayCircle className="w-4 h-4" />
+                                </div>
+                                <span className="text-sm font-medium text-slate-700">Upload Lecture</span>
+                            </button>
+                            <button className="w-full flex items-center gap-3 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors text-left group">
+                                <div className="p-2 bg-amber-100 rounded-lg text-amber-600 group-hover:bg-amber-600 group-hover:text-white transition-colors">
+                                    <HelpCircle className="w-4 h-4" />
+                                </div>
+                                <span className="text-sm font-medium text-slate-700">Solve Doubts</span>
+                            </button>
+                            <button className="w-full flex items-center gap-3 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors text-left group">
+                                <div className="p-2 bg-green-100 rounded-lg text-green-600 group-hover:bg-green-600 group-hover:text-white transition-colors">
+                                    <Users className="w-4 h-4" />
+                                </div>
+                                <span className="text-sm font-medium text-slate-700">Batch Performance</span>
+                            </button>
+                        </div>
+                    </section>
+                </div>
             </div>
         </div>
     );

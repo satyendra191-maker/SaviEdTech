@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { usePathname } from 'next/navigation';
 import { X } from 'lucide-react';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
 
@@ -34,12 +35,20 @@ interface PopupProviderProps {
 }
 
 export function PopupProvider({ children }: PopupProviderProps) {
+    const pathname = usePathname();
     const [showPopup, setShowPopup] = useState(false);
     const [countdown, setCountdown] = useState(10);
     const [canClose, setCanClose] = useState(false);
     const [ad, setAd] = useState<PopupAd | null>(null);
 
+    const isDashboardRoute = pathname?.startsWith('/dashboard') || 
+                            pathname?.startsWith('/admin') || 
+                            pathname?.startsWith('/super-admin') ||
+                            pathname?.startsWith('/faculty-dashboard') ||
+                            pathname?.startsWith('/auth/callback');
+
     useEffect(() => {
+        if (isDashboardRoute) return;
         const fetchActiveAd = async () => {
             const supabase = getSupabaseBrowserClient();
             const now = new Date().toISOString();

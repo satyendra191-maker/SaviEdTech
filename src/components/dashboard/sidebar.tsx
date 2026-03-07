@@ -1,5 +1,6 @@
 'use client';
 
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
@@ -17,12 +18,14 @@ import {
     Flame,
     Clock,
     Users,
+    HelpCircle,
+    Shield,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { StreakDisplay } from '@/components/gamification';
-import { AnimatedLogo } from '@/components/AnimatedLogo';
+import { AnimatedLogo } from '@/components/animated-logo';
 
-const navItems = [
+const studentNavItems = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Lectures', href: '/dashboard/lectures', icon: PlayCircle },
     { name: 'Practice', href: '/dashboard/practice', icon: BookOpen },
@@ -30,16 +33,60 @@ const navItems = [
     { name: 'Daily Challenge', href: '/dashboard/challenge', icon: Trophy },
     { name: 'DPP', href: '/dashboard/dpp', icon: Calendar },
     { name: 'Study Planner', href: '/dashboard/planner', icon: Clock },
-    { name: 'Ask Faculty', href: '/dashboard/doubts', icon: Trophy },
+    { name: 'Ask Faculty', href: '/dashboard/doubts', icon: HelpCircle },
     { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
     { name: 'Revision', href: '/dashboard/revision', icon: RotateCcw },
     { name: 'Parent Portal', href: '/dashboard/parent', icon: Users },
     { name: 'Settings', href: '/dashboard/settings', icon: Settings },
 ];
 
+const facultyNavItems = [
+    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'My Lectures', href: '/dashboard/lectures', icon: PlayCircle },
+    { name: 'Doubt Sessions', href: '/dashboard/doubts', icon: HelpCircle },
+    { name: 'Tests Management', href: '/dashboard/tests', icon: ClipboardList },
+    { name: 'Question Bank', href: '/dashboard/practice', icon: BookOpen },
+    { name: 'Analytics', href: '/dashboard/analytics', icon: BarChart3 },
+    { name: 'Settings', href: '/dashboard/settings', icon: Settings },
+];
+
+const adminNavItems = [
+    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Student Mgmt', href: '/admin/students', icon: Users },
+    { name: 'Faculty Mgmt', href: '/admin/faculty', icon: GraduationCap },
+    { name: 'Course Mgmt', href: '/admin/courses', icon: BookOpen },
+    { name: 'System Health', href: '/super-admin', icon: Shield },
+    { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
+    { name: 'Settings', href: '/admin/settings', icon: Settings },
+];
+
+const parentNavItems = [
+    { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Child Progress', href: '/dashboard/parent', icon: Users },
+    { name: 'Attendance', href: '/dashboard/parent/attendance', icon: Calendar },
+    { name: 'Reports', href: '/dashboard/parent/reports', icon: BarChart3 },
+    { name: 'Account Settings', href: '/dashboard/settings', icon: Settings },
+];
+
 export function Sidebar() {
     const pathname = usePathname();
-    const { user, isLoading, signOut } = useAuth();
+    const { user, role, isLoading, signOut } = useAuth();
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    const getNavItems = () => {
+        // Render student items as default for SSR to match the first client paint
+        if (!mounted || !role) return studentNavItems;
+        if (role === 'admin' || role === 'super_admin') return adminNavItems;
+        if (role === 'faculty') return facultyNavItems;
+        if (role === 'parent') return parentNavItems;
+        return studentNavItems;
+    };
+
+    const currentNavItems = getNavItems();
 
     return (
         <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-white border-r border-slate-200">
@@ -50,7 +97,7 @@ export function Sidebar() {
 
             {/* Navigation */}
             <nav className="p-4 space-y-1 overflow-y-auto h-[calc(100vh-11rem)]">
-                {navItems.map((item) => {
+                {currentNavItems.map((item) => {
                     const Icon = item.icon;
                     const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
 

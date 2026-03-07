@@ -37,7 +37,8 @@ export interface LeaderboardFilters {
  */
 export async function getLeaderboard(
     filters: LeaderboardFilters,
-    currentUserId?: string
+    currentUserId?: string,
+    customSupabase?: any
 ): Promise<{
     entries: LeaderboardEntry[];
     userRank?: LeaderboardEntry;
@@ -47,15 +48,15 @@ export async function getLeaderboard(
 
     switch (type) {
         case 'points':
-            return getPointsLeaderboard(period, limit, currentUserId);
+            return getPointsLeaderboard(period, limit, currentUserId, customSupabase);
         case 'streaks':
-            return getStreaksLeaderboard(period, limit, currentUserId);
+            return getStreaksLeaderboard(period, limit, currentUserId, customSupabase);
         case 'accuracy':
-            return getAccuracyLeaderboard(period, limit, currentUserId);
+            return getAccuracyLeaderboard(period, limit, currentUserId, customSupabase);
         case 'tests_completed':
-            return getTestsLeaderboard(period, limit, currentUserId);
+            return getTestsLeaderboard(period, limit, currentUserId, customSupabase);
         case 'study_time':
-            return getStudyTimeLeaderboard(period, limit, currentUserId);
+            return getStudyTimeLeaderboard(period, limit, currentUserId, customSupabase);
         default:
             return { entries: [], totalParticipants: 0 };
     }
@@ -67,9 +68,10 @@ export async function getLeaderboard(
 async function getPointsLeaderboard(
     period: LeaderboardPeriod,
     limit: number,
-    currentUserId?: string
+    currentUserId?: string,
+    customSupabase?: any
 ): Promise<{ entries: LeaderboardEntry[]; userRank?: LeaderboardEntry; totalParticipants: number }> {
-    const supabase = createBrowserSupabaseClient();
+    const supabase = customSupabase || createBrowserSupabaseClient();
 
     // For all-time, use total_points from student_profiles
     if (period === 'all_time') {
@@ -117,7 +119,7 @@ async function getPointsLeaderboard(
 
     const { data, error } = await supabase
         .from('user_points')
-        .select('user_id, points, profiles(user_id, full_name, avatar_url)')
+        .select('user_id, points, profiles(id, full_name, avatar_url)')
         .gte('created_at', startDate.toISOString());
 
     if (error) {
@@ -172,9 +174,10 @@ async function getPointsLeaderboard(
 async function getStreaksLeaderboard(
     period: LeaderboardPeriod,
     limit: number,
-    currentUserId?: string
+    currentUserId?: string,
+    customSupabase?: any
 ): Promise<{ entries: LeaderboardEntry[]; userRank?: LeaderboardEntry; totalParticipants: number }> {
-    const supabase = createBrowserSupabaseClient();
+    const supabase = customSupabase || createBrowserSupabaseClient();
 
     const { data, error } = await supabase
         .from('student_profiles')
@@ -221,9 +224,10 @@ async function getStreaksLeaderboard(
 async function getAccuracyLeaderboard(
     period: LeaderboardPeriod,
     limit: number,
-    currentUserId?: string
+    currentUserId?: string,
+    customSupabase?: any
 ): Promise<{ entries: LeaderboardEntry[]; userRank?: LeaderboardEntry; totalParticipants: number }> {
-    const supabase = createBrowserSupabaseClient();
+    const supabase = customSupabase || createBrowserSupabaseClient();
 
     let query = supabase
         .from('student_progress')
@@ -231,7 +235,7 @@ async function getAccuracyLeaderboard(
             user_id,
             accuracy_percent,
             total_questions_attempted,
-            profiles(user_id, full_name, avatar_url)
+            profiles(id, full_name, avatar_url)
         `)
         .gte('total_questions_attempted', 20) // Minimum attempts for valid accuracy
         .order('accuracy_percent', { ascending: false })
@@ -279,13 +283,14 @@ async function getAccuracyLeaderboard(
 async function getTestsLeaderboard(
     period: LeaderboardPeriod,
     limit: number,
-    currentUserId?: string
+    currentUserId?: string,
+    customSupabase?: any
 ): Promise<{ entries: LeaderboardEntry[]; userRank?: LeaderboardEntry; totalParticipants: number }> {
-    const supabase = createBrowserSupabaseClient();
+    const supabase = customSupabase || createBrowserSupabaseClient();
 
     let query = supabase
         .from('test_attempts')
-        .select('user_id, profiles(user_id, full_name, avatar_url)')
+        .select('user_id, profiles(id, full_name, avatar_url)')
         .eq('status', 'completed');
 
     if (period !== 'all_time') {
@@ -346,9 +351,10 @@ async function getTestsLeaderboard(
 async function getStudyTimeLeaderboard(
     period: LeaderboardPeriod,
     limit: number,
-    currentUserId?: string
+    currentUserId?: string,
+    customSupabase?: any
 ): Promise<{ entries: LeaderboardEntry[]; userRank?: LeaderboardEntry; totalParticipants: number }> {
-    const supabase = createBrowserSupabaseClient();
+    const supabase = customSupabase || createBrowserSupabaseClient();
 
     // For all-time, use total_study_minutes from student_profiles
     if (period === 'all_time') {
@@ -395,7 +401,7 @@ async function getStudyTimeLeaderboard(
 
     const { data, error } = await supabase
         .from('study_streaks')
-        .select('user_id, study_minutes, profiles(user_id, full_name, avatar_url)')
+        .select('user_id, study_minutes, profiles(id, full_name, avatar_url)')
         .gte('streak_date', startDate.toISOString().split('T')[0]);
 
     if (error) {

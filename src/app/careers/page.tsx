@@ -15,8 +15,6 @@ import {
     GraduationCap,
     DollarSign,
 } from 'lucide-react';
-import { Navbar } from '@/components/navbar';
-import { Footer } from '@/components/footer';
 
 interface JobListing {
     id: string;
@@ -142,9 +140,7 @@ export default function CareersPage() {
     };
 
     return (
-        <div className="min-h-screen bg-slate-50">
-            <Navbar />
-
+        <div className="min-h-screen page-bg-jobs">
             {/* Hero Section */}
             <section className="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 py-20 px-4">
                 <div className="max-w-6xl mx-auto text-center">
@@ -424,8 +420,6 @@ export default function CareersPage() {
                     </div>
                 </div>
             </section>
-
-            <Footer />
         </div>
     );
 }

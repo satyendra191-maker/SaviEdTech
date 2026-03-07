@@ -49,7 +49,7 @@ import {
     type SystemHealth,
     type CronJobStatus,
     type DatabaseMetrics,
-} from '@/lib/platform-manager';
+} from '@/lib/platform-manager/monitor';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 
 // Types for dashboard data

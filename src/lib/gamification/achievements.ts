@@ -280,8 +280,8 @@ async function sendAchievementNotification(
 /**
  * Get user's stats for achievement calculation
  */
-async function getUserStats(userId: string): Promise<Record<string, number>> {
-    const supabase = createBrowserSupabaseClient();
+async function getUserStats(userId: string, customSupabase?: any): Promise<Record<string, number>> {
+    const supabase = customSupabase || createBrowserSupabaseClient();
 
     const stats: Record<string, number> = {
         activities_completed: 0,
@@ -400,11 +400,11 @@ function calculateAchievementProgress(
 /**
  * Get all achievements with progress for a user
  */
-export async function getUserAchievements(userId: string): Promise<{
+export async function getUserAchievements(userId: string, customSupabase?: any): Promise<{
     unlocked: UserAchievement[];
     inProgress: (AchievementProgress & { achievement: typeof ACHIEVEMENTS[AchievementId] })[];
 }> {
-    const supabase = createBrowserSupabaseClient();
+    const supabase = customSupabase || createBrowserSupabaseClient();
 
     // Get unlocked achievements
     const { data: unlockedData, error } = await supabase
@@ -421,7 +421,7 @@ export async function getUserAchievements(userId: string): Promise<{
         return { unlocked: [], inProgress: [] };
     }
 
-    const stats = await getUserStats(userId);
+    const stats = await getUserStats(userId, supabase);
     const unlockedIds = new Set((unlockedData || []).map((a: Record<string, unknown>) => a.achievement_id));
 
     const unlocked: UserAchievement[] = (unlockedData || []).map((item: Record<string, unknown>) => ({

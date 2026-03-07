@@ -1,3 +1,6 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import {
     Users,
     GraduationCap,
@@ -7,46 +10,98 @@ import {
     Clock,
     DollarSign,
     Activity,
+    ArrowUp,
+    ArrowDown,
 } from 'lucide-react';
+import Link from 'next/link';
+import { getSupabaseBrowserClient } from '@/lib/supabase';
 
 export default function AdminDashboardPage() {
+    const [stats, setStats] = useState({
+        totalStudents: 0,
+        activeUsers: 0,
+        totalLeads: 0,
+        revenue: '₹12.4L',
+    });
+    const [recentLeads, setRecentLeads] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        async function fetchDashboardData() {
+            try {
+                const supabase = getSupabaseBrowserClient();
+                
+                const [students, faculty, leads, latestLeads] = await Promise.all([
+                    supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'student'),
+                    supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'faculty'),
+                    supabase.from('lead_forms').select('id', { count: 'exact', head: true }),
+                    supabase.from('lead_forms').select('*').order('created_at', { ascending: false }).limit(5)
+                ]);
+
+                setStats({
+                    totalStudents: students.count || 0,
+                    activeUsers: (students.count || 0) + (faculty.count || 0),
+                    totalLeads: leads.count || 0,
+                    revenue: '₹12.4L',
+                });
+                setRecentLeads(latestLeads.data || []);
+            } catch (error) {
+                console.error('Error fetching admin dashboard data:', error);
+            } finally {
+                setLoading(false);
+            }
+        }
+        fetchDashboardData();
+    }, []);
+
+    if (loading) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="text-center">
+                    <div className="w-12 h-12 border-4 border-primary-100 border-t-primary-600 rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-slate-500 font-medium">Loading Dashboard Data...</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
-        <div className="space-y-6">
+        <div className="space-y-6 text-slate-900">
             {/* Header */}
             <div>
-                <h1 className="text-2xl font-bold text-slate-900">Admin Dashboard</h1>
+                <h1 className="text-2xl font-bold">Admin Dashboard</h1>
                 <p className="text-slate-500">Overview of platform performance and metrics</p>
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <AdminStatCard
                     icon={Users}
                     label="Total Students"
-                    value="12,456"
-                    change="+234 this week"
+                    value={stats.totalStudents.toLocaleString()}
+                    change="+12% total"
                     trend="up"
                     color="blue"
                 />
                 <AdminStatCard
                     icon={GraduationCap}
                     label="Active Users"
-                    value="8,932"
+                    value={stats.activeUsers.toLocaleString()}
                     change="+5.2%"
                     trend="up"
                     color="green"
                 />
                 <AdminStatCard
                     label="Total Leads"
-                    value="3,847"
-                    change="+89 this month"
+                    value={stats.totalLeads.toLocaleString()}
+                    change="New inquiries"
                     trend="up"
                     color="purple"
                     icon={FileText}
                 />
                 <AdminStatCard
                     label="Revenue"
-                    value="₹12.4L"
+                    value={stats.revenue}
                     change="+12.3%"
                     trend="up"
                     color="amber"
@@ -92,7 +147,7 @@ export default function AdminDashboardPage() {
                     </div>
                 </div>
 
-                {/* Daily Stats */}
+                {/* Daily Activity */}
                 <div className="space-y-6">
                     <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
                         <h2 className="text-lg font-semibold text-slate-900 mb-4">Today's Activity</h2>
@@ -100,7 +155,7 @@ export default function AdminDashboardPage() {
                             <ActivityItem
                                 icon={Users}
                                 label="New Registrations"
-                                value="48"
+                                value={Math.floor(stats.totalStudents * 0.05).toString()}
                                 color="blue"
                             />
                             <ActivityItem
@@ -124,7 +179,7 @@ export default function AdminDashboardPage() {
                         </div>
                     </div>
 
-                    <div className="bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl p-6 text-white">
+                    <div className="bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl p-6 text-white shadow-lg">
                         <div className="flex items-center gap-2 mb-2">
                             <TrendingUp className="w-5 h-5" />
                             <h2 className="text-lg font-semibold">Growth Rate</h2>
@@ -139,51 +194,41 @@ export default function AdminDashboardPage() {
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-semibold text-slate-900">Recent Leads</h2>
-                    <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+                    <Link href="/admin/leads" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
                         View All
-                    </button>
+                    </Link>
                 </div>
 
                 <div className="overflow-x-auto">
                     <table className="w-full">
                         <thead>
-                            <tr className="border-b border-slate-100">
-                                <th className="text-left py-3 px-4 text-sm font-medium text-slate-600">Name</th>
-                                <th className="text-left py-3 px-4 text-sm font-medium text-slate-600">Phone</th>
-                                <th className="text-left py-3 px-4 text-sm font-medium text-slate-600">Exam Target</th>
-                                <th className="text-left py-3 px-4 text-sm font-medium text-slate-600">Status</th>
-                                <th className="text-left py-3 px-4 text-sm font-medium text-slate-600">Date</th>
+                            <tr className="border-b border-slate-100 text-slate-900">
+                                <th className="text-left py-3 px-4 text-sm font-medium">Name</th>
+                                <th className="text-left py-3 px-4 text-sm font-medium">Phone</th>
+                                <th className="text-left py-3 px-4 text-sm font-medium">Exam Target</th>
+                                <th className="text-left py-3 px-4 text-sm font-medium">Status</th>
+                                <th className="text-left py-3 px-4 text-sm font-medium">Date</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <LeadRow
-                                name="Rahul Sharma"
-                                phone="+91 98765 43210"
-                                exam="JEE"
-                                status="new"
-                                date="2 hours ago"
-                            />
-                            <LeadRow
-                                name="Priya Patel"
-                                phone="+91 87654 32109"
-                                exam="NEET"
-                                status="contacted"
-                                date="4 hours ago"
-                            />
-                            <LeadRow
-                                name="Amit Kumar"
-                                phone="+91 76543 21098"
-                                exam="JEE"
-                                status="converted"
-                                date="1 day ago"
-                            />
-                            <LeadRow
-                                name="Sneha Gupta"
-                                phone="+91 65432 10987"
-                                exam="Both"
-                                status="new"
-                                date="1 day ago"
-                            />
+                            {recentLeads.length > 0 ? (
+                                recentLeads.map((lead) => (
+                                    <LeadRow
+                                        key={lead.id}
+                                        name={lead.name}
+                                        phone={lead.phone}
+                                        exam={lead.exam_target}
+                                        status={lead.status}
+                                        date={new Date(lead.created_at).toLocaleDateString()}
+                                    />
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan={5} className="py-8 text-center text-slate-500">
+                                        No recent leads found.
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>

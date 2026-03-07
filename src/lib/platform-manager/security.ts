@@ -8,8 +8,18 @@
  * - Security Reporter: Generate comprehensive security reports with scoring
  */
 
-import { createAdminSupabaseClient } from '@/lib/supabase';
+import { getSupabaseBrowserClient, createAdminSupabaseClient, isBrowser } from '@/lib/supabase';
 import { logError } from './monitor';
+import type { Database } from '@/types/supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
+
+/**
+ * Internal helper to get the correct Supabase client based on environment
+ */
+function getClient(client?: any): any {
+    if (client) return client;
+    return isBrowser() ? getSupabaseBrowserClient() : createAdminSupabaseClient();
+}
 
 // ============================================================================
 // TYPE DEFINITIONS
@@ -209,7 +219,7 @@ const EXEMPT_TABLES: string[] = [];
  * Audit all RLS policies across the database
  */
 export async function auditRLSPolicies(): Promise<RLSPolicyCheck[]> {
-    const supabase = createAdminSupabaseClient();
+    const supabase = getClient();
     const results: RLSPolicyCheck[] = [];
 
     try {
@@ -248,7 +258,7 @@ export async function auditRLSPolicies(): Promise<RLSPolicyCheck[]> {
  * Audit RLS for a single table
  */
 async function auditSingleTableRLS(tableName: string): Promise<RLSPolicyCheck> {
-    const supabase = createAdminSupabaseClient();
+    const supabase = getClient();
     const issues: string[] = [];
 
     try {
@@ -366,7 +376,7 @@ export async function validatePolicyEffectiveness(): Promise<{
         details: string;
     }>;
 }> {
-    const supabase = createAdminSupabaseClient();
+    const supabase = getClient();
     const testResults: Array<{
         table: string;
         test: string;
@@ -443,7 +453,7 @@ const BRUTE_FORCE_WINDOW_MINUTES = 10;
 export async function monitorAuthEvents(
     timeWindowMinutes: number = 60
 ): Promise<AuthEvent[]> {
-    const supabase = createAdminSupabaseClient();
+    const supabase = getClient();
     const timeWindow = new Date();
     timeWindow.setMinutes(timeWindow.getMinutes() - timeWindowMinutes);
 
@@ -505,7 +515,7 @@ export async function monitorAuthEvents(
  * Record an authentication event for monitoring
  */
 export async function recordAuthEvent(event: Omit<AuthEvent, 'id'>): Promise<void> {
-    const supabase = createAdminSupabaseClient();
+    const supabase = getClient();
 
     try {
         await (supabase.from('auth_audit_logs').insert as unknown as (data: Record<string, unknown>) => Promise<{ error: Error | null }>)({
@@ -569,7 +579,7 @@ export async function detectBruteForce(
 
     // Filter for attacks exceeding threshold and check block status
     const bruteForceAttempts: BruteForceAttempt[] = [];
-    const supabase = createAdminSupabaseClient();
+    const supabase = getClient();
 
     for (const ip of Array.from(attempts.keys())) {
         const attempt = attempts.get(ip);
@@ -598,7 +608,7 @@ export async function blockIP(
     reason: string,
     durationMinutes: number = 60
 ): Promise<void> {
-    const supabase = createAdminSupabaseClient();
+    const supabase = getClient();
     const blockedUntil = new Date();
     blockedUntil.setMinutes(blockedUntil.getMinutes() + durationMinutes);
 
@@ -750,7 +760,7 @@ const SUSPICIOUS_QUERY_PATTERNS = [
 export async function analyzeQueryPatterns(
     timeWindowMinutes: number = 60
 ): Promise<QueryPattern[]> {
-    const supabase = createAdminSupabaseClient();
+    const supabase = getClient();
     const timeWindow = new Date();
     timeWindow.setMinutes(timeWindow.getMinutes() - timeWindowMinutes);
 
@@ -889,7 +899,7 @@ export async function getSuspiciousQueries(
 export async function monitorAdminEscalation(
     timeWindowHours: number = 24
 ): Promise<AdminEscalationAttempt[]> {
-    const supabase = createAdminSupabaseClient();
+    const supabase = getClient();
     const timeWindow = new Date();
     timeWindow.setHours(timeWindow.getHours() - timeWindowHours);
 
@@ -970,7 +980,7 @@ export async function monitorAdminEscalation(
  * Log a query for analysis
  */
 export async function logQuery(query: Omit<QueryPattern, 'query_id'>): Promise<void> {
-    const supabase = createAdminSupabaseClient();
+    const supabase = getClient();
 
     try {
         await (supabase.from('query_logs').insert as unknown as (data: Record<string, unknown>) => Promise<{ error: Error | null }>)({

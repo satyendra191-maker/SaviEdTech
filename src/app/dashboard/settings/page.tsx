@@ -127,14 +127,16 @@ export default function SettingsPage() {
           <div>
             <h2 className="text-xl font-bold text-slate-900">{displayName}</h2>
             <p className="text-slate-500">{profile?.email || 'student@example.com'}</p>
-            <div className="flex items-center gap-2 mt-2">
-              <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full">
-                {examTarget}
-              </span>
-              <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-medium rounded-full">
-                {classLevel}
-              </span>
-            </div>
+            {profile?.role === 'student' && (
+              <div className="flex items-center gap-2 mt-2">
+                <span className="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full">
+                  {examTarget}
+                </span>
+                <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-medium rounded-full">
+                  {classLevel}
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>

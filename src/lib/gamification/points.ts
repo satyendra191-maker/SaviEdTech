@@ -124,14 +124,14 @@ async function recordPoints(
 /**
  * Get user's total points
  */
-export async function getUserTotalPoints(userId: string): Promise<number> {
-    const supabase = createBrowserSupabaseClient();
+export async function getUserTotalPoints(userId: string, customSupabase?: any): Promise<number> {
+    const supabase = customSupabase || createBrowserSupabaseClient();
 
     const { data, error } = await supabase
         .from('student_profiles')
         .select('total_points')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
     if (error) {
         console.error('Error fetching total points:', error);
@@ -219,14 +219,14 @@ function getActivityDescription(activityType: ActivityType): string {
 /**
  * Get points summary for a user
  */
-export async function getPointsSummary(userId: string): Promise<{
+export async function getPointsSummary(userId: string, customSupabase?: any): Promise<{
     totalPoints: number;
     pointsThisWeek: number;
     pointsThisMonth: number;
     pointsToday: number;
     breakdown: Record<ActivityType, number>;
 }> {
-    const supabase = createBrowserSupabaseClient();
+    const supabase = customSupabase || createBrowserSupabaseClient();
 
     const now = new Date();
     const today = now.toISOString().split('T')[0];
@@ -278,7 +278,7 @@ export async function getPointsSummary(userId: string): Promise<{
     });
 
     return {
-        totalPoints: await getUserTotalPoints(userId),
+        totalPoints: await getUserTotalPoints(userId, supabase),
         pointsThisWeek,
         pointsThisMonth,
         pointsToday,
@@ -330,7 +330,7 @@ export async function getPointsLeaderboard(
 
         const { data, error } = await supabase
             .from('user_points')
-            .select('user_id, points, profiles(user_id, full_name, avatar_url)')
+            .select('user_id, points, profiles(id, full_name, avatar_url)')
             .gte('created_at', startDate)
             .order('points', { ascending: false })
             .limit(limit);

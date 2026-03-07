@@ -27,18 +27,18 @@ export interface StreakActivity {
 /**
  * Get the current streak information for a user
  */
-export async function getUserStreak(userId: string): Promise<{
+export async function getUserStreak(userId: string, customSupabase?: any): Promise<{
     currentStreak: number;
     longestStreak: number;
     lastActivityDate: Date | null;
 }> {
-    const supabase = createBrowserSupabaseClient();
+    const supabase = customSupabase || createBrowserSupabaseClient();
 
     const { data, error } = await supabase
         .from('student_profiles')
         .select('study_streak, longest_streak, last_activity_at')
         .eq('id', userId)
-        .single();
+        .maybeSingle();
 
     if (error) {
         console.error('Error fetching user streak:', error);
@@ -218,8 +218,8 @@ export async function getStreakHistory(
 /**
  * Check if user has an active streak today
  */
-export async function hasActiveStreakToday(userId: string): Promise<boolean> {
-    const supabase = createBrowserSupabaseClient();
+export async function hasActiveStreakToday(userId: string, customSupabase?: any): Promise<boolean> {
+    const supabase = customSupabase || createBrowserSupabaseClient();
 
     const today = new Date().toISOString().split('T')[0];
 

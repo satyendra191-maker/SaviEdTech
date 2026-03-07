@@ -19,13 +19,12 @@ import {
     generateRateLimitIdentifier,
     RATE_LIMITS,
     containsSuspiciousPatterns,
-    SECURITY_CONSTANTS,
 } from '@/lib/security';
 
 // Routes that require authentication
-const protectedRoutes = ['/dashboard', '/admin', '/parent'];
+const protectedRoutes = ['/dashboard', '/admin', '/super-admin', '/parent'];
 
-// Routes that require admin role
+// Routes that require specific admin-level roles
 const adminRoutes = ['/admin', '/super-admin'];
 
 // Public routes that authenticated users shouldn't access
@@ -39,7 +38,6 @@ const authApiRoutes = ['/api/auth/'];
 
 /**
  * Get client IP from request headers
- * Handles various proxy configurations
  */
 function getClientIp(request: NextRequest): string {
     const forwarded = request.headers.get('x-forwarded-for');
@@ -53,31 +51,16 @@ function getClientIp(request: NextRequest): string {
 
 /**
  * Add security headers to response
- * These headers protect against various web attacks
  */
 function addSecurityHeaders(response: NextResponse): NextResponse {
-    // Prevent clickjacking attacks - DENY is more secure than SAMEORIGIN
     response.headers.set('X-Frame-Options', 'DENY');
-
-    // Prevent MIME type sniffing
     response.headers.set('X-Content-Type-Options', 'nosniff');
-
-    // Enable XSS protection in browsers (legacy but still useful)
     response.headers.set('X-XSS-Protection', '1; mode=block');
-
-    // Referrer policy
     response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
-
-    // DNS prefetch control
     response.headers.set('X-DNS-Prefetch-Control', 'on');
-
-    // HSTS (HTTPS Strict Transport Security) - forces HTTPS
     response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
-
-    // Permissions policy (formerly Feature Policy)
     response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), interest-cohort=()');
 
-    // Content Security Policy
     const csp = [
         "default-src 'self'",
         "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co",
@@ -99,37 +82,19 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
 export async function middleware(request: NextRequest) {
     const { pathname } = request.nextUrl;
     const ip = getClientIp(request);
-    const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    const requestId = `req_${Date.now()}`;
 
-    // ============================================================================
-    // SECURITY CHECK 1: Block Suspicious Requests
-    // Check for common attack patterns in URL and query params
-    // ============================================================================
-    const urlToCheck = pathname + request.nextUrl.search;
-    if (containsSuspiciousPatterns(urlToCheck)) {
-        console.warn(`[Security] Suspicious request blocked from IP: ${ip}, path: ${pathname}, requestId: ${requestId}`);
-
+    // 1. Block Suspicious Requests
+    if (containsSuspiciousPatterns(pathname + request.nextUrl.search)) {
         return new NextResponse(
-            JSON.stringify({
-                error: 'Forbidden',
-                message: 'Request contains suspicious patterns',
-                requestId: requestId,
-            }),
-            {
-                status: 403,
-                headers: { 'Content-Type': 'application/json' }
-            }
+            JSON.stringify({ error: 'Forbidden', message: 'Suspicious pattern detected', requestId }),
+            { status: 403, headers: { 'Content-Type': 'application/json' } }
         );
     }
 
-    // ============================================================================
-    // SECURITY CHECK 2: Rate Limiting for API Routes
-    // Protect against brute force and DoS attacks
-    // ============================================================================
+    // 2. Rate Limiting for API Routes
     const isApiRoute = rateLimitedApiRoutes.some(route => pathname.startsWith(route));
-
     if (isApiRoute) {
-        // Determine rate limit type based on route
         const isAuthRoute = authApiRoutes.some(route => pathname.startsWith(route));
         const rateLimitType = isAuthRoute ? 'auth' : 'api';
         const rateLimitConfig = isAuthRoute ? RATE_LIMITS.AUTH : RATE_LIMITS.API;
@@ -138,135 +103,108 @@ export async function middleware(request: NextRequest) {
         const rateLimitResult = checkRateLimit(rateLimitId, rateLimitConfig);
 
         if (!rateLimitResult.allowed) {
-            console.warn(`[Security] Rate limit exceeded for IP: ${ip}, path: ${pathname}, requestId: ${requestId}`);
-
             return new NextResponse(
                 JSON.stringify({
                     error: 'Too many requests',
-                    message: isAuthRoute
-                        ? 'Too many authentication attempts. Please try again later.'
-                        : 'Rate limit exceeded. Please slow down.',
                     retryAfter: Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000),
-                    requestId: requestId,
+                    requestId
                 }),
                 {
                     status: 429,
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-RateLimit-Limit': String(rateLimitConfig.maxRequests),
-                        'X-RateLimit-Remaining': '0',
-                        'X-RateLimit-Reset': new Date(rateLimitResult.resetTime).toISOString(),
                         'Retry-After': String(Math.ceil((rateLimitResult.resetTime - Date.now()) / 1000)),
                     }
                 }
             );
         }
-
-        // Store rate limit info for response headers
         request.headers.set('x-ratelimit-remaining', String(rateLimitResult.remaining));
     }
 
-    // ============================================================================
-    // Create Supabase client for authentication checks
-    // ============================================================================
+    // 3. Supabase Client Initialization
     const supabase = createServerClient<Database>(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
         {
             cookies: {
-                get(name: string) {
-                    return request.cookies.get(name)?.value;
-                },
-                set(name: string, value: string, options: Record<string, unknown>) {
-                    request.cookies.set({ name, value, ...options });
-                },
-                remove(name: string, options: Record<string, unknown>) {
-                    request.cookies.set({ name, value: '', ...options });
-                },
+                get(name: string) { return request.cookies.get(name)?.value; },
+                set(name: string, value: string, options: any) { request.cookies.set({ name, value, ...options }); },
+                remove(name: string, options: any) { request.cookies.set({ name, value: '', ...options }); },
             },
         }
     );
 
-    // Check if user is authenticated
     const { data: { user } } = await supabase.auth.getUser();
 
-    // Check if route requires protection
-    const isProtectedRoute = protectedRoutes.some(route =>
-        pathname.startsWith(route)
-    );
+    // Route classifications
+    const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
+    const isAdminRoute = adminRoutes.some(route => pathname.startsWith(route));
+    const isAuthRoute = authRoutes.some(route => pathname === route || pathname.startsWith(route));
 
-    const isAdminRoute = adminRoutes.some(route =>
-        pathname.startsWith(route)
-    );
-
-    const isAuthRoute = authRoutes.some(route =>
-        pathname === route || pathname.startsWith(route)
-    );
-
-    // ============================================================================
-    // SECURITY CHECK 3: Redirect unauthenticated users to login
-    // ============================================================================
+    // 4. Redirect unauthenticated users
     if (isProtectedRoute && !user) {
         const redirectUrl = new URL('/login', request.url);
         redirectUrl.searchParams.set('redirect', pathname);
-
-        console.log(`[Auth] Redirecting unauthenticated user to login, original path: ${pathname}`);
-
-        const response = NextResponse.redirect(redirectUrl);
-        return addSecurityHeaders(response);
+        return addSecurityHeaders(NextResponse.redirect(redirectUrl));
     }
 
-    // ============================================================================
-    // SECURITY CHECK 4: Redirect authenticated users away from auth pages
-    // ============================================================================
+    // 5. Redirect authenticated users away from auth pages
     if (isAuthRoute && user) {
-        const response = NextResponse.redirect(new URL('/dashboard', request.url));
-        return addSecurityHeaders(response);
+        // Fetch role to determine optimal landing page
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .single();
+        
+        const role = (profile as { role?: string } | null)?.role || 'student';
+        let dest = '/dashboard';
+        if (role === 'admin' || role === 'super_admin') dest = '/super-admin';
+        else if (role === 'content_manager') dest = '/admin/courses';
+        else if (role === 'parent') dest = '/dashboard/parent';
+        
+        return addSecurityHeaders(NextResponse.redirect(new URL(dest, request.url)));
     }
 
-    // ============================================================================
-    // SECURITY CHECK 5: Check admin role for admin routes
-    // ============================================================================
-    if (isAdminRoute && user) {
+    // 6. Granular Role-Based Access Control
+    if (user) {
         try {
-            const { data: profile, error: profileError } = await supabase
+            const { data: profile } = await supabase
                 .from('profiles')
                 .select('role')
                 .eq('id', user.id)
-                .single() as { data: { role: string } | null; error: Error | null };
+                .single();
+            
+            const role = (profile as { role?: string } | null)?.role || 'student';
 
-            // Handle database errors or non-admin users (allow admin and super_admin roles)
-            if (profileError || !profile || (profile.role !== 'admin' && profile.role !== 'super_admin')) {
-                console.error(`[Security] Admin check failed for user: ${user.id}, error: ${profileError?.message || 'User is not admin'}`);
-
-                const response = NextResponse.redirect(new URL('/dashboard', request.url));
-                return addSecurityHeaders(response);
+            // Admin Routes Check
+            if (isAdminRoute && role !== 'admin' && role !== 'super_admin') {
+                return addSecurityHeaders(NextResponse.redirect(new URL('/dashboard', request.url)));
             }
 
-            console.log(`[Auth] Admin access granted for user: ${user.id}, path: ${pathname}`);
-        } catch (error) {
-            console.error(`[Security] Unexpected error during admin check: ${error}`);
+            // Parent Routes Check
+            if ((pathname.startsWith('/dashboard/parent') || pathname.startsWith('/parent')) && 
+                role !== 'parent' && role !== 'admin' && role !== 'super_admin') {
+                return addSecurityHeaders(NextResponse.redirect(new URL('/dashboard', request.url)));
+            }
 
-            const response = NextResponse.redirect(new URL('/dashboard', request.url));
-            return addSecurityHeaders(response);
+            // Content Manager / Faculty Routes Check
+            if ((pathname.startsWith('/admin/courses') || pathname.startsWith('/admin/lectures')) && 
+                role !== 'content_manager' && role !== 'admin' && role !== 'super_admin') {
+                return addSecurityHeaders(NextResponse.redirect(new URL('/dashboard', request.url)));
+            }
+        } catch (error) {
+            console.error('Middleware role check error:', error);
         }
     }
 
-    // Continue with the request
+    // 7. Regular response with security headers
     let response = NextResponse.next();
-
-    // Add rate limit headers if applicable
     if (isApiRoute) {
         const remaining = request.headers.get('x-ratelimit-remaining');
-        if (remaining) {
-            response.headers.set('X-RateLimit-Remaining', remaining);
-        }
+        if (remaining) response.headers.set('X-RateLimit-Remaining', remaining);
     }
-
-    // Add security headers to all responses
-    response = addSecurityHeaders(response);
-
-    return response;
+    return addSecurityHeaders(response);
 }
 
 export const config = {
@@ -274,6 +212,7 @@ export const config = {
         '/dashboard/:path*',
         '/admin/:path*',
         '/super-admin/:path*',
+        '/parent/:path*',
         '/login',
         '/register',
         '/reset-password',

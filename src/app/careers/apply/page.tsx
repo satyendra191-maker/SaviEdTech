@@ -15,8 +15,6 @@ import {
     MapPin,
     Loader2,
 } from 'lucide-react';
-import { Navbar } from '@/components/navbar';
-import { Footer } from '@/components/footer';
 
 interface JobListing {
     id: string;
@@ -238,7 +236,6 @@ function ApplyPageContent() {
     if (success) {
         return (
             <div className="min-h-screen bg-slate-50">
-                <Navbar />
                 <div className="max-w-2xl mx-auto px-4 py-16">
                     <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center">
                         <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
@@ -268,15 +265,12 @@ function ApplyPageContent() {
                         </div>
                     </div>
                 </div>
-                <Footer />
             </div>
         );
     }
 
     return (
         <div className="min-h-screen bg-slate-50">
-            <Navbar />
-
             <div className="max-w-3xl mx-auto px-4 py-8">
                 {/* Back Link */}
                 <Link
@@ -616,8 +610,6 @@ function ApplyPageContent() {
                     </div>
                 </form>
             </div>
-
-            <Footer />
         </div>
     );
 }

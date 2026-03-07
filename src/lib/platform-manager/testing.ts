@@ -9,9 +9,18 @@
  * - Test result tracking and reporting
  */
 
-import { createAdminSupabaseClient } from '@/lib/supabase';
+import { getSupabaseBrowserClient, createAdminSupabaseClient, isBrowser } from '@/lib/supabase';
 import { sendAlert } from './alerts';
 import type { Database } from '@/types/supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
+
+/**
+ * Internal helper to get the correct Supabase client based on environment
+ */
+function getClient(client?: any): any {
+    if (client) return client;
+    return isBrowser() ? getSupabaseBrowserClient() : createAdminSupabaseClient();
+}
 
 // Type definitions for test results (stored in system_health table as test metadata)
 interface TestResultRow {
@@ -337,7 +346,7 @@ export async function testCoursePages(): Promise<Omit<TestResult, 'id' | 'run_id
  */
 export async function testLecturePlayer(): Promise<Omit<TestResult, 'id' | 'run_id'>> {
     const startTime = Date.now();
-    const supabase = createAdminSupabaseClient();
+    const supabase = getClient();
 
     try {
         // Check if lectures table exists and has content
@@ -385,7 +394,7 @@ export async function testLecturePlayer(): Promise<Omit<TestResult, 'id' | 'run_
  */
 export async function testPracticeQuestions(): Promise<Omit<TestResult, 'id' | 'run_id'>> {
     const startTime = Date.now();
-    const supabase = createAdminSupabaseClient();
+    const supabase = getClient();
 
     try {
         // Check practice page
@@ -439,7 +448,7 @@ export async function testPracticeQuestions(): Promise<Omit<TestResult, 'id' | '
  */
 export async function testMockTests(): Promise<Omit<TestResult, 'id' | 'run_id'>> {
     const startTime = Date.now();
-    const supabase = createAdminSupabaseClient();
+    const supabase = getClient();
 
     try {
         // Check tests page
@@ -494,7 +503,7 @@ export async function testMockTests(): Promise<Omit<TestResult, 'id' | 'run_id'>
  */
 export async function testDailyChallenge(): Promise<Omit<TestResult, 'id' | 'run_id'>> {
     const startTime = Date.now();
-    const supabase = createAdminSupabaseClient();
+    const supabase = getClient();
 
     try {
         // Check challenge page
@@ -770,7 +779,7 @@ export async function testAdminDashboard(): Promise<Omit<TestResult, 'id' | 'run
  */
 export async function testUserManagement(): Promise<Omit<TestResult, 'id' | 'run_id'>> {
     const startTime = Date.now();
-    const supabase = createAdminSupabaseClient();
+    const supabase = getClient();
 
     try {
         // Check if profiles table is accessible
@@ -822,7 +831,7 @@ export async function testUserManagement(): Promise<Omit<TestResult, 'id' | 'run
  */
 export async function testContentPublishing(): Promise<Omit<TestResult, 'id' | 'run_id'>> {
     const startTime = Date.now();
-    const supabase = createAdminSupabaseClient();
+    const supabase = getClient();
 
     try {
         // Check content tables
@@ -929,7 +938,7 @@ export async function runTests(
     }
 
     const results: TestResult[] = [];
-    const supabase = createAdminSupabaseClient();
+    const supabase = getClient();
 
     // Execute tests
     for (const testFn of testsToRun) {
@@ -1020,7 +1029,7 @@ async function executeTestWithRetry(
  * Store test result in database
  */
 async function storeTestResult(result: TestResult): Promise<void> {
-    const supabase = createAdminSupabaseClient();
+    const supabase = getClient();
 
     try {
         await supabase.from('test_results').insert({
@@ -1042,7 +1051,7 @@ async function storeTestResult(result: TestResult): Promise<void> {
  * Store test run summary in database
  */
 async function storeTestRunSummary(summary: TestRunSummary): Promise<void> {
-    const supabase = createAdminSupabaseClient();
+    const supabase = getClient();
 
     try {
         await supabase.from('test_run_summaries').insert({
@@ -1068,7 +1077,7 @@ export async function getRecentTestResults(
     limit: number = 50,
     category?: TestCategory
 ): Promise<TestResult[]> {
-    const supabase = createAdminSupabaseClient();
+    const supabase = getClient();
 
     let query = supabase
         .from('test_results')
@@ -1104,7 +1113,7 @@ export async function getRecentTestResults(
  * Get test results by run ID
  */
 export async function getTestResultsByRunId(runId: string): Promise<TestResult[]> {
-    const supabase = createAdminSupabaseClient();
+    const supabase = getClient();
 
     const { data, error } = await supabase
         .from('test_results')
@@ -1134,7 +1143,7 @@ export async function getTestResultsByRunId(runId: string): Promise<TestResult[]
  * Get test run history
  */
 export async function getTestRunHistory(limit: number = 20): Promise<TestRunSummary[]> {
-    const supabase = createAdminSupabaseClient();
+    const supabase = getClient();
 
     const { data, error } = await supabase
         .from('test_run_summaries')
@@ -1169,7 +1178,7 @@ export async function getTestStatistics(timeWindowHours: number = 24): Promise<{
     averageDuration: number;
     failuresByCategory: Record<TestCategory, number>;
 }> {
-    const supabase = createAdminSupabaseClient();
+    const supabase = getClient();
     const timeWindow = new Date();
     timeWindow.setHours(timeWindow.getHours() - timeWindowHours);
 

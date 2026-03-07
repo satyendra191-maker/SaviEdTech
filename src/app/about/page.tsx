@@ -8,25 +8,25 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen page-bg-about">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <h1 className="text-4xl font-bold text-slate-900 mb-8">About SaviEduTech</h1>
-        
+
         <div className="prose max-w-none">
           <p className="text-lg text-slate-600 mb-6">
-            SaviEduTech is India&apos;s premier digital coaching platform dedicated to helping students ace their JEE and NEET examinations. 
+            SaviEduTech is India&apos;s premier digital coaching platform dedicated to helping students ace their JEE and NEET examinations.
             With cutting-edge technology and expert faculty guidance, we transform the way students prepare for competitive exams.
           </p>
 
           <h2 className="text-2xl font-semibold text-slate-900 mt-12 mb-4">Our Mission</h2>
           <p className="text-slate-600 mb-6">
-            To provide quality education accessible to every student in India, regardless of their geographic location or financial constraints. 
+            To provide quality education accessible to every student in India, regardless of their geographic location or financial constraints.
             We believe that every student deserves the best possible guidance to achieve their dreams.
           </p>
 
           <h2 className="text-2xl font-semibold text-slate-900 mt-12 mb-4">Our Vision</h2>
           <p className="text-slate-600 mb-6">
-            To become the most trusted digital education platform in India, empowering millions of students to realize their full potential 
+            To become the most trusted digital education platform in India, empowering millions of students to realize their full potential
             and build a brighter future for themselves and the nation.
           </p>
 

@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
-import { getSupabaseBrowserClient, createAdminSupabaseClient } from '@/lib/supabase';
+import { getSupabaseBrowserClient } from '@/lib/supabase';
 import type { User, UserRole, ExamTarget, ClassLevel } from '@/types';
 
 interface AuthState {
@@ -28,6 +28,7 @@ interface UseAuthReturn extends AuthState {
     refreshUser: () => Promise<void>;
     resetPassword: (email: string) => Promise<{ error: string | null }>;
     updatePassword: (newPassword: string) => Promise<{ error: string | null }>;
+    signInWithGoogle: () => Promise<{ error: string | null }>;
 }
 
 export function useAuth(): UseAuthReturn {
@@ -104,6 +105,9 @@ export function useAuth(): UseAuthReturn {
                         isLoading: false,
                         isAuthenticated: false,
                     });
+                    // Redirect to home page on sign out
+                    router.push('/');
+                    router.refresh();
                 }
             }
         );
@@ -111,7 +115,7 @@ export function useAuth(): UseAuthReturn {
         return () => {
             subscription.unsubscribe();
         };
-    }, [fetchUser, supabase]);
+    }, [fetchUser, supabase, router]);
 
     const signIn = async (email: string, password: string): Promise<{ error: string | null }> => {
         try {
@@ -121,20 +125,38 @@ export function useAuth(): UseAuthReturn {
             });
 
             if (error) {
-                // Provide user-friendly error messages
-                if (error.message.includes('Invalid login credentials')) {
+                // Handle specific error cases
+                const errorMessage = error.message.toLowerCase();
+
+                if (errorMessage.includes('invalid') || errorMessage.includes('credentials')) {
                     return { error: 'Invalid email or password. Please try again.' };
-                }
-                if (error.message.includes('Email not confirmed')) {
+                } else if (errorMessage.includes('confirm') || errorMessage.includes('verify')) {
                     return { error: 'Please verify your email before signing in.' };
+                } else if (errorMessage.includes('rate limit')) {
+                    return { error: 'Too many attempts. Please wait a moment and try again.' };
                 }
                 return { error: error.message };
             }
 
-            await fetchUser();
             return { error: null };
         } catch (err) {
             return { error: err instanceof Error ? err.message : 'Sign in failed' };
+        }
+    };
+
+    const signInWithGoogle = async (): Promise<{ error: string | null }> => {
+        try {
+            const { error } = await supabase.auth.signInWithOAuth({
+                provider: 'google',
+                options: {
+                    redirectTo: `${window.location.origin}/auth/callback`,
+                },
+            });
+
+            if (error) return { error: error.message };
+            return { error: null };
+        } catch (err) {
+            return { error: err instanceof Error ? err.message : 'Google sign in failed' };
         }
     };
 
@@ -178,42 +200,29 @@ export function useAuth(): UseAuthReturn {
                 return { error: 'Registration failed. Please try again.' };
             }
 
-            // Step 2: Create profile using admin client (service role key)
-            try {
-                const roleValue = userData.role || 'student';
-                const examValue = userData.exam_target || null;
-                const classValue = userData.class_level || null;
-                
-                // Use admin client for profile creation
-                const adminClient = createAdminSupabaseClient();
-                
-                const { error: profileError } = await (adminClient.from('profiles') as any).insert({
-                    id: authData.user.id,
-                    email: email,
-                    full_name: userData.full_name || 'User',
-                    phone: userData.phone || null,
-                    role: roleValue,
-                    exam_target: examValue,
-                    class_level: classValue,
-                    is_active: true,
-                });
+            // Handle Parent-Child Linking during registration
+            if (userData.role === 'parent' && userData.phone) {
+                try {
+                    // Try to find student with this phone
+                    const { data: studentProfile } = await supabase
+                        .from('profiles')
+                        .select('id')
+                        .eq('phone', userData.phone)
+                        .eq('role', 'student')
+                        .single();
 
-                if (profileError) {
-                    console.error('Profile creation error:', profileError.message);
+                    if (studentProfile) {
+                        await (supabase.from('parent_links') as any).insert({
+                            parent_id: authData.user.id,
+                            student_id: (studentProfile as any).id,
+                            student_phone: userData.phone,
+                            verification_status: 'approved' // Automatically link for now
+                        });
+                    }
+                } catch (err) {
+                    console.error('Failed to auto-link parent:', err);
+                    // Don't fail registration if linking fails, parent can link manually in dashboard
                 }
-
-                // Step 3: Create student profile only for students
-                if (roleValue === 'student') {
-                    await (adminClient.from('student_profiles') as any).insert({
-                        id: authData.user.id,
-                        study_streak: 0,
-                        longest_streak: 0,
-                        total_study_minutes: 0,
-                        subscription_status: 'free',
-                    }).catch(() => {});
-                }
-            } catch (profileErr) {
-                console.error('Profile creation error:', profileErr);
             }
 
             return { error: null };
@@ -225,9 +234,32 @@ export function useAuth(): UseAuthReturn {
 
     const signOut = async (): Promise<void> => {
         try {
+            // 1. Sign out from Supabase
             const { error } = await supabase.auth.signOut();
             if (error) {
                 console.error('Sign out error:', error);
+            }
+
+            // 2. Clear all local storage related to supabase to ensure no ghost sessions
+            if (typeof window !== 'undefined') {
+                const keysToRemove = [];
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && (key.includes('supabase.auth.token') || key.startsWith('sb-'))) {
+                        keysToRemove.push(key);
+                    }
+                }
+                keysToRemove.forEach(key => localStorage.removeItem(key));
+                
+                // Clear session storage too
+                sessionStorage.clear();
+                
+                // Manually clear cookies if we can (though they might be HttpOnly)
+                document.cookie.split(";").forEach((c) => {
+                    document.cookie = c
+                        .replace(/^ +/, "")
+                        .replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+                });
             }
         } catch (err) {
             console.error('Sign out error:', err);
@@ -294,5 +326,6 @@ export function useAuth(): UseAuthReturn {
         refreshUser,
         resetPassword,
         updatePassword,
+        signInWithGoogle,
     };
 }

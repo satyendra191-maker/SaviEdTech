@@ -19,7 +19,8 @@ import {
     Briefcase,
     Database,
 } from 'lucide-react';
-import { AnimatedLogo } from '@/components/AnimatedLogo';
+import { AnimatedLogo } from '@/components/animated-logo';
+import { useAuth } from '@/hooks/useAuth';
 
 const adminNavItems = [
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
@@ -39,6 +40,7 @@ const adminNavItems = [
 
 export function AdminSidebar() {
     const pathname = usePathname();
+    const { signOut } = useAuth();
 
     return (
         <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-slate-900 text-white">
@@ -76,7 +78,9 @@ export function AdminSidebar() {
 
             {/* Logout */}
             <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-800 bg-slate-900">
-                <button className="flex w-full items-center gap-3 px-4 py-2 text-sm font-medium text-red-400 hover:bg-slate-800 hover:text-red-300 rounded-xl transition-colors">
+                <button 
+                  onClick={() => signOut()}
+                  className="flex w-full items-center gap-3 px-4 py-2 text-sm font-medium text-red-400 hover:bg-slate-800 hover:text-red-300 rounded-xl transition-colors">
                     <LogOut className="w-5 h-5" />
                     Sign Out
                 </button>

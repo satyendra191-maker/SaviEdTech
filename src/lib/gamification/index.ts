@@ -234,29 +234,44 @@ export interface GamificationSummary {
 /**
  * Get complete gamification summary
  */
-export async function getUserGamificationSummary(userId: string): Promise<GamificationSummary> {
-    const supabase = (await import('@/lib/supabase')).createBrowserSupabaseClient();
+export async function getUserGamificationSummary(userId: string, customSupabase?: any): Promise<GamificationSummary> {
+    let supabase = customSupabase;
+    
+    if (!supabase) {
+        // Fallback to correct client based on environment
+        if (typeof window !== 'undefined') {
+            const { createBrowserSupabaseClient } = await import('@/lib/supabase');
+            supabase = createBrowserSupabaseClient();
+        } else {
+            // This is just a fallback, ideally a client should be passed from the server route
+            const { createClient } = await import('@supabase/supabase-js');
+            supabase = createClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL!,
+                process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+            );
+        }
+    }
 
     // Get points summary
     const { getPointsSummary } = await import('./points');
-    const pointsSummary = await getPointsSummary(userId);
+    const pointsSummary = await getPointsSummary(userId, supabase);
 
     // Get streak info
     const { getUserStreak, getStreakMilestones, hasActiveStreakToday } = await import('./streaks');
-    const streakInfo = await getUserStreak(userId);
+    const streakInfo = await getUserStreak(userId, supabase);
     const milestones = getStreakMilestones(streakInfo.currentStreak);
-    const isActiveToday = await hasActiveStreakToday(userId);
+    const isActiveToday = await hasActiveStreakToday(userId, supabase);
 
     // Get achievements
     const { getUserAchievements, ACHIEVEMENTS } = await import('./achievements');
-    const achievements = await getUserAchievements(userId);
+    const achievements = await getUserAchievements(userId, supabase);
 
     // Get leaderboard ranks
     const { getLeaderboard } = await import('./leaderboards');
 
     const [pointsLeaderboard, streaksLeaderboard] = await Promise.all([
-        getLeaderboard({ type: 'points', period: 'all_time' }, userId),
-        getLeaderboard({ type: 'streaks', period: 'all_time' }, userId),
+        getLeaderboard({ type: 'points', period: 'all_time' }, userId, supabase),
+        getLeaderboard({ type: 'streaks', period: 'all_time' }, userId, supabase),
     ]);
 
     return {

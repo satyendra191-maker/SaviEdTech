@@ -38,8 +38,22 @@ async function getUser(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
     try {
+        const supabase = createServerClient<Database>(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+            {
+                cookies: {
+                    get(name: string) {
+                        return request.cookies.get(name)?.value;
+                    },
+                    set() { /* no-op */ },
+                    remove() { /* no-op */ },
+                },
+            }
+        );
+
         // Authenticate the request
-        const user = await getUser(request);
+        const { data: { user } } = await supabase.auth.getUser();
 
         if (!user) {
             return NextResponse.json(
@@ -50,8 +64,8 @@ export async function GET(request: NextRequest) {
 
         const userId = user.id;
 
-        // Get gamification summary
-        const summary = await getUserGamificationSummary(userId);
+        // Get gamification summary using the server-side supabase client
+        const summary = await getUserGamificationSummary(userId, supabase);
 
         return NextResponse.json({
             success: true,

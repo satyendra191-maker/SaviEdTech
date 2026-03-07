@@ -8,10 +8,18 @@
  * - Continuous monitoring and alerting
  */
 
-import { createAdminSupabaseClient } from '@/lib/supabase';
+import { getSupabaseBrowserClient, createAdminSupabaseClient, isBrowser } from '@/lib/supabase';
 import { getRecentErrors, getSystemHealth, getCronStatus, getLatestHealthStatus, recordHealthCheck, type HealthStatus } from './monitor';
 import { sendAlert, type AlertSeverity } from './alerts';
 import { checkDatabaseHealth } from './health';
+
+/**
+ * Internal helper to get the correct Supabase client based on environment
+ */
+function getClient(client?: any): any {
+    if (client) return client;
+    return isBrowser() ? getSupabaseBrowserClient() : createAdminSupabaseClient();
+}
 
 // Recovery action types
 export type RecoveryActionType =
@@ -109,7 +117,7 @@ const FAILURE_THRESHOLDS = {
  * Detect failed deployments by analyzing error patterns
  */
 export async function detectDeploymentFailure(): Promise<FailureDetection> {
-    const supabase = createAdminSupabaseClient();
+    const supabase = getClient();
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
 
     try {
@@ -168,7 +176,7 @@ export async function detectDeploymentFailure(): Promise<FailureDetection> {
  * Detect server crashes from error logs
  */
 export async function detectServerCrash(): Promise<FailureDetection> {
-    const supabase = createAdminSupabaseClient();
+    const supabase = getClient();
     const oneMinuteAgo = new Date(Date.now() - 60 * 1000).toISOString();
 
     try {
@@ -221,7 +229,7 @@ export async function detectServerCrash(): Promise<FailureDetection> {
  * Detect build failures from error logs
  */
 export async function detectBrokenBuild(): Promise<FailureDetection> {
-    const supabase = createAdminSupabaseClient();
+    const supabase = getClient();
     const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000).toISOString();
 
     try {
@@ -279,7 +287,7 @@ export async function detectBrokenBuild(): Promise<FailureDetection> {
  * Detect database connectivity issues
  */
 export async function detectDatabaseOutage(): Promise<FailureDetection> {
-    const supabase = createAdminSupabaseClient();
+    const supabase = getClient();
     const fiveMinutesAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
 
     try {
@@ -638,7 +646,7 @@ export async function reconnectDatabase(): Promise<RecoveryAction> {
         await logRecoveryAction(action);
 
         // Reconnection steps
-        const supabase = createAdminSupabaseClient();
+        const supabase = getClient();
 
         // Step 1: Test connection
         const { error: testError } = await supabase
@@ -964,7 +972,7 @@ export async function resetConnections(): Promise<RecoveryAction> {
     try {
         await logRecoveryAction(action);
 
-        const supabase = createAdminSupabaseClient();
+        const supabase = getClient();
 
         // Reset database connections (if RPC available)
         try {
@@ -1171,7 +1179,7 @@ export async function sendRecoveryAlert(
  * Log recovery action to database
  */
 export async function logRecoveryAction(action: RecoveryAction): Promise<void> {
-    const supabase = createAdminSupabaseClient();
+    const supabase = getClient();
 
     try {
         // Store recovery action in system_health table as a record

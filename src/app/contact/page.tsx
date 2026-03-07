@@ -7,10 +7,10 @@ export const metadata: Metadata = {
 
 export default function ContactPage() {
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen page-bg-contact">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <h1 className="text-4xl font-bold text-slate-900 mb-8">Contact Us</h1>
-        
+
         <div className="grid md:grid-cols-2 gap-12">
           <div>
             <h2 className="text-2xl font-semibold text-slate-900 mb-6">Get in Touch</h2>

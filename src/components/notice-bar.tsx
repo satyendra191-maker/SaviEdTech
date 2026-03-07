@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { Sparkles, Trophy, Clock, Target } from 'lucide-react';
 
 const notices = [
@@ -27,44 +28,37 @@ const notices = [
 ];
 
 export function NoticeBar() {
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [isPaused, setIsPaused] = useState(false);
+    const [mounted, setMounted] = useState(false);
+    const pathname = usePathname();
 
     useEffect(() => {
-        if (isPaused) return;
+        setMounted(true);
+    }, []);
 
-        const interval = setInterval(() => {
-            setCurrentIndex((prev) => (prev + 1) % notices.length);
-        }, 4000);
+    const isDashboardRoute = pathname?.startsWith('/dashboard') ||
+        pathname?.startsWith('/admin') ||
+        pathname?.startsWith('/super-admin') ||
+        pathname?.startsWith('/faculty-dashboard') ||
+        pathname?.startsWith('/auth/callback');
 
-        return () => clearInterval(interval);
-    }, [isPaused]);
-
-    const currentNotice = notices[currentIndex];
-    const Icon = currentNotice.icon;
+    if (!mounted || isDashboardRoute) return null;
 
     return (
-        <div
-            className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white py-2.5 px-4 overflow-hidden relative"
-            onMouseEnter={() => setIsPaused(true)}
-            onMouseLeave={() => setIsPaused(false)}
-        >
-            <div className="max-w-7xl mx-auto">
-                <div className="flex items-center justify-center gap-3 animate-fade-in">
-                    <Icon className={`w-4 h-4 ${currentNotice.color} flex-shrink-0`} />
-                    <span className="text-sm font-medium text-center">
-                        {currentNotice.text}
-                    </span>
-                    <span className="hidden sm:inline-block w-1.5 h-1.5 rounded-full bg-white/40 flex-shrink-0" />
-                    <span className="hidden sm:inline text-xs text-white/70">
-                        Join 100,000+ students preparing with SaviEduTech
-                    </span>
-                </div>
+        <div className="bg-indigo-900 border-b border-indigo-800 py-2 overflow-hidden relative group">
+            <div className="flex animate-scroll-left whitespace-nowrap hover:[animation-play-state:paused]">
+                {/* Duplicate the list to create a seamless loop */}
+                {[...notices, ...notices].map((notice, index) => {
+                    const Icon = notice.icon;
+                    return (
+                        <div key={index} className="inline-flex items-center gap-2 px-12 border-r border-indigo-700/30">
+                            <Icon className={`w-4 h-4 ${notice.color}`} />
+                            <span className="text-sm font-medium text-indigo-100">
+                                {notice.text}
+                            </span>
+                        </div>
+                    );
+                })}
             </div>
-
-            {/* Scrolling gradient overlay for mobile */}
-            <div className="absolute inset-y-0 left-0 w-8 bg-gradient-to-r from-slate-900 to-transparent pointer-events-none" />
-            <div className="absolute inset-y-0 right-0 w-8 bg-gradient-to-l from-slate-900 to-transparent pointer-events-none" />
         </div>
     );
 }

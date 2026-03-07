@@ -17,8 +17,6 @@ import {
     Users,
     Building2,
 } from 'lucide-react';
-import { Navbar } from '@/components/navbar';
-import { Footer } from '@/components/footer';
 
 interface JobListing {
     id: string;
@@ -133,7 +131,6 @@ export default function JobDetailPage() {
     if (loading) {
         return (
             <div className="min-h-screen bg-slate-50">
-                <Navbar />
                 <div className="max-w-4xl mx-auto px-4 py-12">
                     <div className="animate-pulse">
                         <div className="h-8 bg-slate-200 rounded w-1/3 mb-4"></div>
@@ -143,7 +140,6 @@ export default function JobDetailPage() {
                         <div className="h-4 bg-slate-200 rounded w-1/2"></div>
                     </div>
                 </div>
-                <Footer />
             </div>
         );
     }
@@ -151,7 +147,6 @@ export default function JobDetailPage() {
     if (error || !job) {
         return (
             <div className="min-h-screen bg-slate-50">
-                <Navbar />
                 <div className="max-w-4xl mx-auto px-4 py-16 text-center">
                     <div className="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
                         <Briefcase className="w-10 h-10 text-red-500" />
@@ -170,7 +165,6 @@ export default function JobDetailPage() {
                         Back to Careers
                     </Link>
                 </div>
-                <Footer />
             </div>
         );
     }
@@ -179,8 +173,6 @@ export default function JobDetailPage() {
 
     return (
         <div className="min-h-screen bg-slate-50">
-            <Navbar />
-
             <div className="max-w-4xl mx-auto px-4 py-8">
                 {/* Back Link */}
                 <Link
@@ -201,10 +193,10 @@ export default function JobDetailPage() {
                                 </h1>
                                 {daysRemaining && (
                                     <span className={`px-3 py-1 text-xs font-medium rounded-full ${daysRemaining === 'Closed'
-                                            ? 'bg-red-100 text-red-700'
-                                            : daysRemaining.includes('today')
-                                                ? 'bg-orange-100 text-orange-700'
-                                                : 'bg-green-100 text-green-700'
+                                        ? 'bg-red-100 text-red-700'
+                                        : daysRemaining.includes('today')
+                                            ? 'bg-orange-100 text-orange-700'
+                                            : 'bg-green-100 text-green-700'
                                         }`}>
                                         {daysRemaining}
                                     </span>
@@ -405,8 +397,6 @@ export default function JobDetailPage() {
                     </div>
                 </div>
             </div>
-
-            <Footer />
         </div>
     );
 }

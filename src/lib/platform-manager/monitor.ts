@@ -8,8 +8,9 @@
  * - Database performance metrics
  */
 
-import { createAdminSupabaseClient } from '@/lib/supabase';
+import { getSupabaseBrowserClient, createAdminSupabaseClient, isBrowser } from '@/lib/supabase';
 import type { Database } from '@/types/supabase';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 // Type definitions from Supabase schema
 type ErrorLogRow = Database['public']['Tables']['error_logs']['Row'];
@@ -72,9 +73,10 @@ export interface MonitoringConfig {
     errorLimit?: number;
     timeWindowMinutes?: number;
     includeResolved?: boolean;
+    client?: SupabaseClient<Database>;
 }
 
-const DEFAULT_CONFIG: Required<MonitoringConfig> = {
+const DEFAULT_CONFIG: Required<Omit<MonitoringConfig, 'client'>> = {
     errorLimit: 100,
     timeWindowMinutes: 60,
     includeResolved: false,
@@ -86,7 +88,7 @@ const DEFAULT_CONFIG: Required<MonitoringConfig> = {
 export async function getRecentErrors(
     config: MonitoringConfig = {}
 ): Promise<ErrorLog[]> {
-    const supabase = createAdminSupabaseClient();
+    const supabase = config.client || (isBrowser() ? getSupabaseBrowserClient() : createAdminSupabaseClient());
     const { errorLimit, timeWindowMinutes } = { ...DEFAULT_CONFIG, ...config };
 
     const timeWindow = new Date();
@@ -125,7 +127,7 @@ export async function getRecentErrors(
 export async function getErrorsByType(
     config: MonitoringConfig = {}
 ): Promise<{ error_type: string; count: number; latest: string }[]> {
-    const supabase = createAdminSupabaseClient();
+    const supabase = config.client || (isBrowser() ? getSupabaseBrowserClient() : createAdminSupabaseClient());
     const { timeWindowMinutes } = { ...DEFAULT_CONFIG, ...config };
 
     const timeWindow = new Date();
@@ -163,9 +165,10 @@ export async function getErrorsByType(
  * Get system health metrics from the system_health table
  */
 export async function getSystemHealth(
-    checkName?: string
+    checkName?: string,
+    config: MonitoringConfig = {}
 ): Promise<SystemHealth[]> {
-    const supabase = createAdminSupabaseClient();
+    const supabase = config.client || (isBrowser() ? getSupabaseBrowserClient() : createAdminSupabaseClient());
 
     let query = supabase
         .from('system_health')
@@ -197,8 +200,10 @@ export async function getSystemHealth(
 /**
  * Get latest health status for each check type
  */
-export async function getLatestHealthStatus(): Promise<Record<string, SystemHealth>> {
-    const supabase = createAdminSupabaseClient();
+export async function getLatestHealthStatus(
+    config: MonitoringConfig = {}
+): Promise<Record<string, SystemHealth>> {
+    const supabase = config.client || (isBrowser() ? getSupabaseBrowserClient() : createAdminSupabaseClient());
 
     const { data, error } = await supabase
         .from('system_health')
@@ -232,8 +237,10 @@ export async function getLatestHealthStatus(): Promise<Record<string, SystemHeal
  * Get cron job execution status
  * Analyzes system_health entries with cron job check names
  */
-export async function getCronStatus(): Promise<CronJobStatus[]> {
-    const supabase = createAdminSupabaseClient();
+export async function getCronStatus(
+    config: MonitoringConfig = {}
+): Promise<CronJobStatus[]> {
+    const supabase = config.client || (isBrowser() ? getSupabaseBrowserClient() : createAdminSupabaseClient());
 
     // Get all cron job related health checks
     const { data, error } = await supabase
@@ -284,8 +291,10 @@ export async function getCronStatus(): Promise<CronJobStatus[]> {
  * Get database performance metrics
  * Uses Supabase's built-in statistics functions
  */
-export async function getDatabaseMetrics(): Promise<DatabaseMetrics> {
-    const supabase = createAdminSupabaseClient();
+export async function getDatabaseMetrics(
+    config: MonitoringConfig = {}
+): Promise<DatabaseMetrics> {
+    const supabase = config.client || (isBrowser() ? getSupabaseBrowserClient() : createAdminSupabaseClient());
 
     try {
         // Get connection stats (requires pg_stat_activity access)
@@ -391,9 +400,10 @@ export async function logError(
         method?: string;
         userAgent?: string;
         ipAddress?: string;
-    }
+    },
+    config: MonitoringConfig = {}
 ): Promise<void> {
-    const supabase = createAdminSupabaseClient();
+    const supabase = config.client || (isBrowser() ? getSupabaseBrowserClient() : createAdminSupabaseClient());
 
     const { error } = await supabase.from('error_logs').insert({
         error_type: errorType,
@@ -419,9 +429,10 @@ export async function recordHealthCheck(
     status: HealthStatus,
     details: Record<string, unknown> = {},
     responseTimeMs?: number,
-    errorCount: number = 0
+    errorCount: number = 0,
+    config: MonitoringConfig = {}
 ): Promise<void> {
-    const supabase = createAdminSupabaseClient();
+    const supabase = config.client || (isBrowser() ? getSupabaseBrowserClient() : createAdminSupabaseClient());
 
     const { error } = await supabase.from('system_health').insert({
         check_name: checkName,
@@ -441,14 +452,15 @@ export async function recordHealthCheck(
  * Get error summary statistics
  */
 export async function getErrorSummary(
-    hours: number = 24
+    hours: number = 24,
+    config: MonitoringConfig = {}
 ): Promise<{
     total_errors: number;
     unique_error_types: number;
     error_trend: { hour: string; count: number }[];
     top_errors: { error_type: string; count: number; percentage: number }[];
 }> {
-    const supabase = createAdminSupabaseClient();
+    const supabase = config.client || (isBrowser() ? getSupabaseBrowserClient() : createAdminSupabaseClient());
 
     const startTime = new Date();
     startTime.setHours(startTime.getHours() - hours);

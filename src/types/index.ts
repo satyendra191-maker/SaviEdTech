@@ -1,5 +1,5 @@
 // User Types
-export type UserRole = 'student' | 'admin' | 'super_admin' | 'content_manager';
+export type UserRole = 'student' | 'admin' | 'super_admin' | 'content_manager' | 'parent' | 'hr' | 'faculty';
 
 // Exam target types
 export type ExamTarget = 'JEE' | 'NEET' | 'Both' | 'JEE Mains' | 'JEE Advanced' | 'CBSE Board' | 'Foundation';
