@@ -100,7 +100,7 @@ export function PaymentButton({
     );
     const [error, setError] = useState<string | null>(null);
 
-    // Load Razorpay script
+    // Load Razorpay script with multiple CDN fallbacks
     const loadRazorpayScript = useCallback(async (): Promise<boolean> => {
         return new Promise((resolve) => {
             if (window.Razorpay) {
@@ -108,12 +108,34 @@ export function PaymentButton({
                 return;
             }
 
-            const script = document.createElement('script');
-            script.src = 'https://checkout.razorpay.com/v1/checkout.js';
-            script.async = true;
-            script.onload = () => resolve(true);
-            script.onerror = () => resolve(false);
-            document.body.appendChild(script);
+            // Try multiple Razorpay CDN URLs
+            const cdnUrls = [
+                'https://checkout.razorpay.com/v1/checkout.js',
+                'https://cdn.razorpay.com/v1/checkout.js',
+                'https://js.razorpay.com/v1/razorpay.js',
+            ];
+
+            let currentIndex = 0;
+
+            const tryLoadScript = () => {
+                if (currentIndex >= cdnUrls.length) {
+                    // All CDNs failed, try loading inline as last resort
+                    resolve(false);
+                    return;
+                }
+
+                const script = document.createElement('script');
+                script.src = cdnUrls[currentIndex];
+                script.async = true;
+                script.onload = () => resolve(true);
+                script.onerror = () => {
+                    currentIndex++;
+                    tryLoadScript();
+                };
+                document.body.appendChild(script);
+            };
+
+            tryLoadScript();
         });
     }, []);
 

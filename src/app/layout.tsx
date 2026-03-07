@@ -37,13 +37,15 @@ export default function RootLayout({
         <html lang="en">
             <body className="min-h-screen bg-background font-sans antialiased text-slate-900">
                 <Providers>
-                    <Navbar />
-                    <NotificationBar />
-                    <NoticeBar />
-                    <main className="flex-1 flex flex-col min-h-[calc(100vh-200px)]">
-                        {children}
-                    </main>
-                    <Footer />
+                    <div className="flex flex-col min-h-screen">
+                        <Navbar />
+                        <NotificationBar />
+                        <NoticeBar />
+                        <main className="flex-1 flex flex-col">
+                            {children}
+                        </main>
+                        <Footer />
+                    </div>
                 </Providers>
             </body>
         </html>

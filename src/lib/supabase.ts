@@ -179,12 +179,17 @@ export const getSupabaseBrowserClient = () => {
     // During SSR/build, return a dummy client to prevent errors
     // The real client will be created on the client side after hydration
     if (typeof window === 'undefined') {
-        // Return a minimal mock that won't throw during prerender
-        return createBrowserClient<Database>(getSupabaseUrl(), getSupabaseAnonKey());
+        // Return null during SSR to prevent errors
+        return null;
     }
 
     if (!browserClient) {
-        browserClient = createBrowserClient<Database>(getSupabaseUrl(), getSupabaseAnonKey());
+        try {
+            browserClient = createBrowserClient<Database>(getSupabaseUrl(), getSupabaseAnonKey());
+        } catch (error) {
+            console.warn('Failed to create Supabase browser client:', error);
+            return null;
+        }
     }
 
     return browserClient;

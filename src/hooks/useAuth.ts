@@ -31,19 +31,45 @@ interface UseAuthReturn extends AuthState {
     signInWithGoogle: () => Promise<{ error: string | null }>;
 }
 
+// Safe way to get the base URL for redirects - works in both client and server
+function getBaseUrl(): string {
+    if (typeof window !== 'undefined') {
+        return window.location.origin;
+    }
+    // Fallback for server-side - use environment variable or default
+    return process.env.NEXT_PUBLIC_APP_URL || 'https://saviedutech.com';
+}
+
 export function useAuth(): UseAuthReturn {
     const router = useRouter();
     const [state, setState] = useState<AuthState>({
         user: null,
         role: null,
-        isLoading: true,
+        isLoading: false,
         isAuthenticated: false,
     });
 
     // Memoize Supabase client to prevent unnecessary recreations
-    const supabase = useMemo(() => getSupabaseBrowserClient(), []);
+    const supabase = useMemo(() => {
+        try {
+            return getSupabaseBrowserClient();
+        } catch (error) {
+            console.warn('Supabase client initialization failed:', error);
+            return null;
+        }
+    }, []);
 
     const fetchUser = useCallback(async () => {
+        if (!supabase) {
+            setState({
+                user: null,
+                role: null,
+                isLoading: false,
+                isAuthenticated: false,
+            });
+            return;
+        }
+
         try {
             const { data: { user: authUser } } = await supabase.auth.getUser();
 
@@ -93,6 +119,8 @@ export function useAuth(): UseAuthReturn {
     useEffect(() => {
         fetchUser();
 
+        if (!supabase) return;
+
         // Subscribe to auth changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange(
             async (event) => {
@@ -118,6 +146,9 @@ export function useAuth(): UseAuthReturn {
     }, [fetchUser, supabase, router]);
 
     const signIn = async (email: string, password: string): Promise<{ error: string | null }> => {
+        if (!supabase) {
+            return { error: 'Authentication service unavailable. Please try again later.' };
+        }
         try {
             const { error } = await supabase.auth.signInWithPassword({
                 email,
@@ -145,11 +176,14 @@ export function useAuth(): UseAuthReturn {
     };
 
     const signInWithGoogle = async (): Promise<{ error: string | null }> => {
+        if (!supabase) {
+            return { error: 'Authentication service unavailable. Please try again later.' };
+        }
         try {
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: `${window.location.origin}/auth/callback`,
+                    redirectTo: `${getBaseUrl()}/auth/callback`,
                 },
             });
 
@@ -165,6 +199,9 @@ export function useAuth(): UseAuthReturn {
         password: string,
         userData: SignUpUserData
     ): Promise<{ error: string | null }> => {
+        if (!supabase) {
+            return { error: 'Authentication service unavailable. Please try again later.' };
+        }
         try {
             // Step 1: Sign up with Supabase Auth
             const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -178,7 +215,7 @@ export function useAuth(): UseAuthReturn {
                         class_level: userData.class_level,
                         role: userData.role || 'student',
                     },
-                    emailRedirectTo: `${window.location.origin}/login`,
+                    emailRedirectTo: `${getBaseUrl()}/login`,
                 },
             });
 
@@ -233,6 +270,17 @@ export function useAuth(): UseAuthReturn {
     };
 
     const signOut = async (): Promise<void> => {
+        if (!supabase) {
+            setState({
+                user: null,
+                role: null,
+                isLoading: false,
+                isAuthenticated: false,
+            });
+            router.push('/');
+            router.refresh();
+            return;
+        }
         try {
             // 1. Sign out from Supabase
             const { error } = await supabase.auth.signOut();
@@ -250,10 +298,10 @@ export function useAuth(): UseAuthReturn {
                     }
                 }
                 keysToRemove.forEach(key => localStorage.removeItem(key));
-                
+
                 // Clear session storage too
                 sessionStorage.clear();
-                
+
                 // Manually clear cookies if we can (though they might be HttpOnly)
                 document.cookie.split(";").forEach((c) => {
                     document.cookie = c
@@ -277,9 +325,12 @@ export function useAuth(): UseAuthReturn {
     };
 
     const resetPassword = async (email: string): Promise<{ error: string | null }> => {
+        if (!supabase) {
+            return { error: 'Authentication service unavailable. Please try again later.' };
+        }
         try {
             const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: `${window.location.origin}/reset-password`,
+                redirectTo: `${getBaseUrl()}/reset-password`,
             });
 
             if (error) {
@@ -296,6 +347,9 @@ export function useAuth(): UseAuthReturn {
     };
 
     const updatePassword = async (newPassword: string): Promise<{ error: string | null }> => {
+        if (!supabase) {
+            return { error: 'Authentication service unavailable. Please try again later.' };
+        }
         try {
             const { error } = await supabase.auth.updateUser({
                 password: newPassword,

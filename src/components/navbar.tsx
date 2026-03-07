@@ -14,9 +14,23 @@ export function Navbar() {
   const [facultyOpen, setFacultyOpen] = useState(false);
   const [careerOpen, setCareerOpen] = useState(false);
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
-  const { user, role, isAuthenticated, signOut } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+
+  let user: any = null;
+  let role: any = null;
+  let isAuthenticated = false;
+  let signOut: any = () => {};
+
+  try {
+    const auth = useAuth();
+    user = auth.user;
+    role = auth.role;
+    isAuthenticated = auth.isAuthenticated;
+    signOut = auth.signOut;
+  } catch (error) {
+    // Auth not available, continue with null user
+  }
 
   useEffect(() => {
     setMounted(true);
@@ -28,8 +42,8 @@ export function Navbar() {
     pathname?.startsWith('/faculty-dashboard') ||
     pathname?.startsWith('/auth/callback');
 
-  // Skip rendering on server or dashboard routes
-  if (!mounted || isDashboardRoute) return null;
+  // Skip on dashboard routes but render on all other pages including home
+  if (isDashboardRoute) return null;
 
   const navLinks = [
     { name: 'Faculty', href: '/faculty', icon: <Users className="w-4 h-4" /> },
@@ -125,10 +139,12 @@ export function Navbar() {
             </Link>
 
             {/* Faculty Dropdown */}
-            <div className="relative group">
+            <div 
+              className="relative group"
+              onMouseEnter={() => setFacultyOpen(true)}
+              onMouseLeave={() => setFacultyOpen(false)}
+            >
               <button
-                onMouseEnter={() => setFacultyOpen(true)}
-                onMouseLeave={() => setFacultyOpen(false)}
                 className="flex items-center gap-1 px-4 py-2 text-sm font-semibold text-slate-700 hover:text-primary-600 rounded-lg hover:bg-white/50 transition-all"
                 aria-expanded={facultyOpen}
               >
@@ -137,7 +153,7 @@ export function Navbar() {
               </button>
 
               <div
-                className={`absolute top-full -right-20 w-64 bg-white shadow-xl rounded-xl border border-slate-200 p-2 transition-all duration-150 ${facultyOpen ? 'opacity-100 visible translate-y-1' : 'opacity-0 invisible translate-y-2'}`}
+                className={`absolute top-full -right-20 w-64 bg-white shadow-xl rounded-xl border border-slate-200 p-2 transition-all duration-150 z-50 ${facultyOpen ? 'opacity-100 visible translate-y-1' : 'opacity-0 invisible translate-y-2'}`}
               >
                 <div className="grid gap-1">
                   {[
@@ -174,10 +190,12 @@ export function Navbar() {
             </div>
 
             {/* Courses Dropdown */}
-            <div className="relative group">
+            <div 
+              className="relative group"
+              onMouseEnter={() => setCoursesOpen(true)}
+              onMouseLeave={() => setCoursesOpen(false)}
+            >
               <button
-                onMouseEnter={() => setCoursesOpen(true)}
-                onMouseLeave={() => setCoursesOpen(false)}
                 className="flex items-center gap-1 px-4 py-2 text-sm font-semibold text-slate-700 hover:text-primary-600 rounded-lg hover:bg-white/50 transition-all"
                 aria-expanded={coursesOpen}
               >
@@ -187,7 +205,7 @@ export function Navbar() {
 
               {/* Courses Mega Menu */}
               <div
-                className={`absolute top-full -left-20 w-64 bg-white shadow-xl rounded-xl border border-slate-200 p-2 transition-all duration-150 ${coursesOpen ? 'opacity-100 visible translate-y-1' : 'opacity-0 invisible translate-y-2'}`}
+                className={`absolute top-full -left-20 w-64 bg-white shadow-xl rounded-xl border border-slate-200 p-2 transition-all duration-150 z-50 ${coursesOpen ? 'opacity-100 visible translate-y-1' : 'opacity-0 invisible translate-y-2'}`}
               >
                 <div className="grid gap-1">
                   {courses.map((course) => (
@@ -211,10 +229,12 @@ export function Navbar() {
             </div>
 
             {/* Career Dropdown */}
-            <div className="relative group">
+            <div 
+              className="relative group"
+              onMouseEnter={() => setCareerOpen(true)}
+              onMouseLeave={() => setCareerOpen(false)}
+            >
               <button
-                onMouseEnter={() => setCareerOpen(true)}
-                onMouseLeave={() => setCareerOpen(false)}
                 className="flex items-center gap-1 px-4 py-2 text-sm font-semibold text-slate-700 hover:text-primary-600 rounded-lg hover:bg-white/50 transition-all"
                 aria-expanded={careerOpen}
               >
@@ -223,7 +243,7 @@ export function Navbar() {
               </button>
 
               <div
-                className={`absolute top-full -right-20 w-64 bg-white shadow-xl rounded-xl border border-slate-200 p-2 transition-all duration-150 ${careerOpen ? 'opacity-100 visible translate-y-1' : 'opacity-0 invisible translate-y-2'}`}
+                className={`absolute top-full -right-20 w-64 bg-white shadow-xl rounded-xl border border-slate-200 p-2 transition-all duration-150 z-50 ${careerOpen ? 'opacity-100 visible translate-y-1' : 'opacity-0 invisible translate-y-2'}`}
               >
                 <div className="grid gap-1">
                   {careerOptions.map((career) => (

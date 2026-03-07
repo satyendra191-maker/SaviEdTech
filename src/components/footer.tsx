@@ -1,7 +1,6 @@
 'use client';
 
 import { usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
     Phone,
@@ -58,12 +57,7 @@ const footerLinks = {
 };
 
 export function Footer() {
-    const [mounted, setMounted] = useState(false);
     const pathname = usePathname();
-
-    useEffect(() => {
-        setMounted(true);
-    }, []);
 
     const isDashboardRoute = pathname?.startsWith("/dashboard") ||
         pathname?.startsWith("/admin") ||
@@ -71,7 +65,8 @@ export function Footer() {
         pathname?.startsWith("/faculty-dashboard") ||
         pathname?.startsWith("/auth/callback");
 
-    if (!mounted || isDashboardRoute) return null;
+    // Skip on dashboard routes but render on all other pages
+    if (isDashboardRoute) return null;
 
     return (
         <footer className="bg-slate-900 text-slate-300">

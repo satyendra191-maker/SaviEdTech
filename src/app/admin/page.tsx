@@ -58,19 +58,24 @@ export default function AdminDashboardPage() {
         return (
             <div className="flex items-center justify-center min-h-[60vh]">
                 <div className="text-center">
-                    <div className="w-12 h-12 border-4 border-primary-100 border-t-primary-600 rounded-full animate-spin mx-auto mb-4"></div>
-                    <p className="text-slate-500 font-medium">Loading Dashboard Data...</p>
+                    <div className="w-10 h-10 border-3 border-indigo-100 border-t-indigo-600 rounded-full animate-spin mx-auto mb-3"></div>
+                    <p className="text-slate-600 font-medium">Loading Dashboard...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="space-y-6 text-slate-900">
+        <div className="space-y-5 text-slate-900">
             {/* Header */}
-            <div>
-                <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-                <p className="text-slate-500">Overview of platform performance and metrics</p>
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-xl font-bold text-slate-900">Dashboard</h1>
+                    <p className="text-sm text-slate-500">Platform performance overview</p>
+                </div>
+                <div className="hidden sm:flex items-center gap-2 text-sm text-slate-500">
+                    <span>Last updated: {new Date().toLocaleTimeString()}</span>
+                </div>
             </div>
 
             {/* Stats Grid */}
@@ -79,22 +84,22 @@ export default function AdminDashboardPage() {
                     icon={Users}
                     label="Total Students"
                     value={stats.totalStudents.toLocaleString()}
-                    change="+12% total"
+                    change="+12%"
                     trend="up"
-                    color="blue"
+                    color="indigo"
                 />
                 <AdminStatCard
                     icon={GraduationCap}
                     label="Active Users"
                     value={stats.activeUsers.toLocaleString()}
-                    change="+5.2%"
+                    change="+5%"
                     trend="up"
                     color="green"
                 />
                 <AdminStatCard
                     label="Total Leads"
                     value={stats.totalLeads.toLocaleString()}
-                    change="New inquiries"
+                    change="New"
                     trend="up"
                     color="purple"
                     icon={FileText}
@@ -102,24 +107,24 @@ export default function AdminDashboardPage() {
                 <AdminStatCard
                     label="Revenue"
                     value={stats.revenue}
-                    change="+12.3%"
+                    change="+12%"
                     trend="up"
                     color="amber"
                     icon={DollarSign}
                 />
             </div>
 
-            <div className="grid lg:grid-cols-3 gap-6">
+            <div className="grid lg:grid-cols-3 gap-4">
                 {/* System Health */}
-                <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+                <div className="lg:col-span-2 bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
                     <div className="flex items-center justify-between mb-4">
-                        <h2 className="text-lg font-semibold text-slate-900">System Health</h2>
-                        <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-medium rounded-full">
+                        <h2 className="text-base font-semibold text-slate-900">System Health</h2>
+                        <span className="px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-semibold rounded-full">
                             All Systems Operational
                         </span>
                     </div>
 
-                    <div className="space-y-4">
+                    <div className="space-y-0">
                         <HealthStatusItem
                             name="Database"
                             status="healthy"
@@ -147,16 +152,16 @@ export default function AdminDashboardPage() {
                     </div>
                 </div>
 
-                {/* Daily Activity */}
-                <div className="space-y-6">
-                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                        <h2 className="text-lg font-semibold text-slate-900 mb-4">Today's Activity</h2>
-                        <div className="space-y-4">
+                    {/* Daily Activity */}
+                <div className="space-y-4">
+                    <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
+                        <h2 className="text-base font-semibold text-slate-900 mb-4">Today's Activity</h2>
+                        <div className="space-y-1">
                             <ActivityItem
                                 icon={Users}
                                 label="New Registrations"
                                 value={Math.floor(stats.totalStudents * 0.05).toString()}
-                                color="blue"
+                                color="indigo"
                             />
                             <ActivityItem
                                 icon={Trophy}
@@ -168,7 +173,7 @@ export default function AdminDashboardPage() {
                                 icon={FileText}
                                 label="DPP Attempts"
                                 value="892"
-                                color="green"
+                                color="emerald"
                             />
                             <ActivityItem
                                 icon={Clock}
@@ -179,35 +184,35 @@ export default function AdminDashboardPage() {
                         </div>
                     </div>
 
-                    <div className="bg-gradient-to-br from-primary-500 to-primary-600 rounded-2xl p-6 text-white shadow-lg">
-                        <div className="flex items-center gap-2 mb-2">
+                    <div className="bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 rounded-2xl p-5 text-white shadow-lg">
+                        <div className="flex items-center gap-2 mb-3">
                             <TrendingUp className="w-5 h-5" />
-                            <h2 className="text-lg font-semibold">Growth Rate</h2>
+                            <h2 className="text-base font-semibold">Growth Rate</h2>
                         </div>
                         <p className="text-4xl font-bold mb-1">23.5%</p>
-                        <p className="text-white/80">Month over month</p>
+                        <p className="text-white/80 text-sm">Month over month</p>
                     </div>
                 </div>
             </div>
 
             {/* Recent Leads Table */}
-            <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+            <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200">
                 <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-semibold text-slate-900">Recent Leads</h2>
-                    <Link href="/admin/leads" className="text-sm text-primary-600 hover:text-primary-700 font-medium">
-                        View All
+                    <h2 className="text-base font-semibold text-slate-900">Recent Leads</h2>
+                    <Link href="/admin/leads" className="text-sm text-indigo-600 hover:text-indigo-700 font-semibold">
+                        View All →
                     </Link>
                 </div>
 
                 <div className="overflow-x-auto">
                     <table className="w-full">
                         <thead>
-                            <tr className="border-b border-slate-100 text-slate-900">
-                                <th className="text-left py-3 px-4 text-sm font-medium">Name</th>
-                                <th className="text-left py-3 px-4 text-sm font-medium">Phone</th>
-                                <th className="text-left py-3 px-4 text-sm font-medium">Exam Target</th>
-                                <th className="text-left py-3 px-4 text-sm font-medium">Status</th>
-                                <th className="text-left py-3 px-4 text-sm font-medium">Date</th>
+                            <tr className="border-b border-slate-200">
+                                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">Name</th>
+                                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">Phone</th>
+                                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">Exam Target</th>
+                                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">Status</th>
+                                <th className="text-left py-3 px-4 text-xs font-semibold text-slate-600 uppercase tracking-wider">Date</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -250,26 +255,37 @@ function AdminStatCard({
     value: string;
     change: string;
     trend: 'up' | 'down';
-    color: 'blue' | 'green' | 'purple' | 'amber' | 'red';
+    color: 'blue' | 'green' | 'purple' | 'amber' | 'red' | 'indigo';
 }) {
     const colorClasses = {
-        blue: 'bg-blue-50 text-blue-600',
-        green: 'bg-green-50 text-green-600',
-        purple: 'bg-purple-50 text-purple-600',
-        amber: 'bg-amber-50 text-amber-600',
-        red: 'bg-red-50 text-red-600',
+        blue: 'bg-blue-100 text-blue-700',
+        green: 'bg-emerald-100 text-emerald-700',
+        purple: 'bg-violet-100 text-violet-700',
+        amber: 'bg-amber-100 text-amber-700',
+        red: 'bg-red-100 text-red-700',
+        indigo: 'bg-indigo-100 text-indigo-700',
+    };
+    const gradientColors = {
+        blue: 'from-blue-500 to-blue-600',
+        green: 'from-emerald-500 to-emerald-600',
+        purple: 'from-violet-500 to-violet-600',
+        amber: 'from-amber-500 to-amber-600',
+        red: 'from-red-500 to-red-600',
+        indigo: 'from-indigo-500 to-indigo-600',
     };
 
     return (
-        <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-4 ${colorClasses[color]}`}>
-                <Icon className="w-5 h-5" />
+        <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
+            <div className="flex items-start justify-between mb-3">
+                <div className={`w-11 h-11 rounded-xl flex items-center justify-center bg-gradient-to-br ${gradientColors[color]} text-white`}>
+                    <Icon className="w-5 h-5" />
+                </div>
+                <span className={`text-xs font-semibold px-2 py-1 rounded-full ${trend === 'up' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                    {trend === 'up' ? '↑' : '↓'} {change}
+                </span>
             </div>
-            <p className="text-sm text-slate-500 mb-1">{label}</p>
-            <p className="text-2xl font-bold text-slate-900 mb-1">{value}</p>
-            <p className={`text-xs font-medium ${trend === 'up' ? 'text-green-600' : 'text-red-600'}`}>
-                {change}
-            </p>
+            <p className="text-sm text-slate-500 font-medium">{label}</p>
+            <p className="text-2xl font-bold text-slate-900 mt-1">{value}</p>
         </div>
     );
 }
@@ -286,20 +302,25 @@ function HealthStatusItem({
     uptime: string;
 }) {
     const statusColors = {
-        healthy: 'bg-green-500',
-        degraded: 'bg-yellow-500',
+        healthy: 'bg-emerald-500',
+        degraded: 'bg-amber-500',
+        critical: 'bg-red-500',
+    };
+    const statusDotColors = {
+        healthy: 'bg-emerald-500',
+        degraded: 'bg-amber-500',
         critical: 'bg-red-500',
     };
 
     return (
-        <div className="flex items-center justify-between py-3 border-b border-slate-50 last:border-0">
+        <div className="flex items-center justify-between py-3 border-b border-slate-100 last:border-0">
             <div className="flex items-center gap-3">
-                <div className={`w-2.5 h-2.5 rounded-full ${statusColors[status]}`} />
-                <span className="font-medium text-slate-900">{name}</span>
+                <div className={`w-2.5 h-2.5 rounded-full ${statusDotColors[status]}`} />
+                <span className="font-medium text-slate-800">{name}</span>
             </div>
-            <div className="flex items-center gap-6 text-sm text-slate-500">
-                <span>Latency: {latency}</span>
-                <span>Uptime: {uptime}</span>
+            <div className="flex items-center gap-5 text-sm">
+                <span className="text-slate-500">Latency: <span className="font-medium text-slate-700">{latency}</span></span>
+                <span className="text-slate-500">Uptime: <span className="font-medium text-emerald-600">{uptime}</span></span>
             </div>
         </div>
     );
@@ -314,24 +335,26 @@ function ActivityItem({
     icon: React.ElementType;
     label: string;
     value: string;
-    color: 'blue' | 'green' | 'purple' | 'orange';
+    color: 'blue' | 'green' | 'purple' | 'orange' | 'indigo' | 'emerald';
 }) {
     const colorClasses = {
-        blue: 'bg-blue-50 text-blue-600',
-        green: 'bg-green-50 text-green-600',
-        purple: 'bg-purple-50 text-purple-600',
-        orange: 'bg-orange-50 text-orange-600',
+        blue: 'bg-blue-100 text-blue-700',
+        green: 'bg-emerald-100 text-emerald-700',
+        purple: 'bg-violet-100 text-violet-700',
+        orange: 'bg-orange-100 text-orange-700',
+        indigo: 'bg-indigo-100 text-indigo-700',
+        emerald: 'bg-emerald-100 text-emerald-700',
     };
 
     return (
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between py-2.5">
             <div className="flex items-center gap-3">
-                <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${colorClasses[color]}`}>
+                <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${colorClasses[color]}`}>
                     <Icon className="w-4 h-4" />
                 </div>
-                <span className="text-sm text-slate-600">{label}</span>
+                <span className="text-sm font-medium text-slate-700">{label}</span>
             </div>
-            <span className="font-semibold text-slate-900">{value}</span>
+            <span className="font-bold text-slate-900">{value}</span>
         </div>
     );
 }
@@ -351,24 +374,24 @@ function LeadRow({
 }) {
     const statusColors = {
         new: 'bg-blue-100 text-blue-700',
-        contacted: 'bg-yellow-100 text-yellow-700',
-        converted: 'bg-green-100 text-green-700',
+        contacted: 'bg-amber-100 text-amber-700',
+        converted: 'bg-emerald-100 text-emerald-700',
         disqualified: 'bg-red-100 text-red-700',
     };
 
     return (
-        <tr className="border-b border-slate-50 last:border-0">
+        <tr className="border-b border-slate-100 hover:bg-slate-50 transition-colors">
             <td className="py-3 px-4">
                 <p className="font-medium text-slate-900">{name}</p>
             </td>
             <td className="py-3 px-4 text-slate-600">{phone}</td>
             <td className="py-3 px-4">
-                <span className="px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded-full">
-                    {exam}
+                <span className="px-2 py-1 bg-slate-100 text-slate-700 text-xs font-medium rounded-full">
+                    {exam || '-'}
                 </span>
             </td>
             <td className="py-3 px-4">
-                <span className={`px-2 py-1 text-xs rounded-full ${statusColors[status]}`}>
+                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${statusColors[status]}`}>
                     {status.charAt(0).toUpperCase() + status.slice(1)}
                 </span>
             </td>

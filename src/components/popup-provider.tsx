@@ -49,23 +49,28 @@ export function PopupProvider({ children }: PopupProviderProps) {
 
     useEffect(() => {
         if (isDashboardRoute) return;
+        
         const fetchActiveAd = async () => {
-            const supabase = getSupabaseBrowserClient();
-            const now = new Date().toISOString();
-            
-            const { data: ads } = await supabase
-                .from('popup_ads')
-                .select('*')
-                .eq('is_active', true)
-                .lte('start_date', now)
-                .gte('end_date', now)
-                .order('priority', { ascending: false })
-                .limit(1);
+            try {
+                const supabase = getSupabaseBrowserClient();
+                const now = new Date().toISOString();
+                
+                const { data: ads } = await supabase
+                    .from('popup_ads')
+                    .select('*')
+                    .eq('is_active', true)
+                    .lte('start_date', now)
+                    .gte('end_date', now)
+                    .order('priority', { ascending: false })
+                    .limit(1);
 
-            if (ads && ads.length > 0) {
-                const adData = ads[0] as any;
-                setAd(adData as PopupAd);
-                setCountdown(adData.display_duration_seconds || 10);
+                if (ads && ads.length > 0) {
+                    const adData = ads[0] as any;
+                    setAd(adData as PopupAd);
+                    setCountdown(adData.display_duration_seconds || 10);
+                }
+            } catch (error) {
+                console.warn('Failed to fetch popup ads:', error);
             }
         };
 

@@ -19,7 +19,7 @@ interface ParentLink {
 export default function ParentVerifyPage() {
     const router = useRouter();
     const { user, isLoading: authLoading } = useAuth();
-    const supabase = getSupabaseBrowserClient();
+    const [supabase, setSupabase] = useState<any>(null);
     
     const [studentPhone, setStudentPhone] = useState('');
     const [studentName, setStudentName] = useState('');
@@ -31,13 +31,21 @@ export default function ParentVerifyPage() {
     const [showVerification, setShowVerification] = useState(false);
 
     useEffect(() => {
+        try {
+            setSupabase(getSupabaseBrowserClient());
+        } catch (e) {
+            console.warn('Failed to initialize Supabase client');
+        }
+    }, []);
+
+    useEffect(() => {
         if (!authLoading && user) {
             fetchExistingLinks();
         }
     }, [user, authLoading]);
 
     const fetchExistingLinks = async () => {
-        if (!user) return;
+        if (!user || !supabase) return;
         
         const { data, error } = await supabase
             .from('parent_links')
@@ -51,7 +59,7 @@ export default function ParentVerifyPage() {
     };
 
     const requestLink = async () => {
-        if (!user || !studentPhone) return;
+        if (!user || !studentPhone || !supabase) return;
 
         setLoading(true);
         setError(null);

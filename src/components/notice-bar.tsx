@@ -1,6 +1,5 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Sparkles, Trophy, Clock, Target } from 'lucide-react';
 
@@ -28,12 +27,7 @@ const notices = [
 ];
 
 export function NoticeBar() {
-    const [mounted, setMounted] = useState(false);
     const pathname = usePathname();
-
-    useEffect(() => {
-        setMounted(true);
-    }, []);
 
     const isDashboardRoute = pathname?.startsWith('/dashboard') ||
         pathname?.startsWith('/admin') ||
@@ -41,7 +35,7 @@ export function NoticeBar() {
         pathname?.startsWith('/faculty-dashboard') ||
         pathname?.startsWith('/auth/callback');
 
-    if (!mounted || isDashboardRoute) return null;
+    if (isDashboardRoute) return null;
 
     return (
         <div className="bg-indigo-900 border-b border-indigo-800 py-2 overflow-hidden relative group">

@@ -93,11 +93,11 @@ const nextConfig: NextConfig = {
                         key: 'Content-Security-Policy',
                         value: [
                             "default-src 'self'",
-                            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co",
+                            "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://checkout.razorpay.com https://cdn.razorpay.com https://js.razorpay.com",
                             "style-src 'self' 'unsafe-inline'",
                             "img-src 'self' data: https: blob:",
                             "font-src 'self'",
-                            "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+                            "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.razorpay.com https://cdn.razorpay.com",
                             "media-src 'self' https:",
                             "object-src 'none'",
                             "frame-ancestors 'none'",

@@ -63,11 +63,11 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
 
     const csp = [
         "default-src 'self'",
-        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co",
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://checkout.razorpay.com https://cdn.razorpay.com https://js.razorpay.com",
         "style-src 'self' 'unsafe-inline'",
         "img-src 'self' data: https: blob:",
         "font-src 'self'",
-        "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+        "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.razorpay.com https://cdn.razorpay.com",
         "media-src 'self' https:",
         "object-src 'none'",
         "frame-ancestors 'none'",
@@ -156,13 +156,13 @@ export async function middleware(request: NextRequest) {
             .select('role')
             .eq('id', user.id)
             .single();
-        
+
         const role = (profile as { role?: string } | null)?.role || 'student';
         let dest = '/dashboard';
         if (role === 'admin' || role === 'super_admin') dest = '/super-admin';
         else if (role === 'content_manager') dest = '/admin/courses';
         else if (role === 'parent') dest = '/dashboard/parent';
-        
+
         return addSecurityHeaders(NextResponse.redirect(new URL(dest, request.url)));
     }
 
@@ -174,7 +174,7 @@ export async function middleware(request: NextRequest) {
                 .select('role')
                 .eq('id', user.id)
                 .single();
-            
+
             const role = (profile as { role?: string } | null)?.role || 'student';
 
             // Admin Routes Check
@@ -183,13 +183,13 @@ export async function middleware(request: NextRequest) {
             }
 
             // Parent Routes Check
-            if ((pathname.startsWith('/dashboard/parent') || pathname.startsWith('/parent')) && 
+            if ((pathname.startsWith('/dashboard/parent') || pathname.startsWith('/parent')) &&
                 role !== 'parent' && role !== 'admin' && role !== 'super_admin') {
                 return addSecurityHeaders(NextResponse.redirect(new URL('/dashboard', request.url)));
             }
 
             // Content Manager / Faculty Routes Check
-            if ((pathname.startsWith('/admin/courses') || pathname.startsWith('/admin/lectures')) && 
+            if ((pathname.startsWith('/admin/courses') || pathname.startsWith('/admin/lectures')) &&
                 role !== 'content_manager' && role !== 'admin' && role !== 'super_admin') {
                 return addSecurityHeaders(NextResponse.redirect(new URL('/dashboard', request.url)));
             }

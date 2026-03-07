@@ -97,9 +97,9 @@ export default function CareersPage() {
     const filteredJobs = jobs.filter((job) => {
         const matchesSearch =
             searchTerm === '' ||
-            job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            job.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            job.skills.some((skill) => skill.toLowerCase().includes(searchTerm.toLowerCase()));
+            (job.title || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (job.description || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+            (job.skills || []).some((skill) => skill.toLowerCase().includes(searchTerm.toLowerCase()));
 
         const matchesDepartment =
             selectedDepartment === 'All Departments' || job.department === selectedDepartment;
@@ -350,7 +350,7 @@ export default function CareersPage() {
                                         </p>
 
                                         <div className="flex flex-wrap gap-2">
-                                            {job.skills.slice(0, 4).map((skill) => (
+                                            {(job.skills || []).slice(0, 4).map((skill) => (
                                                 <span
                                                     key={skill}
                                                     className="px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded-md"
@@ -358,9 +358,9 @@ export default function CareersPage() {
                                                     {skill}
                                                 </span>
                                             ))}
-                                            {job.skills.length > 4 && (
+                                            {(job.skills || []).length > 4 && (
                                                 <span className="px-2 py-1 bg-slate-100 text-slate-700 text-xs rounded-md">
-                                                    +{job.skills.length - 4} more
+                                                    +{(job.skills || []).length - 4} more
                                                 </span>
                                             )}
                                         </div>

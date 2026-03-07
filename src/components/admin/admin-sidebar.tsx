@@ -13,14 +13,16 @@ import {
     Image,
     Settings,
     LogOut,
-    Shield,
     BookOpen,
     CreditCard,
     Briefcase,
     Database,
+    ChevronLeft,
+    ChevronRight,
 } from 'lucide-react';
 import { AnimatedLogo } from '@/components/animated-logo';
 import { useAuth } from '@/hooks/useAuth';
+import { useSidebar } from './sidebar-context';
 
 const adminNavItems = [
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
@@ -41,20 +43,39 @@ const adminNavItems = [
 export function AdminSidebar() {
     const pathname = usePathname();
     const { signOut } = useAuth();
+    const { isCollapsed, toggleSidebar } = useSidebar();
 
     return (
-        <aside className="fixed left-0 top-0 z-40 h-screen w-64 bg-slate-900 text-white">
+        <aside
+            className={`fixed left-0 top-0 z-40 h-screen bg-slate-900 text-white transition-all duration-300 ${
+                isCollapsed ? 'w-20' : 'w-64'
+            }`}
+        >
+            {/* Toggle Button */}
+            <button
+                onClick={toggleSidebar}
+                className="absolute -right-3 top-20 z-50 w-6 h-6 bg-indigo-600 hover:bg-indigo-500 rounded-full flex items-center justify-center shadow-lg transition-colors"
+            >
+                {isCollapsed ? (
+                    <ChevronRight className="w-4 h-4 text-white" />
+                ) : (
+                    <ChevronLeft className="w-4 h-4 text-white" />
+                )}
+            </button>
+
             {/* Logo */}
-            <div className="flex items-center gap-2 px-4 h-16 border-b border-slate-800">
+            <div className={`flex items-center gap-2 px-4 h-16 border-b border-slate-800 ${isCollapsed ? 'justify-center' : ''}`}>
                 <AnimatedLogo size="sm" showText={false} />
-                <div>
-                    <span className="font-bold text-white">Admin</span>
-                    <span className="font-bold text-primary-400">Panel</span>
-                </div>
+                {!isCollapsed && (
+                    <div>
+                        <span className="font-bold text-white">Admin</span>
+                        <span className="font-bold text-indigo-400">Panel</span>
+                    </div>
+                )}
             </div>
 
             {/* Navigation */}
-            <nav className="p-4 space-y-1 overflow-y-auto h-[calc(100vh-8rem)]">
+            <nav className="p-2 lg:p-4 space-y-1 overflow-y-auto h-[calc(100vh-8rem)]">
                 {adminNavItems.map((item) => {
                     const Icon = item.icon;
                     const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
@@ -63,26 +84,31 @@ export function AdminSidebar() {
                         <Link
                             key={item.name}
                             href={item.href}
-                            className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all
-                ${isActive
-                                    ? 'bg-primary-600 text-white'
+                            className={`flex items-center gap-3 px-3 py-3 rounded-xl text-sm font-medium transition-all ${
+                                isActive
+                                    ? 'bg-indigo-600 text-white'
                                     : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                                }`}
+                            } ${isCollapsed ? 'justify-center' : ''}`}
+                            title={isCollapsed ? item.name : undefined}
                         >
-                            <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-slate-400'}`} />
-                            {item.name}
+                            <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-white' : 'text-slate-400'}`} />
+                            {!isCollapsed && <span>{item.name}</span>}
                         </Link>
                     );
                 })}
             </nav>
 
             {/* Logout */}
-            <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-800 bg-slate-900">
-                <button 
-                  onClick={() => signOut()}
-                  className="flex w-full items-center gap-3 px-4 py-2 text-sm font-medium text-red-400 hover:bg-slate-800 hover:text-red-300 rounded-xl transition-colors">
+            <div className={`absolute bottom-0 left-0 right-0 p-2 lg:p-4 border-t border-slate-800 bg-slate-900 ${isCollapsed ? 'flex justify-center' : ''}`}>
+                <button
+                    onClick={() => signOut()}
+                    className={`flex items-center gap-3 px-3 py-2 text-sm font-medium text-red-400 hover:bg-slate-800 hover:text-red-300 rounded-xl transition-colors ${
+                        isCollapsed ? 'justify-center w-full' : ''
+                    }`}
+                    title={isCollapsed ? 'Sign Out' : undefined}
+                >
                     <LogOut className="w-5 h-5" />
-                    Sign Out
+                    {!isCollapsed && <span>Sign Out</span>}
                 </button>
             </div>
         </aside>
