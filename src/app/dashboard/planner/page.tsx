@@ -9,7 +9,9 @@ import {
     ChevronRight,
     AlertCircle,
     Trash2,
-    X
+    X,
+    Sparkles,
+    Loader2,
 } from 'lucide-react';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
@@ -52,6 +54,8 @@ export default function PlannerPage() {
     const [newPlanStartDate, setNewPlanStartDate] = useState('');
     const [newPlanEndDate, setNewPlanEndDate] = useState('');
     const [currentDate, setCurrentDate] = useState(new Date());
+    const [isGeneratingPlan, setIsGeneratingPlan] = useState(false);
+    const [generationSummary, setGenerationSummary] = useState<string | null>(null);
 
     const fetchPlans = useCallback(async () => {
         if (!user) return;
@@ -206,6 +210,39 @@ export default function PlannerPage() {
         }
     };
 
+    const generateAiPlan = async () => {
+        if (!user) return;
+
+        setIsGeneratingPlan(true);
+        setError(null);
+        setGenerationSummary(null);
+
+        try {
+            const response = await fetch('/api/ai/study-plan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    days: 30,
+                    dailyMinutes: 180,
+                    saveToDashboard: true,
+                }),
+            });
+
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                throw new Error(result.error || 'Failed to generate study plan');
+            }
+
+            setGenerationSummary(result.plan?.description || 'AI study plan generated and added to your dashboard.');
+            await fetchPlans();
+        } catch (err) {
+            console.error('Error generating AI study plan:', err);
+            setError(err instanceof Error ? err.message : 'Failed to generate AI study plan');
+        } finally {
+            setIsGeneratingPlan(false);
+        }
+    };
+
     const getDaysInMonth = (date: Date) => {
         const year = date.getFullYear();
         const month = date.getMonth();
@@ -270,14 +307,34 @@ export default function PlannerPage() {
                     <h1 className="text-2xl font-bold text-slate-900">Study Planner</h1>
                     <p className="text-slate-500">Plan and track your study schedule</p>
                 </div>
-                <button
-                    onClick={() => setShowCreateModal(true)}
-                    className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-                >
-                    <Plus className="w-5 h-5" />
-                    Create Plan
-                </button>
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <button
+                        onClick={generateAiPlan}
+                        disabled={isGeneratingPlan}
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-lg border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-colors disabled:opacity-60"
+                    >
+                        {isGeneratingPlan ? (
+                            <Loader2 className="w-5 h-5 animate-spin" />
+                        ) : (
+                            <Sparkles className="w-5 h-5" />
+                        )}
+                        AI Plan
+                    </button>
+                    <button
+                        onClick={() => setShowCreateModal(true)}
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
+                    >
+                        <Plus className="w-5 h-5" />
+                        Create Plan
+                    </button>
+                </div>
             </div>
+
+            {generationSummary ? (
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+                    {generationSummary}
+                </div>
+            ) : null}
 
             {plans.length > 0 && (
                 <div className="flex gap-2 overflow-x-auto pb-2">

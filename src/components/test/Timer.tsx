@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { AlertCircle, Clock } from 'lucide-react';
 
 interface TimerProps {
@@ -8,12 +8,21 @@ interface TimerProps {
     onTimeUp: () => void;
     onWarning?: (minutesRemaining: number) => void;
     className?: string;
+    initialTimeRemainingSeconds?: number;
+    timeRemainingSeconds?: number;
 }
 
-export function Timer({ durationMinutes, onTimeUp, onWarning, className = '' }: TimerProps) {
-    const [timeRemaining, setTimeRemaining] = useState(durationMinutes * 60);
-    const [isWarning, setIsWarning] = useState(false);
-    const [isCritical, setIsCritical] = useState(false);
+export function Timer({
+    durationMinutes,
+    onTimeUp,
+    onWarning,
+    className = '',
+    initialTimeRemainingSeconds,
+    timeRemainingSeconds,
+}: TimerProps) {
+    const isControlled = typeof timeRemainingSeconds === 'number';
+    const [internalTimeRemaining, setInternalTimeRemaining] = useState(initialTimeRemainingSeconds ?? durationMinutes * 60);
+    const warningStateRef = useRef({ warnedAtFive: false, warnedAtOne: false, timeUp: false });
 
     const formatTime = useCallback((seconds: number) => {
         const hours = Math.floor(seconds / 3600);
@@ -27,23 +36,50 @@ export function Timer({ durationMinutes, onTimeUp, onWarning, className = '' }: 
     }, []);
 
     useEffect(() => {
+        if (!isControlled) {
+            setInternalTimeRemaining(initialTimeRemainingSeconds ?? durationMinutes * 60);
+        }
+        warningStateRef.current = {
+            warnedAtFive: false,
+            warnedAtOne: false,
+            timeUp: false,
+        };
+    }, [durationMinutes, initialTimeRemainingSeconds, isControlled]);
+
+    const currentTimeRemaining = Math.max(
+        0,
+        isControlled ? (timeRemainingSeconds ?? 0) : internalTimeRemaining
+    );
+    const isWarning = currentTimeRemaining <= 300 && currentTimeRemaining > 60;
+    const isCritical = currentTimeRemaining <= 60;
+
+    useEffect(() => {
+        if (currentTimeRemaining <= 300 && currentTimeRemaining > 60 && !warningStateRef.current.warnedAtFive) {
+            warningStateRef.current.warnedAtFive = true;
+            onWarning?.(5);
+        }
+
+        if (currentTimeRemaining <= 60 && currentTimeRemaining > 0 && !warningStateRef.current.warnedAtOne) {
+            warningStateRef.current.warnedAtOne = true;
+            onWarning?.(1);
+        }
+    }, [currentTimeRemaining, onWarning]);
+
+    useEffect(() => {
+        if (isControlled) {
+            return undefined;
+        }
+
         const timer = setInterval(() => {
-            setTimeRemaining((prev) => {
+            setInternalTimeRemaining((prev) => {
                 const newTime = prev - 1;
 
-                // Check for warning thresholds
-                if (newTime === 300) { // 5 minutes
-                    setIsWarning(true);
-                    onWarning?.(5);
-                } else if (newTime === 60) { // 1 minute
-                    setIsCritical(true);
-                    onWarning?.(1);
-                }
-
-                // Time's up
                 if (newTime <= 0) {
                     clearInterval(timer);
-                    onTimeUp();
+                    if (!warningStateRef.current.timeUp) {
+                        warningStateRef.current.timeUp = true;
+                        onTimeUp();
+                    }
                     return 0;
                 }
 
@@ -52,7 +88,7 @@ export function Timer({ durationMinutes, onTimeUp, onWarning, className = '' }: 
         }, 1000);
 
         return () => clearInterval(timer);
-    }, [onTimeUp, onWarning]);
+    }, [isControlled, onTimeUp]);
 
     const getTimerStyles = () => {
         if (isCritical) {
@@ -79,7 +115,7 @@ export function Timer({ durationMinutes, onTimeUp, onWarning, className = '' }: 
             ) : (
                 <Clock className={`w-5 h-5 ${getIconColor()}`} />
             )}
-            <span>{formatTime(timeRemaining)}</span>
+            <span>{formatTime(currentTimeRemaining)}</span>
             {(isWarning || isCritical) && (
                 <span className="text-xs font-medium ml-1 hidden sm:inline">
                     remaining

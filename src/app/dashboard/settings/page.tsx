@@ -14,6 +14,10 @@ interface SettingsData {
     role: string;
     exam_target: string | null;
     class_level: string | null;
+    referral_code?: string | null;
+    referral_count?: number | null;
+    ads_disabled_until?: string | null;
+    ads_disabled_permanent?: boolean | null;
   } | null;
 }
 
@@ -31,6 +35,7 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [signingOut, setSigningOut] = useState(false);
+  const [copiedReferral, setCopiedReferral] = useState(false);
 
   useEffect(() => {
     async function fetchSettingsData() {
@@ -40,14 +45,26 @@ export default function SettingsPage() {
         const supabase = getSupabaseBrowserClient();
 
         // Fetch user profile
-        const { data: profileData, error: profileError } = await supabase
+        let { data: profileData, error: profileError } = await supabase
           .from('profiles')
-          .select('full_name, email, avatar_url, role, exam_target, class_level')
+          .select('full_name, email, avatar_url, role, exam_target, class_level, referral_code, referral_count, ads_disabled_until, ads_disabled_permanent')
           .eq('id', user.id)
           .single();
 
         if (profileError) {
-          throw profileError;
+          // Backward-compatible fallback if newer referral columns are not present yet
+          const fallback = await supabase
+            .from('profiles')
+            .select('full_name, email, avatar_url, role, exam_target, class_level')
+            .eq('id', user.id)
+            .single();
+
+          profileData = fallback.data as typeof profileData;
+          profileError = fallback.error;
+        }
+
+        if (profileError || !profileData) {
+          throw profileError || new Error('Profile not found');
         }
 
         setData({
@@ -102,6 +119,28 @@ export default function SettingsPage() {
   const displayName = profile?.full_name || 'Student';
   const examTarget = profile?.exam_target || 'JEE Aspirant';
   const classLevel = profile?.class_level || 'Class 12';
+  const referralCode = profile?.referral_code || null;
+  const referralCount = profile?.referral_count || 0;
+  const appOrigin = typeof window !== 'undefined'
+    ? window.location.origin
+    : (process.env.NEXT_PUBLIC_APP_URL || 'https://saviedutech.com');
+  const referralLink = referralCode ? `${appOrigin}/signup?ref=${referralCode}` : '';
+  const adsDisabledUntil = profile?.ads_disabled_until ? new Date(profile.ads_disabled_until) : null;
+  const isAdsDisabledTemporarily = !!(adsDisabledUntil && adsDisabledUntil.getTime() > Date.now());
+  const isAdsDisabledPermanently = !!profile?.ads_disabled_permanent;
+  const progressToNextReward = referralCount % 4;
+  const referralsNeededForNextReward = progressToNextReward === 0 ? 4 : 4 - progressToNextReward;
+
+  const copyReferralLink = async () => {
+    if (!referralLink) return;
+    try {
+      await navigator.clipboard.writeText(referralLink);
+      setCopiedReferral(true);
+      setTimeout(() => setCopiedReferral(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy referral link:', err);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -163,6 +202,55 @@ export default function SettingsPage() {
             </button>
           );
         })}
+      </div>
+
+      {/* Referral Program */}
+      <div className="bg-white rounded-2xl border border-slate-100 p-6">
+        <div className="flex items-start justify-between gap-4 mb-4">
+          <div>
+            <h3 className="font-semibold text-slate-900">Referral Program</h3>
+            <p className="text-sm text-slate-500">
+              4 successful referrals unlock 7 days of ad-free learning.
+            </p>
+          </div>
+          <span className="px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-700">
+            {referralCount} referrals
+          </span>
+        </div>
+
+        {referralCode ? (
+          <div className="space-y-3">
+            <div className="p-3 rounded-xl border border-slate-200 bg-slate-50">
+              <p className="text-xs text-slate-500 mb-1">Your referral link</p>
+              <p className="text-sm text-slate-800 break-all">{referralLink}</p>
+            </div>
+            <button
+              onClick={copyReferralLink}
+              className="px-4 py-2 text-sm font-medium rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors"
+            >
+              {copiedReferral ? 'Copied' : 'Copy Referral Link'}
+            </button>
+          </div>
+        ) : (
+          <p className="text-sm text-slate-500">Referral code will be available shortly.</p>
+        )}
+
+        <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+          <div className="p-3 rounded-xl border border-slate-100 bg-slate-50">
+            <p className="text-slate-500">Next reward in</p>
+            <p className="font-semibold text-slate-900">{referralsNeededForNextReward} referral(s)</p>
+          </div>
+          <div className="p-3 rounded-xl border border-slate-100 bg-slate-50">
+            <p className="text-slate-500">Ads status</p>
+            <p className="font-semibold text-slate-900">
+              {isAdsDisabledPermanently
+                ? 'Disabled permanently'
+                : isAdsDisabledTemporarily
+                  ? `Disabled until ${adsDisabledUntil?.toLocaleDateString()}`
+                  : 'Enabled'}
+            </p>
+          </div>
+        </div>
       </div>
 
       {/* App Info */}

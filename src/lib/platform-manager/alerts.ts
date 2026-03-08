@@ -1,5 +1,5 @@
 /**
- * AI Autonomous Platform Manager - Alert Manager
+ * SaviEduTech Team Autonomous Platform Manager - Alert Manager
  * 
  * Provides alert management capabilities:
  * - Alert severity levels
@@ -10,7 +10,7 @@
 
 import { createAdminSupabaseClient } from '@/lib/supabase';
 import { getRecentErrors, getSystemHealth, getCronStatus } from './monitor';
-import type { Database } from '@/types/supabase';
+import { writePlatformAuditLog } from './audit-log';
 
 // Alert severity levels
 export type AlertSeverity = 'CRITICAL' | 'HIGH' | 'MEDIUM' | 'LOW';
@@ -77,6 +77,14 @@ export interface AlertDeduplicationKey {
 // In-memory storage for active alerts (in production, this should be in database/cache)
 const activeAlerts: Map<string, Alert> = new Map();
 const alertRules: Map<string, AlertRule> = new Map();
+
+function getDefaultAlertRecipients(): string[] {
+    const rawRecipients = process.env.PLATFORM_ALERT_EMAILS || process.env.ADMIN_ALERT_EMAILS || '';
+    return rawRecipients
+        .split(',')
+        .map((recipient) => recipient.trim())
+        .filter(Boolean);
+}
 
 // Default alert rules
 const DEFAULT_ALERT_RULES: Omit<AlertRule, 'id' | 'created_at' | 'updated_at' | 'last_triggered_at'>[] = [
@@ -364,6 +372,32 @@ export async function sendAlert(alertData: {
         console.error('Failed to log alert to database:', err);
     }
 
+    try {
+        await writePlatformAuditLog({
+            auditType: 'platform_alert',
+            auditSubtype: 'alert',
+            timeRange: 'live',
+            status: alert.severity === 'CRITICAL' || alert.severity === 'HIGH'
+                ? 'critical'
+                : alert.severity === 'MEDIUM'
+                    ? 'warning'
+                    : 'healthy',
+            title: alert.title,
+            summary: alert.message,
+            affectedModule: alert.source,
+            metadata: {
+                severity: alert.severity,
+                alertId: alert.id,
+                source: alert.source,
+                ...alert.metadata,
+            },
+            notifiedAdmin: true,
+            notifiedEmail: false,
+        });
+    } catch (err) {
+        console.error('Failed to write platform audit alert log:', err);
+    }
+
     return alert;
 }
 
@@ -372,7 +406,12 @@ export async function sendAlert(alertData: {
  */
 async function notifyChannels(alert: Alert): Promise<void> {
     const rule = Array.from(alertRules.values()).find(r => r.name === alert.source);
-    const channels = rule?.notification_channels || [{ type: 'console' }];
+    const channels = [...(rule?.notification_channels || [{ type: 'console' }])];
+    const defaultRecipients = getDefaultAlertRecipients();
+
+    if (defaultRecipients.length > 0 && !channels.some((channel) => channel.type === 'email') && (alert.severity === 'CRITICAL' || alert.severity === 'HIGH')) {
+        channels.push({ type: 'email', recipients: defaultRecipients });
+    }
 
     for (const channel of channels) {
         try {
@@ -382,8 +421,7 @@ async function notifyChannels(alert: Alert): Promise<void> {
                     break;
 
                 case 'email':
-                    // TODO: Implement email notification
-                    console.log(`Would send email to ${channel.recipients.join(', ')}: ${alert.title}`);
+                    await sendAlertEmail(channel.recipients, alert);
                     break;
 
                 case 'webhook':
@@ -404,6 +442,67 @@ async function notifyChannels(alert: Alert): Promise<void> {
         } catch (err) {
             console.error(`Failed to send notification to ${channel.type}:`, err);
         }
+    }
+}
+
+async function sendAlertEmail(recipients: string[], alert: Alert): Promise<void> {
+    if (recipients.length === 0) {
+        return;
+    }
+
+    try {
+        const { sendEmail } = await import('@/lib/email/email-service');
+        const text = [
+            `[${alert.severity}] ${alert.title}`,
+            '',
+            alert.message,
+            '',
+            `Source: ${alert.source}`,
+            `Alert ID: ${alert.id}`,
+            `Time: ${alert.created_at}`,
+        ].join('\n');
+
+        const html = `
+            <div style="font-family: Arial, sans-serif; line-height: 1.6;">
+                <h2>[${alert.severity}] ${alert.title}</h2>
+                <p>${alert.message}</p>
+                <p><strong>Source:</strong> ${alert.source}</p>
+                <p><strong>Alert ID:</strong> ${alert.id}</p>
+                <p><strong>Time:</strong> ${alert.created_at}</p>
+            </div>
+        `;
+
+        const result = await sendEmail(
+            'custom',
+            {
+                to: recipients,
+                subject: `[SaviEduTech] ${alert.severity} alert: ${alert.title}`,
+            },
+            { html, text }
+        );
+
+        if (!result.success) {
+            throw new Error(result.error || 'Email provider returned an unknown error');
+        }
+
+        await writePlatformAuditLog({
+            auditType: 'platform_alert',
+            auditSubtype: 'email_notification',
+            timeRange: 'live',
+            status: 'warning',
+            title: 'Administrative alert email delivered',
+            summary: `Alert ${alert.id} was emailed to ${recipients.join(', ')}`,
+            affectedModule: alert.source,
+            metadata: {
+                severity: alert.severity,
+                alertId: alert.id,
+                recipients,
+            },
+            notifiedAdmin: true,
+            notifiedEmail: true,
+        });
+    } catch (error) {
+        console.error('Failed to send alert email:', error);
     }
 }
 
@@ -433,7 +532,7 @@ async function sendSlackNotification(
                 { title: 'Alert ID', value: alert.id, short: true },
                 { title: 'Time', value: alert.created_at, short: true },
             ],
-            footer: 'SaviEdTech Platform Manager',
+            footer: 'SaviEduTech Team Platform Manager',
             ts: Math.floor(new Date(alert.created_at).getTime() / 1000),
         }],
     };

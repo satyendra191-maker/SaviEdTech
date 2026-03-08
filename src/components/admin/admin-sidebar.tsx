@@ -19,6 +19,9 @@ import {
     Database,
     ChevronLeft,
     ChevronRight,
+    BarChart3,
+    ShieldCheck,
+    Landmark,
 } from 'lucide-react';
 import { AnimatedLogo } from '@/components/animated-logo';
 import { useAuth } from '@/hooks/useAuth';
@@ -26,24 +29,33 @@ import { useSidebar } from './sidebar-context';
 
 const adminNavItems = [
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+    { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
     { name: 'Students', href: '/admin/students', icon: Users },
     { name: 'Courses', href: '/admin/courses', icon: BookOpen },
     { name: 'Lectures', href: '/admin/lectures', icon: PlayCircle },
     { name: 'Questions', href: '/admin/questions', icon: HelpCircle },
     { name: 'Tests', href: '/admin/tests', icon: GraduationCap },
+    { name: 'Online Exams', href: '/admin/online-exams', icon: ShieldCheck },
     { name: 'Careers', href: '/admin/careers', icon: Briefcase },
     { name: 'Leads', href: '/admin/leads', icon: FileText },
     { name: 'Payments', href: '/admin/payments', icon: CreditCard },
+    { name: 'Finance', href: '/admin/finance', icon: Landmark },
     { name: 'Daily Challenge', href: '/admin/challenges', icon: Trophy },
     { name: 'Popup Ads', href: '/admin/ads', icon: Image },
     { name: 'Backups', href: '/admin/backups', icon: Database },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
 ];
 
+const financeNavItems = [
+    { name: 'Finance', href: '/admin/finance', icon: Landmark },
+    { name: 'Payments', href: '/admin/payments', icon: CreditCard },
+];
+
 export function AdminSidebar() {
     const pathname = usePathname();
-    const { signOut } = useAuth();
+    const { signOut, role } = useAuth();
     const { isCollapsed, toggleSidebar } = useSidebar();
+    const navItems = role === 'finance_manager' ? financeNavItems : adminNavItems;
 
     return (
         <aside
@@ -76,7 +88,7 @@ export function AdminSidebar() {
 
             {/* Navigation */}
             <nav className="p-2 lg:p-4 space-y-1 overflow-y-auto h-[calc(100vh-8rem)]">
-                {adminNavItems.map((item) => {
+                {navItems.map((item) => {
                     const Icon = item.icon;
                     const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
 

@@ -82,8 +82,7 @@ src/
 
 1. **Payment Integration** (`src/app/api/payments/`)
    - ✅ Razorpay integration complete
-   - ⚠️ Stripe integration referenced but not fully implemented
-   - ⚠️ PayPal integration referenced but not fully implemented
+   - ✅ Razorpay-only payment integration enforced
    - Webhook handler exists but may need testing
 
 2. **Email Service** (`src/lib/email/`)
@@ -265,9 +264,9 @@ src/app/(auth)/login/page.tsx
 - Webhook handler for async updates
 - Database storage in `donations` table
 
-⚠️ **Stripe & PayPal:**
-- Referenced in code but not fully implemented
-- API routes accept only Razorpay (see `createOrderSchema`)
+✅ **Payment Gateway Policy:**
+- Runtime payment flow is Razorpay only
+- Non-Razorpay references have been removed from the product code path
 
 ### 5.5 Gamification System
 
@@ -493,8 +492,7 @@ Based on code analysis, these tables are used:
 - ✅ `NEXT_PUBLIC_APP_URL`
 
 **Missing from documentation:**
-- ⚠️ Stripe API keys (if implementing)
-- ⚠️ PayPal client ID/secret (if implementing)
+- ✅ No alternate gateway credentials required
 - ⚠️ Email configuration (SMTP settings if not using Resend)
 
 ---
@@ -516,10 +514,10 @@ Based on code analysis, these tables are used:
    - **Impact:** Confusion, unnecessary code complexity
    - **Solution:** Standardize on one endpoint, deprecate the other
 
-3. **Stripe & PayPal Placeholders**
-   - PaymentButton component references Stripe/PayPal but they're not implemented
-   - **Impact:** Broken functionality if user selects these gateways
-   - **Solution:** Either implement fully or remove options
+3. **Payment Gateway Policy**
+   - PaymentButton is constrained to Razorpay only
+   - **Impact:** Prevents unsupported gateway selection paths
+   - **Solution:** Keep Razorpay as the single production gateway
 
 ### 🟡 MEDIUM (Address in Next Sprint)
 
@@ -584,8 +582,8 @@ Based on code analysis, these tables are used:
    - Add deprecation warning if keeping both
 
 3. **Remove Broken Payment Options:**
-   - Either implement Stripe/PayPal or remove from `PaymentButton`
-   - Update `paymentGateways` array in donate page
+   - Keep `PaymentButton` constrained to Razorpay only
+   - Verify donate and checkout flows continue to expose only Razorpay
 
 ### 13.2 Short-term (Month 1)
 
@@ -644,7 +642,7 @@ The SaviEduTech platform is a **well-architected, production-ready application**
 **Recommended Next Steps:**
 1. Fix the duplicated `UserPointsDisplay` component (1 hour)
 2. Standardize gamification API endpoints (2 hours)
-3. Remove or complete Stripe/PayPal implementations (4-8 hours)
+3. Maintain Razorpay-only gateway policy and verify checkout flow
 4. Test payment flow end-to-end with Razorpay
 5. Deploy to production with monitoring
 

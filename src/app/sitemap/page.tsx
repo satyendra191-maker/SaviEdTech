@@ -16,6 +16,7 @@ export default function SitemapPage() {
       { name: 'Register', href: '/register' },
     ],
     courses: [
+      { name: 'Online Courses', href: '/courses' },
       { name: 'JEE Preparation', href: '/jee' },
       { name: 'NEET Preparation', href: '/neet' },
       { name: 'Video Lectures', href: '/lectures' },

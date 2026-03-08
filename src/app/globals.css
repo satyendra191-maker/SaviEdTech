@@ -50,16 +50,29 @@
 }
 
 @layer base {
+    html {
+        overflow-x: hidden;
+    }
+
     * {
         @apply border-border;
     }
 
     body {
         @apply bg-background text-foreground font-sans antialiased;
+        overflow-x: hidden;
         -webkit-user-select: none;
         -moz-user-select: none;
         -ms-user-select: none;
         user-select: none;
+    }
+
+    img,
+    svg,
+    video,
+    canvas,
+    iframe {
+        max-width: 100%;
     }
 
     /* Allow text selection in input fields and textareas */
@@ -168,6 +181,17 @@
 
     .touch-manipulation {
         touch-action: manipulation;
+    }
+}
+
+@media (max-width: 767px) {
+    .page-bg-education,
+    .page-bg-science,
+    .page-bg-contact,
+    .page-bg-jobs,
+    .page-bg-about,
+    .page-bg-donate {
+        background-attachment: scroll;
     }
 }
 

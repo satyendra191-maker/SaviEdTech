@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import {
@@ -61,7 +60,6 @@ const EXPERIENCE_LEVELS = [
 ];
 
 export default function CareersPage() {
-    const router = useRouter();
     const [jobs, setJobs] = useState<JobListing[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -74,6 +72,7 @@ export default function CareersPage() {
 
     useEffect(() => {
         fetchJobs();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     const fetchJobs = async () => {

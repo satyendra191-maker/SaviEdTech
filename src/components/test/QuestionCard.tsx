@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { HelpCircle, Image as ImageIcon, Calculator, BookOpen } from 'lucide-react';
 
 interface QuestionOption {
@@ -45,6 +45,10 @@ export function QuestionCard({
     const [showHint, setShowHint] = useState(false);
     const [numericalInput, setNumericalInput] = useState(selectedAnswer || '');
 
+    useEffect(() => {
+        setNumericalInput(selectedAnswer || '');
+    }, [selectedAnswer, question.id]);
+
     const handleNumericalChange = (value: string) => {
         // Allow only numbers and decimal point
         if (/^-?\d*\.?\d*$/.test(value)) {
@@ -78,7 +82,7 @@ export function QuestionCard({
     const renderLatexText = (text: string) => {
         // Simple LaTeX-like rendering for common patterns
         // This is a basic implementation - for production, use a proper LaTeX library like KaTeX or MathJax
-        let processedText = text
+        const processedText = text
             // Superscripts
             .replace(/\^\{([^}]+)\}/g, '<sup>$1</sup>')
             .replace(/\^([0-9a-zA-Z])/g, '<sup>$1</sup>')

@@ -100,7 +100,7 @@ export default function CoursesPage() {
         } finally {
             setLoading(false);
         }
-    }, [viewMode, breadcrumbs, supabase]);
+    }, [viewMode, breadcrumbs, supabase, getParentId]);
 
     useEffect(() => {
         fetchData();

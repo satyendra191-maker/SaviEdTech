@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import {
@@ -28,6 +28,7 @@ interface FormData {
     fullName: string;
     email: string;
     phone: string;
+    positionApplied: string;
     linkedin: string;
     portfolio: string;
     currentCompany: string;
@@ -44,7 +45,6 @@ const ALLOWED_FILE_TYPES = ['application/pdf'];
 
 function ApplyPageContent() {
     const searchParams = useSearchParams();
-    const router = useRouter();
     const jobId = searchParams.get('jobId');
 
     const [job, setJob] = useState<JobListing | null>(null);
@@ -58,6 +58,7 @@ function ApplyPageContent() {
         fullName: '',
         email: '',
         phone: '',
+        positionApplied: '',
         linkedin: '',
         portfolio: '',
         currentCompany: '',
@@ -72,7 +73,7 @@ function ApplyPageContent() {
     // File upload state
     const [resumeFile, setResumeFile] = useState<File | null>(null);
     const [fileError, setFileError] = useState<string | null>(null);
-    const [uploadProgress, setUploadProgress] = useState(0);
+    const [uploadingResume, setUploadingResume] = useState(false);
 
     const supabase = createBrowserSupabaseClient();
 
@@ -82,6 +83,7 @@ function ApplyPageContent() {
         } else {
             setLoading(false);
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [jobId]);
 
     const fetchJobDetails = async () => {
@@ -102,6 +104,16 @@ function ApplyPageContent() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        if (job?.title) {
+            setFormData((current) => (
+                current.positionApplied
+                    ? current
+                    : { ...current, positionApplied: job.title }
+            ));
+        }
+    }, [job?.title]);
 
     const handleInputChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
@@ -134,35 +146,42 @@ function ApplyPageContent() {
     const removeFile = () => {
         setResumeFile(null);
         setFileError(null);
-        setUploadProgress(0);
     };
 
-    const uploadResume = async (): Promise<string | null> => {
+    const uploadResume = async (): Promise<{
+        resumeUrl: string;
+        resumePath: string;
+        fileName: string;
+        fileSize: number;
+    } | null> => {
         if (!resumeFile) return null;
 
         try {
-            const fileExt = resumeFile.name.split('.').pop();
-            const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-            const filePath = `resumes/${fileName}`;
+            setUploadingResume(true);
+            const formData = new FormData();
+            formData.append('resume', resumeFile);
 
-            const { error: uploadError } = await supabase.storage
-                .from('career-applications')
-                .upload(filePath, resumeFile, {
-                    cacheControl: '3600',
-                    upsert: false,
-                });
+            const response = await fetch('/api/careers/resume', {
+                method: 'POST',
+                body: formData,
+            });
+            const result = await response.json();
 
-            if (uploadError) throw uploadError;
+            if (!response.ok || !result.success) {
+                throw new Error(result.error || 'Failed to upload resume');
+            }
 
-            // Get public URL
-            const { data: { publicUrl } } = supabase.storage
-                .from('career-applications')
-                .getPublicUrl(filePath);
-
-            return publicUrl;
+            return {
+                resumeUrl: result.resumeUrl as string,
+                resumePath: result.resumePath as string,
+                fileName: result.fileName as string,
+                fileSize: Number(result.fileSize || resumeFile.size),
+            };
         } catch (error) {
             console.error('Error uploading resume:', error);
             throw new Error('Failed to upload resume');
+        } finally {
+            setUploadingResume(false);
         }
     };
 
@@ -183,6 +202,10 @@ function ApplyPageContent() {
             setError('Please enter your phone number');
             return;
         }
+        if (!formData.positionApplied.trim()) {
+            setError('Please enter the position you are applying for');
+            return;
+        }
         if (!resumeFile) {
             setError('Please upload your resume');
             return;
@@ -192,7 +215,7 @@ function ApplyPageContent() {
 
         try {
             // Upload resume first
-            const resumeUrl = await uploadResume();
+            const resumeUpload = await uploadResume();
 
             // Submit application
             const response = await fetch('/api/careers', {
@@ -203,9 +226,11 @@ function ApplyPageContent() {
                 body: JSON.stringify({
                     jobId: jobId || null,
                     ...formData,
-                    resumeUrl,
-                    fileName: resumeFile.name,
-                    fileSize: resumeFile.size,
+                    positionApplied: formData.positionApplied || job?.title || null,
+                    resumeUrl: resumeUpload?.resumeUrl,
+                    resumePath: resumeUpload?.resumePath,
+                    fileName: resumeUpload?.fileName || resumeFile.name,
+                    fileSize: resumeUpload?.fileSize || resumeFile.size,
                 }),
             });
 
@@ -365,6 +390,21 @@ function ApplyPageContent() {
                                     onChange={handleInputChange}
                                     className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                                     placeholder="+91 98765 43210"
+                                    required
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">
+                                    Position Applied <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="text"
+                                    name="positionApplied"
+                                    value={formData.positionApplied}
+                                    onChange={handleInputChange}
+                                    className="w-full px-4 py-3 border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                    placeholder={job?.title || 'Teaching or administrative role'}
                                     required
                                 />
                             </div>
@@ -589,13 +629,13 @@ function ApplyPageContent() {
                     <div className="flex flex-col sm:flex-row gap-4">
                         <button
                             type="submit"
-                            disabled={submitting}
+                            disabled={submitting || uploadingResume}
                             className="flex-1 sm:flex-none px-8 py-4 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-semibold flex items-center justify-center gap-2"
                         >
-                            {submitting ? (
+                            {submitting || uploadingResume ? (
                                 <>
                                     <Loader2 className="w-5 h-5 animate-spin" />
-                                    Submitting...
+                                    {uploadingResume ? 'Uploading resume...' : 'Submitting...'}
                                 </>
                             ) : (
                                 'Submit Application'

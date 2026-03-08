@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { 
-    Database, Plus, Trash2, Download, RefreshCw, 
+import {
+    Database, Plus, Trash2, Download,
     CheckCircle, XCircle, Clock, Loader2, AlertCircle,
     HardDrive, Calendar, FileText
 } from 'lucide-react';
@@ -33,7 +33,7 @@ interface BackupStats {
 export default function AdminBackupsPage() {
     const { user, isLoading: authLoading } = useAuth();
     const supabase = getSupabaseBrowserClient();
-    
+
     const [backups, setBackups] = useState<Backup[]>([]);
     const [stats, setStats] = useState<BackupStats | null>(null);
     const [loading, setLoading] = useState(true);
@@ -53,7 +53,7 @@ export default function AdminBackupsPage() {
         try {
             const response = await fetch('/api/cron/database-backup?action=list&limit=50');
             const result = await response.json();
-            
+
             if (result.success) {
                 setBackups(result.data);
             } else {
@@ -71,7 +71,7 @@ export default function AdminBackupsPage() {
         try {
             const response = await fetch('/api/cron/database-backup?action=stats');
             const result = await response.json();
-            
+
             if (result.success) {
                 setStats(result.data);
             }
@@ -91,9 +91,9 @@ export default function AdminBackupsPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'create', backupType: 'full' }),
             });
-            
+
             const result = await response.json();
-            
+
             if (result.success) {
                 setSuccess('Backup created successfully');
                 fetchBackups();
@@ -120,9 +120,9 @@ export default function AdminBackupsPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'delete', id }),
             });
-            
+
             const result = await response.json();
-            
+
             if (result.success) {
                 setSuccess('Backup deleted successfully');
                 fetchBackups();

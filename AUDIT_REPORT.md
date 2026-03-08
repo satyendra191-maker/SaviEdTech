@@ -36,7 +36,7 @@ The SaviEdTech platform has undergone a comprehensive audit covering all core mo
 | Popup Advertisement | ✅ Complete | 10s countdown, admin management |
 | Notification System | ✅ Complete | Email + in-app notifications |
 | Admin Control Center | ✅ Complete | All management interfaces |
-| Payment System | ✅ Complete | Razorpay, Stripe, PayPal |
+| Payment System | ✅ Complete | Razorpay only |
 | Gamification | ✅ Complete | Streaks, points, achievements |
 | Career Portal | ✅ Complete | Job listings, applications |
 | Super Admin | ✅ Complete | Platform management |
@@ -356,7 +356,7 @@ CREATE INDEX idx_popup_ads_dates ON popup_ads(start_date, end_date);
 ### 7.1 Pre-Deployment (REQUIRED)
 - [ ] Set up production Supabase project
 - [ ] Configure environment variables
-- [ ] Set up payment gateway credentials (Razorpay/Stripe)
+- [ ] Set up payment gateway credentials (Razorpay)
 - [ ] Configure email service (Resend)
 - [ ] Set up cron job endpoints (Vercel Cron)
 

@@ -15,7 +15,6 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -86,7 +85,6 @@ const currentClassOptions = [
 ];
 
 export default function RegisterPage() {
-  const router = useRouter();
   const { signUp, signInWithGoogle } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -95,7 +93,8 @@ export default function RegisterPage() {
   const [showVerificationMessage, setShowVerificationMessage] = useState(false);
   const [userType, setUserType] = useState<UserType>('student');
   const [mounted, setMounted] = useState(false);
-  
+  const [referralCode, setReferralCode] = useState<string | null>(null);
+
   const {
     register,
     handleSubmit,
@@ -114,7 +113,23 @@ export default function RegisterPage() {
     setMounted(true);
   }, []);
 
-  const currentRole = watch('userType');
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const params = new URLSearchParams(window.location.search);
+    const refFromUrl = params.get('ref');
+    if (!refFromUrl) {
+      setReferralCode(null);
+      return;
+    }
+
+    const sanitized = refFromUrl.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 16);
+    if (sanitized.length >= 4) {
+      setReferralCode(sanitized);
+    }
+  }, []);
+
+  const userRole = watch('userType');
 
   // Keep internal state in sync with form state
   const handleUserTypeChange = (type: UserType) => {
@@ -127,10 +142,10 @@ export default function RegisterPage() {
     setSubmitError('');
 
     try {
-      const role = userType === 'admin' ? 'admin' : 
-                   userType === 'faculty' ? 'content_manager' : 
-                   userType === 'parent' ? 'parent' : 'student';
-      
+      const role = userType === 'admin' ? 'admin' :
+        userType === 'faculty' ? 'content_manager' :
+          userType === 'parent' ? 'parent' : 'student';
+
       // Map exam values to database format
       let examTarget: string | null = null;
       if (userType === 'student' && data.targetExam) {
@@ -142,20 +157,21 @@ export default function RegisterPage() {
           examTarget = 'Both';
         }
       }
-      
+
       // Map class values to database format
       let classLevel: string | null = null;
       if (userType === 'student' && data.currentClass) {
         // Use the selected value directly as it matches the database check constraint
         classLevel = data.currentClass;
       }
-      
+
       const { error } = await signUp(data.email, data.password, {
         full_name: data.fullName,
         phone: data.phone || undefined,
         exam_target: examTarget as any,
         class_level: classLevel as any,
         role: role,
+        referred_by_code: referralCode || undefined,
       });
 
       if (error) {
@@ -263,6 +279,12 @@ export default function RegisterPage() {
             </div>
           )}
 
+          {referralCode && (
+            <div className="mb-4 p-3 bg-emerald-50 text-emerald-700 text-sm rounded-lg border border-emerald-100">
+              Referral code applied: <span className="font-semibold">{referralCode}</span>
+            </div>
+          )}
+
           {/* Google Auth Button */}
           <button
             type="button"
@@ -307,7 +329,7 @@ export default function RegisterPage() {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form method="post" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             {/* Full Name */}
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
@@ -453,11 +475,10 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={() => handleUserTypeChange('student')}
-                  className={`p-3 rounded-xl border-2 transition-all text-center ${
-                    userType === 'student'
+                  className={`p-3 rounded-xl border-2 transition-all text-center ${userType === 'student'
                       ? 'border-blue-500 bg-blue-50'
                       : 'border-slate-200 hover:border-slate-300'
-                  }`}
+                    }`}
                 >
                   <Users className={`w-6 h-6 mx-auto mb-1 ${userType === 'student' ? 'text-blue-600' : 'text-slate-400'}`} />
                   <span className={`text-sm font-medium ${userType === 'student' ? 'text-blue-700' : 'text-slate-600'}`}>Student</span>
@@ -465,11 +486,10 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={() => handleUserTypeChange('admin')}
-                  className={`p-3 rounded-xl border-2 transition-all text-center ${
-                    userType === 'admin'
+                  className={`p-3 rounded-xl border-2 transition-all text-center ${userType === 'admin'
                       ? 'border-purple-500 bg-purple-50'
                       : 'border-slate-200 hover:border-slate-300'
-                  }`}
+                    }`}
                 >
                   <Shield className={`w-6 h-6 mx-auto mb-1 ${userType === 'admin' ? 'text-purple-600' : 'text-slate-400'}`} />
                   <span className={`text-sm font-medium ${userType === 'admin' ? 'text-purple-700' : 'text-slate-600'}`}>Admin</span>
@@ -477,11 +497,10 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={() => handleUserTypeChange('faculty')}
-                  className={`p-3 rounded-xl border-2 transition-all text-center ${
-                    userType === 'faculty'
+                  className={`p-3 rounded-xl border-2 transition-all text-center ${userType === 'faculty'
                       ? 'border-emerald-500 bg-emerald-50'
                       : 'border-slate-200 hover:border-slate-300'
-                  }`}
+                    }`}
                 >
                   <BookOpen className={`w-6 h-6 mx-auto mb-1 ${userType === 'faculty' ? 'text-emerald-600' : 'text-slate-400'}`} />
                   <span className={`text-sm font-medium ${userType === 'faculty' ? 'text-emerald-700' : 'text-slate-600'}`}>Faculty</span>
@@ -489,11 +508,10 @@ export default function RegisterPage() {
                 <button
                   type="button"
                   onClick={() => handleUserTypeChange('parent')}
-                  className={`p-3 rounded-xl border-2 transition-all text-center ${
-                    userType === 'parent'
+                  className={`p-3 rounded-xl border-2 transition-all text-center ${userType === 'parent'
                       ? 'border-amber-500 bg-amber-50'
                       : 'border-slate-200 hover:border-slate-300'
-                  }`}
+                    }`}
                 >
                   <Heart className={`w-6 h-6 mx-auto mb-1 ${userType === 'parent' ? 'text-amber-600' : 'text-slate-400'}`} />
                   <span className={`text-sm font-medium ${userType === 'parent' ? 'text-amber-700' : 'text-slate-600'}`}>Parent</span>
@@ -503,54 +521,54 @@ export default function RegisterPage() {
 
             {/* Target Exam and Class - Only for Students */}
             {mounted && userType === 'student' && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Target Exam <span className="text-red-500">*</span>
-                </label>
-                <select
-                  {...register('targetExam')}
-                  className={`w-full px-4 py-3 rounded-xl border outline-none transition-all bg-white text-sm ${errors.targetExam
-                    ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-200'
-                    : 'border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-200'
-                    }`}
-                  disabled={isLoading}
-                >
-                  <option value="">Select Exam</option>
-                  {targetExamOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-                {errors.targetExam && (
-                  <p className="mt-1 text-sm text-red-600">{errors.targetExam.message}</p>
-                )}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Target Exam <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    {...register('targetExam')}
+                    className={`w-full px-4 py-3 rounded-xl border outline-none transition-all bg-white text-sm ${errors.targetExam
+                      ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-200'
+                      : 'border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-200'
+                      }`}
+                    disabled={isLoading}
+                  >
+                    <option value="">Select Exam</option>
+                    {targetExamOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.targetExam && (
+                    <p className="mt-1 text-sm text-red-600">{errors.targetExam.message}</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">
+                    Current Class <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    {...register('currentClass')}
+                    className={`w-full px-4 py-3 rounded-xl border outline-none transition-all bg-white text-sm ${errors.currentClass
+                      ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-200'
+                      : 'border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-200'
+                      }`}
+                    disabled={isLoading}
+                  >
+                    <option value="">Select Class</option>
+                    {currentClassOptions.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.currentClass && (
+                    <p className="mt-1 text-sm text-red-600">{errors.currentClass.message}</p>
+                  )}
+                </div>
               </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">
-                  Current Class <span className="text-red-500">*</span>
-                </label>
-                <select
-                  {...register('currentClass')}
-                  className={`w-full px-4 py-3 rounded-xl border outline-none transition-all bg-white text-sm ${errors.currentClass
-                    ? 'border-red-300 focus:border-red-500 focus:ring-2 focus:ring-red-200'
-                    : 'border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-200'
-                    }`}
-                  disabled={isLoading}
-                >
-                  <option value="">Select Class</option>
-                  {currentClassOptions.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-                {errors.currentClass && (
-                  <p className="mt-1 text-sm text-red-600">{errors.currentClass.message}</p>
-                )}
-              </div>
-            </div>
             )}
 
             {/* Child Details - Only for Parents */}

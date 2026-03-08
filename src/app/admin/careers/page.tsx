@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { DataTable, StatusBadge } from '@/components/admin/DataTable';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
-import type { JobListing, JobApplication, ApplicationWithJob } from '@/types/careers';
+import type { JobListing, ApplicationWithJob } from '@/types/careers';
 import {
     Plus,
     Briefcase,
@@ -12,7 +12,6 @@ import {
     CheckCircle,
     AlertCircle,
     Trash2,
-    Edit,
     Download,
 } from 'lucide-react';
 
@@ -289,22 +288,33 @@ export default function CareersAdminPage() {
         });
     };
 
-    const downloadResume = (url: string, fileName: string) => {
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = fileName;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+    const downloadResume = (applicationId: string) => {
+        window.open(`/api/careers/resume?applicationId=${encodeURIComponent(applicationId)}`, '_blank', 'noopener,noreferrer');
+    };
+
+    const getApplicationPosition = (application: ApplicationWithJob) => {
+        const positionFromMetadata = typeof application.additional_info?.position_applied === 'string'
+            ? application.additional_info.position_applied
+            : null;
+
+        return positionFromMetadata || application.job_listings?.title || 'General Application';
     };
 
     const getStatusBadge = (status: string) => {
         const statusConfig = APPLICATION_STATUS.find(s => s.value === status);
-        return statusConfig ? (
-            <span className={`px-2 py-1 rounded-full text-xs font-medium bg-${statusConfig.color}-100 text-${statusConfig.color}-700`}>
-                {statusConfig.label}
-            </span>
-        ) : status;
+        if (!statusConfig) {
+            return <StatusBadge status={status} />;
+        }
+
+        const variantMap: Record<string, 'info' | 'warning' | 'success' | 'error' | 'default'> = {
+            blue: 'info',
+            yellow: 'warning',
+            green: 'success',
+            red: 'error',
+            purple: 'default',
+        };
+
+        return <StatusBadge status={statusConfig.label} variant={variantMap[statusConfig.color] || 'default'} />;
     };
 
     // Job columns
@@ -374,7 +384,7 @@ export default function CareersAdminPage() {
             render: (row: ApplicationWithJob) => (
                 <div>
                     <p className="font-medium text-slate-900">
-                        {row.job_listings?.title || 'General Application'}
+                        {getApplicationPosition(row)}
                     </p>
                     <p className="text-sm text-slate-500">
                         {row.job_listings?.department || '-'}
@@ -527,6 +537,14 @@ export default function CareersAdminPage() {
                                             <p className="text-sm text-slate-500">Experience</p>
                                             <p className="font-medium text-slate-900">{selectedItem.years_of_experience || '-'}</p>
                                         </div>
+                                        <div>
+                                            <p className="text-sm text-slate-500">Position Applied</p>
+                                            <p className="font-medium text-slate-900">{getApplicationPosition(selectedItem)}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-sm text-slate-500">Status</p>
+                                            <div className="pt-1">{getStatusBadge(selectedItem.status)}</div>
+                                        </div>
                                     </div>
 
                                     {selectedItem.linkedin && (
@@ -550,7 +568,7 @@ export default function CareersAdminPage() {
                                     <div>
                                         <p className="text-sm text-slate-500">Resume</p>
                                         <button
-                                            onClick={() => downloadResume(selectedItem.resume_url, selectedItem.resume_file_name)}
+                                            onClick={() => downloadResume(selectedItem.id)}
                                             className="flex items-center gap-2 text-indigo-600 hover:underline"
                                         >
                                             <Download className="w-4 h-4" />
@@ -572,10 +590,11 @@ export default function CareersAdminPage() {
                                                 <button
                                                     key={status.value}
                                                     onClick={() => handleUpdateApplicationStatus(selectedItem.id, status.value)}
-                                                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${selectedItem.status === status.value
-                                                        ? `bg-${status.color}-100 text-${status.color}-700`
-                                                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                                                        }`}
+                                                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                                                        selectedItem.status === status.value
+                                                            ? 'bg-indigo-100 text-indigo-700'
+                                                            : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                                                    }`}
                                                 >
                                                     {status.label}
                                                 </button>

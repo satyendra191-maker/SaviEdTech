@@ -275,12 +275,25 @@ cp .env.local.example .env.local
 # Edit .env.local with your credentials
 ```
 
-4. Run database migrations
+4. Start local Supabase or configure a remote target
 ```bash
-npx supabase db push
+# Local stack
+npm run db:start
+
+# Apply migrations to local Supabase
+npm run db:push:local
+
+# OR apply migrations to a remote Supabase project
+# Requires SUPABASE_DB_URL, or SUPABASE_DB_PASSWORD + project ref variables
+npm run db:push
 ```
 
-5. Run the development server
+5. Regenerate Supabase types after schema changes
+```bash
+npm run db:generate
+```
+
+6. Run the development server
 ```bash
 npm run dev
 ```
@@ -294,6 +307,9 @@ Open [http://localhost:3000](http://localhost:3000)
 NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+SUPABASE_PROJECT_ID=your_project_ref
+SUPABASE_DB_PASSWORD=your_database_password
+SUPABASE_DB_URL=postgresql://postgres:password@db.your-project.supabase.co:5432/postgres
 
 # App
 NEXT_PUBLIC_APP_URL=http://localhost:3000
@@ -316,9 +332,11 @@ EMAIL_FROM=noreply@saviedutech.com
 
 ### Supabase
 1. Create new project
-2. Run migrations
-3. Set up authentication providers
-4. Configure storage buckets
+2. Update `.env.local` with `SUPABASE_PROJECT_ID` and either `SUPABASE_DB_PASSWORD` or `SUPABASE_DB_URL`
+3. Run `npm run db:push`
+4. Run `npm run db:generate`
+5. Set up authentication providers
+6. Configure storage buckets
 
 ## API Documentation
 

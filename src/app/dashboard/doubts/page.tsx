@@ -12,7 +12,9 @@ import {
     X,
     Loader2,
     User,
-    BookOpen
+    BookOpen,
+    ImagePlus,
+    Sparkles,
 } from 'lucide-react';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
@@ -24,6 +26,7 @@ interface Doubt {
     subject: string | null;
     topic: string | null;
     lecture_id: string | null;
+    image_url: string | null;
     status: 'pending' | 'answered' | 'in_progress' | 'closed';
     priority: 'low' | 'medium' | 'high';
     created_at: string;
@@ -49,6 +52,17 @@ export default function DoubtsPage() {
     const [newQuestion, setNewQuestion] = useState('');
     const [newDescription, setNewDescription] = useState('');
     const [newSubject, setNewSubject] = useState('');
+    const [newTopic, setNewTopic] = useState('');
+    const [imageFile, setImageFile] = useState<File | null>(null);
+    const [imagePreview, setImagePreview] = useState<string | null>(null);
+    const [aiSubmitting, setAiSubmitting] = useState(false);
+    const [latestSolved, setLatestSolved] = useState<{
+        answer: string;
+        conceptExplanation: string;
+        steps: string[];
+        relatedPractice: Array<{ id: string; question: string; difficulty: string | null }>;
+        imageUrl?: string | null;
+    } | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
     const [filterStatus, setFilterStatus] = useState<string>('all');
 
@@ -60,7 +74,7 @@ export default function DoubtsPage() {
 
             const { data: doubtsData, error: doubtsError } = await supabase
                 .from('doubts')
-                .select('*')
+                .select('*, responses:doubt_responses(*)')
                 .eq('user_id', user.id)
                 .order('created_at', { ascending: false });
 
@@ -85,8 +99,18 @@ export default function DoubtsPage() {
         }
     }, [authLoading]);
 
-    const askDoubt = async () => {
-        if (!user || !newQuestion) return;
+    const resetComposer = () => {
+        setShowAskModal(false);
+        setNewQuestion('');
+        setNewDescription('');
+        setNewSubject('');
+        setNewTopic('');
+        setImageFile(null);
+        setImagePreview(null);
+    };
+
+    const fallbackCreateDoubt = async () => {
+        if (!user || (!newQuestion && !newDescription)) return;
 
         try {
             const supabase = getSupabaseBrowserClient();
@@ -95,9 +119,10 @@ export default function DoubtsPage() {
                 .from('doubts')
                 .insert({
                     user_id: user.id,
-                    question: newQuestion,
+                    question: newQuestion || `${newTopic || newSubject || 'Academic'} doubt`,
                     description: newDescription || null,
                     subject: newSubject || null,
+                    topic: newTopic || null,
                     status: 'pending',
                     priority: 'medium',
                 } as unknown as any)
@@ -107,13 +132,55 @@ export default function DoubtsPage() {
             if (error) throw error;
 
             setDoubts([(data as unknown as Doubt), ...doubts]);
-            setShowAskModal(false);
-            setNewQuestion('');
-            setNewDescription('');
-            setNewSubject('');
+            resetComposer();
         } catch (err) {
             console.error('Error asking doubt:', err);
             setError('Failed to submit your question');
+        }
+    };
+
+    const askDoubt = async () => {
+        if (!user || (!newQuestion && !newDescription && !imageFile)) return;
+
+        setAiSubmitting(true);
+        setError(null);
+
+        try {
+            const formData = new FormData();
+            formData.append('question', newQuestion);
+            formData.append('description', newDescription);
+            formData.append('subject', newSubject);
+            formData.append('topic', newTopic);
+            if (imageFile) {
+                formData.append('image', imageFile);
+            }
+
+            const response = await fetch('/api/ai/doubt-solver', {
+                method: 'POST',
+                body: formData,
+            });
+
+            const result = await response.json();
+            if (!response.ok || !result.success) {
+                throw new Error(result.error || 'Failed to solve doubt');
+            }
+
+            setLatestSolved({
+                answer: result.data.answer,
+                conceptExplanation: result.data.conceptExplanation,
+                steps: result.data.steps || [],
+                relatedPractice: result.data.relatedPractice || [],
+                imageUrl: result.data.imageUrl,
+            });
+
+            resetComposer();
+            await fetchDoubts();
+        } catch (err) {
+            console.error('Error solving doubt with AI:', err);
+            await fallbackCreateDoubt();
+            setLatestSolved(null);
+        } finally {
+            setAiSubmitting(false);
         }
     };
 
@@ -233,6 +300,47 @@ export default function DoubtsPage() {
                 </select>
             </div>
 
+            {latestSolved ? (
+                <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-5">
+                    <div className="flex items-start gap-3">
+                        <div className="rounded-xl bg-emerald-100 p-2 text-emerald-700">
+                            <Sparkles className="w-5 h-5" />
+                        </div>
+                        <div className="space-y-3">
+                            <div>
+                                <h3 className="font-semibold text-slate-900">AI Doubt Solver</h3>
+                                <p className="text-sm text-slate-700">{latestSolved.answer}</p>
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-slate-900">Step-by-step</p>
+                                <ul className="mt-1 space-y-1 text-sm text-slate-700">
+                                    {latestSolved.steps.map((step, index) => (
+                                        <li key={`${step}-${index}`}>{index + 1}. {step}</li>
+                                    ))}
+                                </ul>
+                            </div>
+                            <div>
+                                <p className="text-sm font-medium text-slate-900">Concept help</p>
+                                <p className="text-sm text-slate-700">{latestSolved.conceptExplanation}</p>
+                            </div>
+                            {latestSolved.relatedPractice.length > 0 ? (
+                                <div>
+                                    <p className="text-sm font-medium text-slate-900">Related practice</p>
+                                    <div className="mt-2 grid gap-2">
+                                        {latestSolved.relatedPractice.map((item) => (
+                                            <div key={item.id} className="rounded-xl border border-emerald-100 bg-white px-3 py-2 text-sm text-slate-700">
+                                                <p className="font-medium text-slate-900">{item.question}</p>
+                                                <p className="text-xs uppercase tracking-wide text-emerald-700">{item.difficulty || 'mixed'} difficulty</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            ) : null}
+                        </div>
+                    </div>
+                </div>
+            ) : null}
+
             {/* Doubts List */}
             {filteredDoubts.length > 0 ? (
                 <div className="space-y-4">
@@ -260,6 +368,26 @@ export default function DoubtsPage() {
                             {doubt.description && (
                                 <p className="text-slate-600 mb-4">{doubt.description}</p>
                             )}
+
+                            {doubt.image_url ? (
+                                <img
+                                    src={doubt.image_url}
+                                    alt="Doubt attachment"
+                                    className="mb-4 max-h-48 w-full rounded-xl object-cover sm:w-auto"
+                                />
+                            ) : null}
+
+                            {doubt.responses && doubt.responses.length > 0 ? (
+                                <div className="mb-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
+                                    <div className="mb-2 flex items-center gap-2 text-sm font-medium text-slate-900">
+                                        <User className="w-4 h-4" />
+                                        {doubt.responses[0]?.faculty_id === 'ai-doubt-solver' ? 'SaviEdu AI' : 'Faculty Response'}
+                                    </div>
+                                    <p className="text-sm whitespace-pre-line text-slate-700">
+                                        {doubt.responses[0]?.response}
+                                    </p>
+                                </div>
+                            ) : null}
 
                             <div className="flex items-center justify-between text-sm text-slate-500">
                                 <span>Asked on {new Date(doubt.created_at).toLocaleDateString()}</span>
@@ -323,6 +451,17 @@ export default function DoubtsPage() {
                             </div>
 
                             <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-1">Topic (Optional)</label>
+                                <input
+                                    type="text"
+                                    value={newTopic}
+                                    onChange={(e) => setNewTopic(e.target.value)}
+                                    placeholder="e.g., Electrostatics"
+                                    className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                                />
+                            </div>
+
+                            <div>
                                 <label className="block text-sm font-medium text-slate-700 mb-1">Description (Optional)</label>
                                 <textarea
                                     value={newDescription}
@@ -333,13 +472,47 @@ export default function DoubtsPage() {
                                 />
                             </div>
 
+                            <div>
+                                <label className="block text-sm font-medium text-slate-700 mb-2">Image Upload (Optional)</label>
+                                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-xl border border-dashed border-slate-300 px-4 py-4 text-sm text-slate-600 hover:border-primary-400 hover:text-primary-700">
+                                    <ImagePlus className="w-4 h-4" />
+                                    Upload handwritten or printed question
+                                    <input
+                                        type="file"
+                                        accept="image/png,image/jpeg,image/webp"
+                                        className="hidden"
+                                        onChange={(event) => {
+                                            const file = event.target.files?.[0] || null;
+                                            setImageFile(file);
+                                            if (!file) {
+                                                setImagePreview(null);
+                                                return;
+                                            }
+                                            const previewUrl = URL.createObjectURL(file);
+                                            setImagePreview(previewUrl);
+                                        }}
+                                    />
+                                </label>
+                                {imagePreview ? (
+                                    <img
+                                        src={imagePreview}
+                                        alt="Doubt preview"
+                                        className="mt-3 max-h-40 w-full rounded-xl object-cover"
+                                    />
+                                ) : null}
+                            </div>
+
                             <button
                                 onClick={askDoubt}
-                                disabled={!newQuestion}
+                                disabled={aiSubmitting || (!newQuestion && !newDescription && !imageFile)}
                                 className="w-full py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
                             >
-                                <Send className="w-5 h-5" />
-                                Submit Question
+                                {aiSubmitting ? (
+                                    <Loader2 className="w-5 h-5 animate-spin" />
+                                ) : (
+                                    <Send className="w-5 h-5" />
+                                )}
+                                Solve with AI
                             </button>
                         </div>
                     </div>

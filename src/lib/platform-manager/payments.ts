@@ -1,5 +1,5 @@
 /**
- * AI Autonomous Platform Manager - Payment Monitoring System
+ * SaviEduTech Team Autonomous Platform Manager - Payment Monitoring System
  *
  * Comprehensive monitoring and tracking for Razorpay gateway
  */

@@ -59,7 +59,7 @@ export default function LecturesPage() {
                     .order('display_order', { ascending: true });
 
                 // Fetch published lectures with faculty info
-                let query = supabase
+                const query = supabase
                     .from('lectures')
                     .select(`
                         id,

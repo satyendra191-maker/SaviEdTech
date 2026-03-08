@@ -16,6 +16,7 @@ interface NavigationPanelProps {
     answeredCount: number;
     markedCount: number;
     notVisitedCount: number;
+    submitLabel?: string;
 }
 
 export function NavigationPanel({
@@ -30,9 +31,10 @@ export function NavigationPanel({
     answeredCount,
     markedCount,
     notVisitedCount,
+    submitLabel = 'Submit Test',
 }: NavigationPanelProps) {
     const getStatusStyles = (status: QuestionStatus, isCurrent: boolean) => {
-        const baseStyles = 'flex items-center justify-center w-10 h-10 rounded-lg font-semibold text-sm transition-all duration-200 cursor-pointer';
+        const baseStyles = 'relative flex items-center justify-center w-10 h-10 rounded-lg font-semibold text-sm transition-all duration-200 cursor-pointer';
 
         if (isCurrent) {
             return `${baseStyles} ring-2 ring-primary-500 ring-offset-2`;
@@ -53,17 +55,39 @@ export function NavigationPanel({
         }
     };
 
-    const getStatusIcon = (status: QuestionStatus) => {
+    const getStatusBadge = (status: QuestionStatus) => {
         switch (status) {
-            case 'answered':
-                return <CheckCircle className="w-3.5 h-3.5" />;
             case 'marked_for_review':
+                return (
+                    <span className="absolute -right-1 -top-1 rounded-full bg-purple-600 p-0.5 text-white">
+                        <Flag className="h-2.5 w-2.5" />
+                    </span>
+                );
             case 'answered_and_marked':
-                return <Flag className="w-3.5 h-3.5" />;
+                return (
+                    <>
+                        <span className="absolute -left-1 -bottom-1 rounded-full bg-green-600 p-0.5 text-white">
+                            <CheckCircle className="h-2.5 w-2.5" />
+                        </span>
+                        <span className="absolute -right-1 -top-1 rounded-full bg-purple-600 p-0.5 text-white">
+                            <Flag className="h-2.5 w-2.5" />
+                        </span>
+                    </>
+                );
+            case 'answered':
+                return (
+                    <span className="absolute -right-1 -bottom-1 rounded-full bg-green-600 p-0.5 text-white">
+                        <CheckCircle className="h-2.5 w-2.5" />
+                    </span>
+                );
             case 'visited':
-                return <HelpCircle className="w-3.5 h-3.5" />;
+                return (
+                    <span className="absolute -right-1 -bottom-1 rounded-full bg-orange-500 p-0.5 text-white">
+                        <HelpCircle className="h-2.5 w-2.5" />
+                    </span>
+                );
             default:
-                return <Circle className="w-3.5 h-3.5" />;
+                return null;
         }
     };
 
@@ -127,7 +151,8 @@ export function NavigationPanel({
                                                 className={getStatusStyles(status, currentQuestion === questionIndex)}
                                                 title={`Question ${questionIndex + 1}`}
                                             >
-                                                {getStatusIcon(status)}
+                                                <span>{questionIndex + 1}</span>
+                                                {getStatusBadge(status)}
                                             </button>
                                         );
                                     })}
@@ -143,7 +168,8 @@ export function NavigationPanel({
                                 className={getStatusStyles(status, currentQuestion === index)}
                                 title={`Question ${index + 1}`}
                             >
-                                {getStatusIcon(status)}
+                                <span>{index + 1}</span>
+                                {getStatusBadge(status)}
                             </button>
                         ))}
                     </div>
@@ -175,7 +201,7 @@ export function NavigationPanel({
                     className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl bg-primary-600 text-white font-semibold hover:bg-primary-700 active:scale-[0.98] transition-all"
                 >
                     <CheckCircle className="w-5 h-5" />
-                    Submit Test
+                    {submitLabel}
                 </button>
             </div>
 

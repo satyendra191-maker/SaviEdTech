@@ -11,9 +11,8 @@ import {
     Twitter,
     Linkedin,
     MessageCircle,
-    GraduationCap
 } from 'lucide-react';
-import { AnimatedLogo } from './animated-logo';
+import { BrandLogo } from './brand-logo';
 
 const socialLinks = [
     { name: 'YouTube', icon: Youtube, href: 'https://youtube.com/@saviedutech', color: 'hover:text-red-500' },
@@ -59,31 +58,29 @@ const footerLinks = {
 export function Footer() {
     const pathname = usePathname();
 
-    const isDashboardRoute = pathname?.startsWith("/dashboard") ||
-        pathname?.startsWith("/admin") ||
-        pathname?.startsWith("/super-admin") ||
-        pathname?.startsWith("/faculty-dashboard") ||
-        pathname?.startsWith("/auth/callback");
+    const isDashboardRoute = pathname?.startsWith('/dashboard')
+        || pathname?.startsWith('/admin')
+        || pathname?.startsWith('/super-admin')
+        || pathname?.startsWith('/faculty-dashboard')
+        || pathname?.startsWith('/auth/callback');
 
-    // Skip on dashboard routes but render on all other pages
-    if (isDashboardRoute) return null;
+    if (isDashboardRoute) {
+        return null;
+    }
 
     return (
         <footer className="bg-slate-900 text-slate-300">
-            {/* Main Footer */}
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8">
-                    {/* Brand Column */}
                     <div className="col-span-2 md:col-span-3 lg:col-span-2">
-                        <Link href="/" className="flex items-center gap-2 mb-6">
-                            <AnimatedLogo size="lg" showText={true} />
+                        <Link href="/" className="mb-6 inline-flex items-center gap-2">
+                            <BrandLogo size="lg" showText={true} showTagline={true} />
                         </Link>
 
                         <p className="text-slate-400 text-sm mb-6 max-w-xs">
-                            Empowering students across India to achieve their dreams of cracking JEE & NEET through innovative digital learning.
+                            Empowering students across India to achieve their dreams of cracking JEE and NEET through innovative digital learning.
                         </p>
 
-                        {/* Contact Info */}
                         <div className="space-y-3">
                             <a href="tel:+919506943134" className="flex items-center gap-3 text-sm hover:text-white transition-colors">
                                 <Phone className="w-4 h-4 text-primary-400" />
@@ -99,7 +96,6 @@ export function Footer() {
                             </div>
                         </div>
 
-                        {/* Social Links */}
                         <div className="flex items-center gap-3 mt-6">
                             {socialLinks.map((social) => {
                                 const Icon = social.icon;
@@ -119,7 +115,6 @@ export function Footer() {
                         </div>
                     </div>
 
-                    {/* Links Columns */}
                     <div>
                         <h3 className="text-white font-semibold mb-4 text-sm">Platform</h3>
                         <ul className="space-y-2.5">
@@ -174,54 +169,15 @@ export function Footer() {
                 </div>
             </div>
 
-            {/* Bottom Bar */}
             <div className="border-t border-slate-800">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
                     <div className="flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-slate-500">
                         <div className="flex items-center gap-4">
-                            <div className="relative">
-                                <div className="w-16 h-16 relative drop-shadow-2xl">
-                                    {/* Colorful 3D Logo for Footer */}
-                                    <svg viewBox="0 0 100 100" className="w-16 h-16">
-                                        <defs>
-                                            <linearGradient id="footerGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
-                                                <stop offset="0%" stopColor="#f472b6" />
-                                                <stop offset="50%" stopColor="#a855f7" />
-                                                <stop offset="100%" stopColor="#6366f1" />
-                                            </linearGradient>
-                                            <linearGradient id="footerGrad2" x1="0%" y1="0%" x2="100%" y2="0%">
-                                                <stop offset="0%" stopColor="#22d3ee" />
-                                                <stop offset="100%" stopColor="#3b82f6" />
-                                            </linearGradient>
-                                            <filter id="footerGlow">
-                                                <feGaussianBlur stdDeviation="2" result="coloredBlur" />
-                                                <feMerge>
-                                                    <feMergeNode in="coloredBlur" />
-                                                    <feMergeNode in="SourceGraphic" />
-                                                </feMerge>
-                                            </filter>
-                                        </defs>
-                                        {/* Central sphere */}
-                                        <circle cx="50" cy="50" r="22" fill="url(#footerGrad1)" filter="url(#footerGlow)" />
-                                        <circle cx="42" cy="42" r="8" fill="white" opacity="0.3" />
-                                        {/* Orbit rings */}
-                                        <ellipse cx="50" cy="50" rx="32" ry="12" fill="none" stroke="url(#footerGrad2)" strokeWidth="1.5" transform="rotate(0 50 50)" opacity="0.8" />
-                                        <ellipse cx="50" cy="50" rx="32" ry="12" fill="none" stroke="#f472b6" strokeWidth="1.5" transform="rotate(60 50 50)" opacity="0.8" />
-                                        <ellipse cx="50" cy="50" rx="32" ry="12" fill="none" stroke="#a855f7" strokeWidth="1.5" transform="rotate(-60 50 50)" opacity="0.8" />
-                                        {/* Electrons */}
-                                        <circle cx="82" cy="50" r="3" fill="#22d3ee" filter="url(#footerGlow)" />
-                                        <circle cx="34" cy="77.7" r="3" fill="#a855f7" filter="url(#footerGlow)" />
-                                        <circle cx="34" cy="22.3" r="3" fill="#f472b6" filter="url(#footerGlow)" />
-                                        {/* Book symbol */}
-                                        <g transform="translate(42, 42)">
-                                            <path d="M2 4 L8 1 L14 4 L14 12 L8 15 L2 12 Z" fill="#ffffff" opacity="0.95" />
-                                            <path d="M2 4 L8 7 L14 4" fill="none" stroke="#a855f7" strokeWidth="0.5" />
-                                        </g>
-                                    </svg>
-                                </div>
-                            </div>
+                            <BrandLogo size="xs" showText={false} showTagline={false} />
                             <p>
-                                Designed and Developed by SaviTech AI @ 2026 ( A brand unit of SGI ) - All Rights Reserved
+                                Developed and Designed by SaviTech AI
+                                {' '}
+                                © 2026 SaviEduTech (A brand unit of SGI) — All Rights Reserved
                             </p>
                         </div>
                         <div className="flex items-center gap-6">

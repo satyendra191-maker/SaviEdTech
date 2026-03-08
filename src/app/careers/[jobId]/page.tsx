@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
 import {
@@ -40,7 +40,6 @@ interface JobListing {
 
 export default function JobDetailPage() {
     const params = useParams();
-    const router = useRouter();
     const jobId = params.jobId as string;
 
     const [job, setJob] = useState<JobListing | null>(null);
@@ -54,6 +53,7 @@ export default function JobDetailPage() {
         if (jobId) {
             fetchJobDetails();
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [jobId]);
 
     const fetchJobDetails = async () => {

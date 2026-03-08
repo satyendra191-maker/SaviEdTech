@@ -33,7 +33,8 @@ const resetPasswordSchema = z.object({
 type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 
 function ResetPasswordForm() {
-    const router = useRouter();
+    // Note: router available via useRouter() if needed for future navigation
+    // const router = useRouter();
     const searchParams = useSearchParams();
     const { updatePassword } = useAuth();
 

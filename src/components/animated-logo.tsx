@@ -46,10 +46,11 @@ export function AnimatedLogo({ size = 'md', showText = true, showTagline = true,
     }, []);
 
     // Render static SVG during SSR and initial render to avoid hydration mismatch
+    // Enhanced brighter logo with improved contrast
     const logoSvg = (
         <div className={`relative ${sizeClasses[size]} drop-shadow-2xl`}>
-            {/* Glow effect */}
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-800 via-slate-900 to-black rounded-full blur-xl opacity-80" />
+            {/* Glow effect - brighter blue/violet gradient */}
+            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-700 rounded-full blur-xl opacity-90" />
 
             {/* Main 3D Online Study Icon Container */}
             <svg
@@ -58,18 +59,18 @@ export function AnimatedLogo({ size = 'md', showText = true, showTagline = true,
             >
                 <defs>
                     <linearGradient id="atomGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#1e293b" />
-                        <stop offset="50%" stopColor="#334155" />
-                        <stop offset="100%" stopColor="#475569" />
+                        <stop offset="0%" stopColor="#1d4ed8" />
+                        <stop offset="50%" stopColor="#3730a3" />
+                        <stop offset="100%" stopColor="#5b21b6" />
                     </linearGradient>
                     <linearGradient id="electronGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#0891b2" />
-                        <stop offset="100%" stopColor="#0e7490" />
+                        <stop offset="0%" stopColor="#06b6d4" />
+                        <stop offset="100%" stopColor="#0891b2" />
                     </linearGradient>
                     <linearGradient id="studyGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#db2777" />
-                        <stop offset="50%" stopColor="#7c3aed" />
-                        <stop offset="100%" stopColor="#4f46e5" />
+                        <stop offset="0%" stopColor="#ec4899" />
+                        <stop offset="50%" stopColor="#8b5cf6" />
+                        <stop offset="100%" stopColor="#6366f1" />
                     </linearGradient>
                     <filter id="glow">
                         <feGaussianBlur stdDeviation="2" result="coloredBlur" />
@@ -91,16 +92,16 @@ export function AnimatedLogo({ size = 'md', showText = true, showTagline = true,
                     </filter>
                 </defs>
 
-                {/* Central sphere - representing online learning platform */}
+                {/* Central sphere - representing online learning platform - brighter */}
                 <circle cx="50" cy="50" r="22" fill="url(#atomGradient)" filter="url(#glow)" />
 
-                {/* Inner highlight */}
-                <circle cx="42" cy="42" r="8" fill="white" opacity="0.3" />
+                {/* Inner highlight - more visible */}
+                <circle cx="42" cy="42" r="8" fill="white" opacity="0.5" />
 
-                {/* Orbit rings - representing global connectivity */}
-                <ellipse cx="50" cy="50" rx="32" ry="12" fill="none" stroke="url(#electronGradient)" strokeWidth="1.5" transform="rotate(0 50 50)" opacity="0.8" />
-                <ellipse cx="50" cy="50" rx="32" ry="12" fill="none" stroke="url(#studyGradient)" strokeWidth="1.5" transform="rotate(60 50 50)" opacity="0.8" />
-                <ellipse cx="50" cy="50" rx="32" ry="12" fill="none" stroke="#f472b6" strokeWidth="1.5" transform="rotate(-60 50 50)" opacity="0.8" />
+                {/* Orbit rings - representing global connectivity - brighter opacity */}
+                <ellipse cx="50" cy="50" rx="32" ry="12" fill="none" stroke="url(#electronGradient)" strokeWidth="1.5" transform="rotate(0 50 50)" opacity="0.9" />
+                <ellipse cx="50" cy="50" rx="32" ry="12" fill="none" stroke="url(#studyGradient)" strokeWidth="1.5" transform="rotate(60 50 50)" opacity="0.9" />
+                <ellipse cx="50" cy="50" rx="32" ry="12" fill="none" stroke="#f472b6" strokeWidth="1.5" transform="rotate(-60 50 50)" opacity="0.9" />
 
                 {/* Electrons on orbits */}
                 <circle cx="82" cy="50" r="3" fill="#22d3ee" filter="url(#glow)" />
@@ -110,28 +111,28 @@ export function AnimatedLogo({ size = 'md', showText = true, showTagline = true,
                 {/* Book/Study symbol in center */}
                 <g transform="translate(42, 42)">
                     <path d="M2 4 L8 1 L14 4 L14 12 L8 15 L2 12 Z" fill="#ffffff" opacity="0.95" filter="url(#shadow)" />
-                    <path d="M2 4 L8 7 L14 4" fill="none" stroke="#8b5cf6" strokeWidth="0.5" />
-                    <rect x="5" y="8" width="6" height="1" fill="#c4b5fd" />
-                    <rect x="5" y="10" width="5" height="1" fill="#c4b5fd" />
+                    <path d="M2 4 L8 7 L14 4" fill="none" stroke="#ddd6fe" strokeWidth="0.5" />
+                    <rect x="5" y="8" width="6" height="1" fill="#e9d5ff" />
+                    <rect x="5" y="10" width="5" height="1" fill="#e9d5ff" />
                 </g>
 
-                {/* Decorative dots around */}
-                <circle cx="15" cy="25" r="2" fill="#22d3ee" opacity="0.6" />
-                <circle cx="85" cy="25" r="2" fill="#8b5cf6" opacity="0.6" />
-                <circle cx="15" cy="75" r="2" fill="#f472b6" opacity="0.6" />
-                <circle cx="85" cy="75" r="2" fill="#3b82f6" opacity="0.6" />
+                {/* Decorative dots around - brighter */}
+                <circle cx="15" cy="25" r="2" fill="#22d3ee" opacity="0.8" />
+                <circle cx="85" cy="25" r="2" fill="#a855f7" opacity="0.8" />
+                <circle cx="15" cy="75" r="2" fill="#f472b6" opacity="0.8" />
+                <circle cx="85" cy="75" r="2" fill="#3b82f6" opacity="0.8" />
             </svg>
         </div>
     );
 
     const textContent = showText && (
         <div className="flex flex-col items-start">
-            <div className={`font-black ${textSizeClasses[size]} bg-gradient-to-r from-violet-600 via-purple-600 to-pink-600 bg-clip-text text-transparent drop-shadow-lg`}>
+            <div className={`font-black ${textSizeClasses[size]} bg-gradient-to-r from-blue-600 via-violet-600 to-pink-600 bg-clip-text text-transparent drop-shadow-lg`}>
                 SaviEduTech
             </div>
             {showTagline && (
                 <div className={`font-bold ${taglineSizeClasses[size]} bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 bg-clip-text text-transparent drop-shadow-md`}>
-                    JEE • NEET • BOARD
+                    JEE | NEET | Board Preparation
                 </div>
             )}
         </div>

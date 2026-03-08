@@ -1,5 +1,5 @@
 /**
- * AI Autonomous Platform Manager - Health Checker
+ * SaviEduTech Team Autonomous Platform Manager - Health Checker
  * 
  * Provides comprehensive health checking capabilities:
  * - API endpoint health checks

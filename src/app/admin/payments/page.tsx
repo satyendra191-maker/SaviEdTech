@@ -1,265 +1,326 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
-import { DataTable, StatusBadge } from '@/components/admin/DataTable';
-import { createBrowserSupabaseClient } from '@/lib/supabase';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import type { ElementType } from 'react';
 import {
-    DollarSign,
     CreditCard,
     CheckCircle,
-    XCircle,
     Clock,
-    RefreshCw,
-    TrendingUp,
-    Users,
-    X,
+    DollarSign,
     FileText,
+    RefreshCw,
+    ShieldCheck,
+    X,
+    XCircle,
 } from 'lucide-react';
+import { DataTable, StatusBadge } from '@/components/admin/DataTable';
+import { getSupabaseBrowserClient } from '@/lib/supabase';
 import type { Database } from '@/types/supabase';
 
-type Donation = Database['public']['Tables']['donations']['Row'];
-type Profile = Database['public']['Tables']['profiles']['Row'];
+type PaymentRecord = Database['public']['Tables']['payments']['Row'];
 
-interface PaymentWithUser extends Donation {
-    user?: Profile;
+function getMetadata(payment: PaymentRecord): Record<string, unknown> {
+    return typeof payment.metadata === 'object' && payment.metadata !== null
+        ? payment.metadata as Record<string, unknown>
+        : {};
+}
+
+function getDisplayName(payment: PaymentRecord) {
+    const metadata = getMetadata(payment);
+    if (typeof metadata.donor_name === 'string' && metadata.donor_name) {
+        return metadata.donor_name;
+    }
+    if (typeof metadata.courseTitle === 'string' && metadata.courseTitle) {
+        return metadata.courseTitle;
+    }
+    if (payment.payment_type === 'subscription') {
+        return typeof metadata.planId === 'string' && metadata.planId ? metadata.planId : 'Premium Subscription';
+    }
+    return payment.user_id || 'Anonymous';
+}
+
+function getDisplayDetails(payment: PaymentRecord) {
+    const metadata = getMetadata(payment);
+    if (typeof metadata.donor_email === 'string' && metadata.donor_email) {
+        return metadata.donor_email;
+    }
+    if (typeof metadata.description === 'string' && metadata.description) {
+        return metadata.description;
+    }
+    return payment.transaction_id || payment.razorpay_order_id || 'No transaction id';
+}
+
+function openPaymentDocument(payment: PaymentRecord) {
+    const metadata = getMetadata(payment);
+
+    if (payment.payment_type === 'donation') {
+        const receiptParams = new URLSearchParams();
+        if (payment.razorpay_order_id) receiptParams.set('orderId', payment.razorpay_order_id);
+        if (payment.razorpay_payment_id) receiptParams.set('paymentId', payment.razorpay_payment_id);
+        if ([...receiptParams.keys()].length > 0) {
+            window.open(`/api/donations/receipt?${receiptParams.toString()}`, '_blank', 'noopener,noreferrer');
+        }
+        return;
+    }
+
+    const invoiceParams = new URLSearchParams();
+    if (typeof metadata.invoice_number === 'string' && metadata.invoice_number) {
+        invoiceParams.set('invoiceNumber', metadata.invoice_number);
+    } else {
+        if (payment.razorpay_order_id) invoiceParams.set('orderId', payment.razorpay_order_id);
+        if (payment.razorpay_payment_id) invoiceParams.set('paymentId', payment.razorpay_payment_id);
+    }
+
+    if ([...invoiceParams.keys()].length > 0) {
+        window.open(`/api/payments/invoice?${invoiceParams.toString()}`, '_blank', 'noopener,noreferrer');
+    }
 }
 
 export default function PaymentsPage() {
-    const [payments, setPayments] = useState<PaymentWithUser[]>([]);
+    const supabase = useMemo(() => getSupabaseBrowserClient(), []);
+    const [payments, setPayments] = useState<PaymentRecord[]>([]);
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [selectedPayment, setSelectedPayment] = useState<PaymentRecord | null>(null);
     const [stats, setStats] = useState({
         total: 0,
         completed: 0,
         pending: 0,
         failed: 0,
-        totalAmount: 0,
+        revenue: 0,
     });
-    const [dialogOpen, setDialogOpen] = useState(false);
-    const [selectedPayment, setSelectedPayment] = useState<PaymentWithUser | null>(null);
 
-    const supabase = createBrowserSupabaseClient();
+    const fetchPayments = useCallback(async () => {
+        if (!supabase) {
+            setError('Payments data source is unavailable.');
+            return;
+        }
 
-    const fetchData = useCallback(async () => {
         setLoading(true);
+        setError(null);
+
         try {
-            const { data: donationsData, error: donationsError } = await supabase
-                .from('donations')
+            const { data, error: queryError } = await supabase
+                .from('payments')
                 .select('*')
                 .order('created_at', { ascending: false });
 
-            if (donationsError) throw donationsError;
+            if (queryError) {
+                throw queryError;
+            }
 
-            const paymentsList = (donationsData || []) as Donation[];
-            setPayments(paymentsList);
-
-            // Calculate stats
-            const total = paymentsList.reduce((acc, p) => acc + (p.amount || 0), 0);
-            const completed = paymentsList.filter(p => p.status === 'completed').length;
-            const pending = paymentsList.filter(p => p.status === 'pending').length;
-            const failed = paymentsList.filter(p => p.status === 'failed').length;
-
+            const paymentRows = (data || []) as PaymentRecord[];
+            setPayments(paymentRows);
             setStats({
-                total: paymentsList.length,
-                completed,
-                pending,
-                failed,
-                totalAmount: total,
+                total: paymentRows.length,
+                completed: paymentRows.filter((payment) => payment.status === 'completed').length,
+                pending: paymentRows.filter((payment) => payment.status === 'pending').length,
+                failed: paymentRows.filter((payment) => payment.status === 'failed').length,
+                revenue: paymentRows
+                    .filter((payment) => payment.status === 'completed')
+                    .reduce((sum, payment) => sum + (payment.amount || 0), 0),
             });
-        } catch (error) {
-            console.error('Error fetching payments:', error);
+        } catch (fetchError) {
+            console.error('Error fetching payments:', fetchError);
+            setError(fetchError instanceof Error ? fetchError.message : 'Failed to load payments');
         } finally {
             setLoading(false);
         }
     }, [supabase]);
 
     useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+        void fetchPayments();
+    }, [fetchPayments]);
 
-    const handleView = (item: object) => {
-        setSelectedPayment(item as PaymentWithUser);
-        setDialogOpen(true);
-    };
-
-    const handleRefund = async (payment: PaymentWithUser) => {
-        if (!confirm(`Are you sure you want to refund ₹${payment.amount} to ${payment.donor_name || payment.donor_email}?`)) return;
-
-        try {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await (supabase.from('donations') as any).update({
-                status: 'refunded',
-                updated_at: new Date().toISOString(),
-            }).eq('id', payment.id);
-
-            await fetchData();
-            alert('Refund processed successfully');
-        } catch (error) {
-            console.error('Error processing refund:', error);
-            alert('Failed to process refund');
+    useEffect(() => {
+        if (!supabase) {
+            return undefined;
         }
-    };
 
-    const handleRetry = async (payment: PaymentWithUser) => {
-        if (!confirm('Retry this payment?')) return;
+        const channel = supabase
+            .channel('admin-payments-sync')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, () => {
+                void fetchPayments();
+            })
+            .subscribe();
 
-        try {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            await (supabase.from('donations') as any).update({
-                status: 'pending',
-                retry_count: (payment.retry_count || 0) + 1,
-                last_retry_at: new Date().toISOString(),
-            }).eq('id', payment.id);
-
-            await fetchData();
-            alert('Payment retry initiated');
-        } catch (error) {
-            console.error('Error retrying payment:', error);
-            alert('Failed to retry payment');
-        }
-    };
+        return () => {
+            void channel.unsubscribe();
+        };
+    }, [fetchPayments, supabase]);
 
     const columns = [
         {
-            key: 'donor',
-            header: 'Donor',
+            key: 'payment',
+            header: 'Payment',
             sortable: true,
             render: (row: object) => {
-                const payment = row as PaymentWithUser;
+                const payment = row as PaymentRecord;
                 return (
                     <div>
-                        <p className="font-medium text-slate-900">{payment.donor_name || 'Anonymous'}</p>
-                        <p className="text-xs text-slate-500">{payment.donor_email || payment.donor_phone || 'No contact info'}</p>
+                        <p className="font-medium text-slate-900">{getDisplayName(payment)}</p>
+                        <p className="text-xs text-slate-500">{getDisplayDetails(payment)}</p>
                     </div>
                 );
-            }
+            },
+        },
+        {
+            key: 'type',
+            header: 'Type',
+            render: (row: object) => {
+                const payment = row as PaymentRecord;
+                const variantMap: Record<string, 'info' | 'success' | 'warning' | 'default'> = {
+                    donation: 'info',
+                    course_purchase: 'success',
+                    subscription: 'warning',
+                };
+                return (
+                    <StatusBadge
+                        status={payment.payment_type.replace('_', ' ')}
+                        variant={variantMap[payment.payment_type] || 'default'}
+                    />
+                );
+            },
+            width: '130px',
         },
         {
             key: 'amount',
             header: 'Amount',
             render: (row: object) => {
-                const payment = row as PaymentWithUser;
+                const payment = row as PaymentRecord;
                 return (
                     <div>
-                        <p className="font-medium text-slate-900">₹{(payment.amount || 0).toLocaleString()}</p>
-                        <p className="text-xs text-slate-500 uppercase">{payment.currency || 'INR'}</p>
+                        <p className="font-medium text-slate-900">Rs {(payment.amount || 0).toLocaleString('en-IN')}</p>
+                        <p className="text-xs text-slate-500 uppercase">{payment.currency}</p>
                     </div>
                 );
             },
-            width: '120px'
-        },
-        {
-            key: 'gateway',
-            header: 'Gateway',
-            render: (row: object) => {
-                const payment = row as PaymentWithUser;
-                const gatewayColors: Record<string, 'default' | 'info' | 'warning' | 'success'> = {
-                    'razorpay': 'info',
-                    'stripe': 'warning',
-                    'paypal': 'success',
-                };
-                return (
-                    <StatusBadge
-                        status={payment.gateway?.toUpperCase() || 'N/A'}
-                        variant={gatewayColors[payment.gateway || ''] || 'default'}
-                    />
-                );
-            },
-            width: '100px'
+            width: '130px',
         },
         {
             key: 'status',
             header: 'Status',
             render: (row: object) => {
-                const payment = row as PaymentWithUser;
-                const statusColors: Record<string, 'default' | 'success' | 'warning' | 'error'> = {
-                    'completed': 'success',
-                    'pending': 'warning',
-                    'failed': 'error',
-                    'refunded': 'default',
-                    'cancelled': 'default',
+                const payment = row as PaymentRecord;
+                const variantMap: Record<string, 'success' | 'warning' | 'error' | 'default'> = {
+                    completed: 'success',
+                    pending: 'warning',
+                    failed: 'error',
+                    refunded: 'default',
+                    cancelled: 'default',
                 };
-                return <StatusBadge status={payment.status} variant={statusColors[payment.status] || 'default'} />;
+                return <StatusBadge status={payment.status} variant={variantMap[payment.status] || 'default'} />;
             },
-            width: '100px'
+            width: '110px',
         },
         {
-            key: 'retry',
-            header: 'Retries',
+            key: 'transaction',
+            header: 'Transaction',
             render: (row: object) => {
-                const payment = row as PaymentWithUser;
-                return <span className="text-sm text-slate-600">{payment.retry_count || 0}</span>;
+                const payment = row as PaymentRecord;
+                return (
+                    <div className="text-xs text-slate-500">
+                        <p className="font-mono">{payment.transaction_id || payment.razorpay_order_id || 'Pending'}</p>
+                        <p className="font-mono">{payment.razorpay_payment_id || 'Awaiting capture'}</p>
+                    </div>
+                );
             },
-            width: '80px'
+            width: '220px',
         },
         {
             key: 'date',
             header: 'Date',
             render: (row: object) => {
-                const payment = row as PaymentWithUser;
+                const payment = row as PaymentRecord;
                 return (
                     <div className="text-sm text-slate-600">
-                        <p>{new Date(payment.created_at).toLocaleDateString()}</p>
-                        <p className="text-xs">{new Date(payment.created_at).toLocaleTimeString()}</p>
+                        <p>{new Date(payment.created_at).toLocaleDateString('en-IN')}</p>
+                        <p className="text-xs">{new Date(payment.created_at).toLocaleTimeString('en-IN')}</p>
                     </div>
                 );
             },
-            width: '120px'
+            width: '140px',
         },
     ];
 
     return (
         <div className="space-y-6">
-            {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900">Payment Management</h1>
-                    <p className="text-slate-500">Track and manage donations and payments</p>
+                    <p className="text-slate-500">Monitor Razorpay donations, course purchases, and premium subscriptions.</p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3">
+                    <a
+                        href="/admin/finance"
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-medium text-emerald-700 transition-colors hover:bg-emerald-100"
+                    >
+                        <ShieldCheck className="h-4 w-4" />
+                        Financial Dashboard
+                    </a>
+                    <a
+                        href="/api/admin/reports/export?type=payments"
+                        className="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                    >
+                        Export PDF
+                    </a>
+                    <button
+                        type="button"
+                        onClick={() => void fetchPayments()}
+                        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
+                    >
+                        <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                        Refresh
+                    </button>
                 </div>
             </div>
 
-            {/* Stats */}
+            {error ? (
+                <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    {error}
+                </div>
+            ) : null}
+
             <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-                <StatCard icon={DollarSign} label="Total Revenue" value={stats.totalAmount} prefix="₹" />
-                <StatCard icon={CreditCard} label="Total Payments" value={stats.total} />
-                <StatCard icon={CheckCircle} label="Completed" value={stats.completed} variant="success" />
-                <StatCard icon={Clock} label="Pending" value={stats.pending} variant="warning" />
-                <StatCard icon={XCircle} label="Failed" value={stats.failed} variant="error" />
+                <StatCard icon={DollarSign} label="Revenue" value={`Rs ${stats.revenue.toLocaleString('en-IN')}`} />
+                <StatCard icon={CreditCard} label="Total Payments" value={stats.total.toLocaleString()} />
+                <StatCard icon={CheckCircle} label="Completed" value={stats.completed.toLocaleString()} variant="success" />
+                <StatCard icon={Clock} label="Pending" value={stats.pending.toLocaleString()} variant="warning" />
+                <StatCard icon={XCircle} label="Failed" value={stats.failed.toLocaleString()} variant="error" />
             </div>
 
-            {/* Data Table */}
             <DataTable
                 data={payments as unknown as object[]}
                 columns={columns}
-                keyExtractor={(row) => (row as PaymentWithUser).id}
+                keyExtractor={(row) => (row as PaymentRecord).id}
                 title="All Payments"
                 loading={loading}
-                onView={handleView}
-                searchKeys={['donor_name', 'donor_email', 'donor_phone', 'order_id', 'payment_id']}
+                onView={(row) => setSelectedPayment(row as PaymentRecord)}
+                searchKeys={['transaction_id', 'razorpay_order_id', 'razorpay_payment_id', 'payment_type', 'user_id']}
             />
 
-            {/* Dialog */}
-            {dialogOpen && selectedPayment && (
+            {selectedPayment ? (
                 <PaymentDialog
                     payment={selectedPayment}
-                    onClose={() => setDialogOpen(false)}
-                    onRefund={() => handleRefund(selectedPayment)}
-                    onRetry={() => handleRetry(selectedPayment)}
+                    onClose={() => setSelectedPayment(null)}
                 />
-            )}
+            ) : null}
         </div>
     );
 }
 
-interface StatCardProps {
-    icon: React.ElementType;
+function StatCard({
+    icon: Icon,
+    label,
+    value,
+    variant = 'default',
+}: {
+    icon: ElementType;
     label: string;
-    value: number;
-    prefix?: string;
+    value: string;
     variant?: 'default' | 'success' | 'warning' | 'error';
-}
-
-function StatCard({ icon: Icon, label, value, prefix = '', variant = 'default' }: StatCardProps) {
-    const variantColors = {
+}) {
+    const variants = {
         default: 'bg-primary-50 text-primary-600',
         success: 'bg-green-50 text-green-600',
         warning: 'bg-yellow-50 text-yellow-600',
@@ -269,11 +330,11 @@ function StatCard({ icon: Icon, label, value, prefix = '', variant = 'default' }
     return (
         <div className="bg-white rounded-xl p-4 shadow-sm border border-slate-200">
             <div className="flex items-center gap-3">
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${variantColors[variant]}`}>
+                <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${variants[variant]}`}>
                     <Icon className="w-5 h-5" />
                 </div>
                 <div>
-                    <p className="text-2xl font-bold text-slate-900">{prefix}{value.toLocaleString()}</p>
+                    <p className="text-2xl font-bold text-slate-900">{value}</p>
                     <p className="text-sm text-slate-500">{label}</p>
                 </div>
             </div>
@@ -281,176 +342,95 @@ function StatCard({ icon: Icon, label, value, prefix = '', variant = 'default' }
     );
 }
 
-interface PaymentDialogProps {
-    payment: PaymentWithUser;
+function PaymentDialog({
+    payment,
+    onClose,
+}: {
+    payment: PaymentRecord;
     onClose: () => void;
-    onRefund: () => void;
-    onRetry: () => void;
-}
-
-function PaymentDialog({ payment, onClose, onRefund, onRetry }: PaymentDialogProps) {
-    const statusColors: Record<string, string> = {
-        'completed': 'text-green-600 bg-green-50',
-        'pending': 'text-yellow-600 bg-yellow-50',
-        'failed': 'text-red-600 bg-red-50',
-        'refunded': 'text-slate-600 bg-slate-100',
-        'cancelled': 'text-slate-600 bg-slate-100',
-    };
+}) {
+    const metadata = getMetadata(payment);
+    const isDonation = payment.payment_type === 'donation';
 
     return (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
-                <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-slate-900">Payment Details</h3>
-                    <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
-                        <X className="w-5 h-5" />
-                    </button>
-                </div>
-
-                <div className="flex-1 overflow-y-auto p-6">
-                    {/* Status Banner */}
-                    <div className={`p-4 rounded-xl mb-6 ${statusColors[payment.status] || 'text-slate-600 bg-slate-100'}`}>
-                        <div className="flex items-center justify-between">
-                            <div>
-                                <p className="text-sm font-medium">Payment Status</p>
-                                <p className="text-2xl font-bold capitalize">{payment.status}</p>
-                            </div>
-                            <div className="text-right">
-                                <p className="text-sm font-medium">Amount</p>
-                                <p className="text-2xl font-bold">₹{(payment.amount || 0).toLocaleString()}</p>
-                            </div>
-                        </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+            <div className="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-xl">
+                <div className="flex items-center justify-between border-b border-slate-200 px-6 py-4">
+                    <div>
+                        <h3 className="text-lg font-semibold text-slate-900">Payment Details</h3>
+                        <p className="text-sm text-slate-500">Razorpay payment record</p>
                     </div>
-
-                    {/* Donor Info */}
-                    <div className="bg-slate-50 p-4 rounded-xl mb-6">
-                        <h4 className="font-medium text-slate-900 mb-3">Donor Information</h4>
-                        <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div>
-                                <span className="text-slate-500">Name:</span>
-                                <span className="ml-2 font-medium">{payment.donor_name || 'Anonymous'}</span>
-                            </div>
-                            <div>
-                                <span className="text-slate-500">Email:</span>
-                                <span className="ml-2 font-medium">{payment.donor_email || 'N/A'}</span>
-                            </div>
-                            <div>
-                                <span className="text-slate-500">Phone:</span>
-                                <span className="ml-2 font-medium">{payment.donor_phone || 'N/A'}</span>
-                            </div>
-                            <div>
-                                <span className="text-slate-500">Gateway:</span>
-                                <span className="ml-2 font-medium capitalize">{payment.gateway}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Transaction Details */}
-                    <div className="bg-slate-50 p-4 rounded-xl mb-6">
-                        <h4 className="font-medium text-slate-900 mb-3">Transaction Details</h4>
-                        <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                                <span className="text-slate-500">Order ID:</span>
-                                <span className="font-mono">{payment.order_id || 'N/A'}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-slate-500">Payment ID:</span>
-                                <span className="font-mono">{payment.payment_id || 'N/A'}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-slate-500">Currency:</span>
-                                <span className="uppercase">{payment.currency}</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span className="text-slate-500">Retry Count:</span>
-                                <span>{payment.retry_count || 0}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Timeline */}
-                    <div className="bg-slate-50 p-4 rounded-xl mb-6">
-                        <h4 className="font-medium text-slate-900 mb-3">Timeline</h4>
-                        <div className="space-y-2 text-sm">
-                            <div className="flex justify-between">
-                                <span className="text-slate-500">Created:</span>
-                                <span>{new Date(payment.created_at).toLocaleString()}</span>
-                            </div>
-                            {payment.completed_at && (
-                                <div className="flex justify-between">
-                                    <span className="text-slate-500">Completed:</span>
-                                    <span>{new Date(payment.completed_at).toLocaleString()}</span>
-                                </div>
-                            )}
-                            {payment.last_retry_at && (
-                                <div className="flex justify-between">
-                                    <span className="text-slate-500">Last Retry:</span>
-                                    <span>{new Date(payment.last_retry_at).toLocaleString()}</span>
-                                </div>
-                            )}
-                            <div className="flex justify-between">
-                                <span className="text-slate-500">Last Updated:</span>
-                                <span>{new Date(payment.updated_at).toLocaleString()}</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Error Info */}
-                    {(payment.error_message || payment.error_code) && (
-                        <div className="bg-red-50 p-4 rounded-xl mb-6">
-                            <h4 className="font-medium text-red-900 mb-3">Error Information</h4>
-                            {payment.error_code && (
-                                <p className="text-sm text-red-700 mb-1">
-                                    <span className="font-medium">Code:</span> {payment.error_code}
-                                </p>
-                            )}
-                            {payment.error_message && (
-                                <p className="text-sm text-red-700">
-                                    <span className="font-medium">Message:</span> {payment.error_message}
-                                </p>
-                            )}
-                        </div>
-                    )}
-
-                    {/* Metadata */}
-                    {payment.metadata && Object.keys(payment.metadata).length > 0 && (
-                        <div className="bg-slate-50 p-4 rounded-xl">
-                            <h4 className="font-medium text-slate-900 mb-3">Additional Metadata</h4>
-                            <pre className="text-xs bg-slate-100 p-3 rounded overflow-x-auto">
-                                {JSON.stringify(payment.metadata, null, 2)}
-                            </pre>
-                        </div>
-                    )}
-                </div>
-
-                {/* Actions */}
-                <div className="px-6 py-4 border-t border-slate-200 flex justify-end gap-3">
-                    {payment.status === 'completed' && (
-                        <button
-                            onClick={onRefund}
-                            className="flex items-center gap-2 px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                            <RefreshCw className="w-4 h-4" />
-                            Refund Payment
-                        </button>
-                    )}
-                    {payment.status === 'failed' && (
-                        <button
-                            onClick={onRetry}
-                            className="flex items-center gap-2 px-4 py-2 text-primary-600 hover:bg-primary-50 rounded-lg transition-colors"
-                        >
-                            <RefreshCw className="w-4 h-4" />
-                            Retry Payment
-                        </button>
-                    )}
                     <button
                         onClick={onClose}
-                        className="px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors"
+                        className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
                     >
-                        Close
+                        <X className="h-5 w-5" />
                     </button>
                 </div>
+
+                <div className="space-y-6 p-6">
+                    <div className="grid gap-4 md:grid-cols-3">
+                        <DetailCard label="Type" value={payment.payment_type.replace('_', ' ')} />
+                        <DetailCard label="Status" value={payment.status} />
+                        <DetailCard label="Amount" value={`Rs ${payment.amount.toLocaleString('en-IN')}`} />
+                    </div>
+
+                    <div className="grid gap-4 md:grid-cols-2">
+                        <DetailCard label="Transaction ID" value={payment.transaction_id || 'Pending'} mono />
+                        <DetailCard label="Order ID" value={payment.razorpay_order_id || 'Pending'} mono />
+                        <DetailCard label="Payment ID" value={payment.razorpay_payment_id || 'Pending'} mono />
+                        <DetailCard label="User" value={payment.user_id || 'Anonymous / not linked'} mono />
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                        <div className="flex items-center gap-2 mb-3 text-slate-900">
+                            <ShieldCheck className="h-4 w-4" />
+                            <h4 className="font-semibold">Metadata</h4>
+                        </div>
+                        <pre className="overflow-x-auto rounded-xl bg-slate-900 p-4 text-xs text-slate-100">
+                            {JSON.stringify(metadata, null, 2)}
+                        </pre>
+                    </div>
+
+                    <div className="flex flex-wrap justify-end gap-3">
+                        {((isDonation && (payment.razorpay_order_id || payment.razorpay_payment_id))
+                            || (!isDonation && (payment.razorpay_order_id || payment.razorpay_payment_id || typeof metadata.invoice_number === 'string'))) ? (
+                            <button
+                                type="button"
+                                onClick={() => openPaymentDocument(payment)}
+                                className="inline-flex items-center gap-2 rounded-xl border border-primary-200 bg-primary-50 px-4 py-2 text-sm font-medium text-primary-700 transition hover:bg-primary-100"
+                            >
+                                <FileText className="h-4 w-4" />
+                                {isDonation ? 'Download Receipt' : 'Download Invoice'}
+                            </button>
+                        ) : null}
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="rounded-xl bg-slate-100 px-4 py-2 text-sm font-medium text-slate-700 transition hover:bg-slate-200"
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
             </div>
+        </div>
+    );
+}
+
+function DetailCard({
+    label,
+    value,
+    mono = false,
+}: {
+    label: string;
+    value: string;
+    mono?: boolean;
+}) {
+    return (
+        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+            <div className="text-xs font-medium uppercase tracking-wide text-slate-400">{label}</div>
+            <div className={`mt-2 text-sm text-slate-900 ${mono ? 'font-mono break-all' : 'font-medium'}`}>{value}</div>
         </div>
     );
 }

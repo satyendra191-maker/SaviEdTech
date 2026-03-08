@@ -1,5 +1,5 @@
 /**
- * AI Autonomous Platform Manager - Auto-Testing Engine
+ * SaviEduTech Team Autonomous Platform Manager - Auto-Testing Engine
  *
  * Provides comprehensive automated testing for critical platform functionality:
  * - Authentication flow tests

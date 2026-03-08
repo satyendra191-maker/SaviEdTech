@@ -1,5 +1,5 @@
 /**
- * AI Autonomous Platform Manager - Self-Healing System
+ * SaviEduTech Team Autonomous Platform Manager - Self-Healing System
  * 
  * Provides automatic recovery from failures:
  * - Failure detection (deployment, server crashes, build failures, database outages)
@@ -11,6 +11,7 @@
 import { getSupabaseBrowserClient, createAdminSupabaseClient, isBrowser } from '@/lib/supabase';
 import { getRecentErrors, getSystemHealth, getCronStatus, getLatestHealthStatus, recordHealthCheck, type HealthStatus } from './monitor';
 import { sendAlert, type AlertSeverity } from './alerts';
+import { writePlatformAuditLog } from './audit-log';
 import { checkDatabaseHealth } from './health';
 
 /**
@@ -1179,8 +1180,6 @@ export async function sendRecoveryAlert(
  * Log recovery action to database
  */
 export async function logRecoveryAction(action: RecoveryAction): Promise<void> {
-    const supabase = getClient();
-
     try {
         // Store recovery action in system_health table as a record
         await recordHealthCheck(
@@ -1195,6 +1194,31 @@ export async function logRecoveryAction(action: RecoveryAction): Promise<void> {
             },
             0
         );
+
+        await writePlatformAuditLog({
+            auditType: 'self_healing',
+            auditSubtype: action.action_type,
+            timeRange: 'live',
+            status: action.status === 'success'
+                ? 'healthy'
+                : action.status === 'in_progress' || action.status === 'pending'
+                    ? 'warning'
+                    : 'critical',
+            title: `Recovery action: ${action.action_type}`,
+            summary: action.result || action.error_message || `Recovery action is ${action.status}`,
+            affectedModule: action.failure_type,
+            recoveryAction: action.action_type,
+            recoveryStatus: action.status,
+            metadata: {
+                actionId: action.id,
+                attemptedBy: action.attempted_by,
+                startedAt: action.started_at,
+                completedAt: action.completed_at,
+                failureDetails: action.failure_details,
+            },
+            notifiedAdmin: true,
+            notifiedEmail: false,
+        });
     } catch (err) {
         console.error('Failed to log recovery action:', err);
     }

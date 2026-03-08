@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useCallback, useEffect, useRef } from 'react';
-import type { Question, Test, TestAttempt } from '@/types';
+import type { Question, Test } from '@/types';
 
 export type QuestionStatus = 'not_visited' | 'visited' | 'answered' | 'marked_for_review' | 'answered_and_marked';
 
@@ -20,11 +20,16 @@ interface UseTestProps {
     test: Test;
     questions: Question[];
     attemptId?: string;
+    initialTimeRemainingSeconds?: number;
+    initialAnswers?: Record<string, string>;
+    initialMarkedQuestionIds?: string[];
+    initialQuestionIndex?: number;
     onSubmit: (answers: Record<string, string>, timeTakenSeconds: number) => Promise<void>;
     onAutoSave?: (answers: Record<string, string>) => Promise<void>;
 }
 
 interface UseTestReturn extends TestState {
+    markedQuestions: Set<string>;
     // Navigation
     goToQuestion: (index: number) => void;
     goToNext: () => void;
@@ -60,16 +65,29 @@ export function useTest({
     test,
     questions,
     attemptId,
+    initialTimeRemainingSeconds,
+    initialAnswers = {},
+    initialMarkedQuestionIds = [],
+    initialQuestionIndex = 0,
     onSubmit,
     onAutoSave,
 }: UseTestProps): UseTestReturn {
-    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-    const [answers, setAnswers] = useState<Record<string, string>>({});
-    const [markedQuestions, setMarkedQuestions] = useState<Set<string>>(new Set());
+    const initialMarkedSet = useRef<Set<string>>(new Set(initialMarkedQuestionIds));
+    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(initialQuestionIndex);
+    const [answers, setAnswers] = useState<Record<string, string>>(initialAnswers);
+    const [markedQuestions, setMarkedQuestions] = useState<Set<string>>(new Set(initialMarkedQuestionIds));
     const [questionStatuses, setQuestionStatuses] = useState<QuestionStatus[]>(
-        () => Array(questions.length).fill('not_visited')
+        () => questions.map((question, index) => {
+            const hasAnswer = Boolean(initialAnswers?.[question.id]);
+            const isMarked = initialMarkedSet.current.has(question.id);
+            if (isMarked && hasAnswer) return 'answered_and_marked';
+            if (isMarked) return 'marked_for_review';
+            if (hasAnswer) return 'answered';
+            if (index < initialQuestionIndex) return 'visited';
+            return 'not_visited';
+        })
     );
-    const [timeRemaining, setTimeRemaining] = useState(test.duration_minutes * 60);
+    const [timeRemaining, setTimeRemaining] = useState(initialTimeRemainingSeconds ?? test.duration_minutes * 60);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSubmitted, setIsSubmitted] = useState(false);
     const [startTime] = useState<Date | null>(new Date());
@@ -77,6 +95,27 @@ export function useTest({
     const visitedTimeoutRef = useRef<NodeJS.Timeout | null>(null);
     const autoSaveIntervalRef = useRef<NodeJS.Timeout | null>(null);
     const lastSavedAnswersRef = useRef<Record<string, string>>({});
+    const restoredFromLocalStorageRef = useRef(false);
+    const answersRef = useRef<Record<string, string>>(answers);
+    const markedQuestionsRef = useRef<Set<string>>(markedQuestions);
+    const currentQuestionIndexRef = useRef(currentQuestionIndex);
+    const timeRemainingRef = useRef(timeRemaining);
+
+    useEffect(() => {
+        answersRef.current = answers;
+    }, [answers]);
+
+    useEffect(() => {
+        markedQuestionsRef.current = markedQuestions;
+    }, [markedQuestions]);
+
+    useEffect(() => {
+        currentQuestionIndexRef.current = currentQuestionIndex;
+    }, [currentQuestionIndex]);
+
+    useEffect(() => {
+        timeRemainingRef.current = timeRemaining;
+    }, [timeRemaining]);
 
     // Load saved state from localStorage on mount
     useEffect(() => {
@@ -91,52 +130,128 @@ export function useTest({
                 if (parsed.answers) setAnswers(parsed.answers);
                 if (parsed.markedQuestions) setMarkedQuestions(new Set(parsed.markedQuestions));
                 if (parsed.currentQuestionIndex !== undefined) setCurrentQuestionIndex(parsed.currentQuestionIndex);
-                if (parsed.timeRemaining !== undefined) setTimeRemaining(parsed.timeRemaining);
+                if (parsed.timeRemaining !== undefined) {
+                    restoredFromLocalStorageRef.current = true;
+                    setTimeRemaining(parsed.timeRemaining);
+                }
             } catch (e) {
                 console.error('Failed to load saved test state:', e);
             }
         }
     }, [attemptId]);
 
-    // Auto-save to localStorage and server
     useEffect(() => {
-        if (!attemptId || isSubmitted) return;
+        if (attemptId) {
+            return;
+        }
 
-        const saveProgress = async () => {
-            // Save to localStorage
-            const saveData = {
-                answers,
-                markedQuestions: Array.from(markedQuestions),
-                currentQuestionIndex,
-                timeRemaining,
-                lastSaved: new Date().toISOString(),
-            };
-            localStorage.setItem(`test_progress_${attemptId}`, JSON.stringify(saveData));
+        setAnswers(initialAnswers);
+        setMarkedQuestions(new Set(initialMarkedQuestionIds));
+        setCurrentQuestionIndex(initialQuestionIndex);
+        setQuestionStatuses(questions.map((question, index) => {
+            const hasAnswer = Boolean(initialAnswers?.[question.id]);
+            const isMarked = initialMarkedQuestionIds.includes(question.id);
+            if (isMarked && hasAnswer) return 'answered_and_marked';
+            if (isMarked) return 'marked_for_review';
+            if (hasAnswer) return 'answered';
+            if (index < initialQuestionIndex) return 'visited';
+            return 'not_visited';
+        }));
+    }, [attemptId, initialAnswers, initialMarkedQuestionIds, initialQuestionIndex, questions]);
 
-            // Auto-save to server if answers have changed
-            const answersChanged = JSON.stringify(answers) !== JSON.stringify(lastSavedAnswersRef.current);
+    useEffect(() => {
+        if (restoredFromLocalStorageRef.current) {
+            return;
+        }
+
+        if (typeof initialTimeRemainingSeconds === 'number') {
+            setTimeRemaining(initialTimeRemainingSeconds);
+            return;
+        }
+
+        setTimeRemaining(test.duration_minutes * 60);
+    }, [initialTimeRemainingSeconds, test.duration_minutes]);
+
+    useEffect(() => {
+        setQuestionStatuses((prev) => {
+            if (prev.length === questions.length) {
+                return prev;
+            }
+
+            const next = Array(questions.length).fill('not_visited') as QuestionStatus[];
+            for (let index = 0; index < Math.min(prev.length, next.length); index += 1) {
+                next[index] = prev[index] || 'not_visited';
+            }
+            return next;
+        });
+
+        setCurrentQuestionIndex((prev) => {
+            if (questions.length === 0) {
+                return 0;
+            }
+
+            return Math.min(prev, questions.length - 1);
+        });
+    }, [questions.length]);
+
+    const saveLocalProgress = useCallback(() => {
+        if (!attemptId || isSubmitted) {
+            return;
+        }
+
+        const saveData = {
+            answers: answersRef.current,
+            markedQuestions: Array.from(markedQuestionsRef.current),
+            currentQuestionIndex: currentQuestionIndexRef.current,
+            timeRemaining: timeRemainingRef.current,
+            lastSaved: new Date().toISOString(),
+        };
+
+        localStorage.setItem(`test_progress_${attemptId}`, JSON.stringify(saveData));
+    }, [attemptId, isSubmitted]);
+
+    // Save key interaction state immediately without writing every second.
+    useEffect(() => {
+        saveLocalProgress();
+    }, [answers, markedQuestions, currentQuestionIndex, saveLocalProgress]);
+
+    // Auto-save to localStorage and server on an interval.
+    useEffect(() => {
+        if (!attemptId || isSubmitted) {
+            return undefined;
+        }
+
+        const syncProgress = async () => {
+            saveLocalProgress();
+
+            const answersChanged = JSON.stringify(answersRef.current) !== JSON.stringify(lastSavedAnswersRef.current);
             if (answersChanged && onAutoSave) {
                 try {
-                    await onAutoSave(answers);
-                    lastSavedAnswersRef.current = { ...answers };
+                    await onAutoSave(answersRef.current);
+                    lastSavedAnswersRef.current = { ...answersRef.current };
                 } catch (e) {
                     console.error('Auto-save failed:', e);
                 }
             }
         };
 
-        // Save immediately when answers change
-        saveProgress();
+        const handleBeforeUnload = () => {
+            saveLocalProgress();
+        };
 
-        // Set up interval for periodic saves
-        autoSaveIntervalRef.current = setInterval(saveProgress, AUTO_SAVE_INTERVAL);
+        void syncProgress();
+        autoSaveIntervalRef.current = setInterval(() => {
+            void syncProgress();
+        }, AUTO_SAVE_INTERVAL);
+        window.addEventListener('beforeunload', handleBeforeUnload);
 
         return () => {
             if (autoSaveIntervalRef.current) {
                 clearInterval(autoSaveIntervalRef.current);
             }
+            window.removeEventListener('beforeunload', handleBeforeUnload);
         };
-    }, [answers, markedQuestions, currentQuestionIndex, timeRemaining, attemptId, isSubmitted, onAutoSave]);
+    }, [attemptId, isSubmitted, onAutoSave, saveLocalProgress]);
 
     // Timer countdown
     useEffect(() => {
@@ -307,7 +422,6 @@ export function useTest({
             }
         } catch (error) {
             console.error('Failed to submit test:', error);
-            throw error;
         } finally {
             setIsSubmitting(false);
         }
@@ -315,9 +429,15 @@ export function useTest({
 
     const handleTimeUp = useCallback(() => {
         if (!isSubmitted) {
-            submitTest();
+            void submitTest();
         }
     }, [isSubmitted, submitTest]);
+
+    useEffect(() => {
+        if (timeRemaining === 0 && !isSubmitted && !isSubmitting) {
+            void submitTest();
+        }
+    }, [timeRemaining, isSubmitted, isSubmitting, submitTest]);
 
     const currentQuestion = questions[currentQuestionIndex] || null;
     const currentAnswer = currentQuestion ? answers[currentQuestion.id] : undefined;

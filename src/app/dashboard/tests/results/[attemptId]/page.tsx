@@ -1,33 +1,38 @@
 'use client';
 
-import { useEffect, useState, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import {
-    Trophy,
-    Target,
-    Clock,
-    CheckCircle,
-    XCircle,
-    HelpCircle,
-    ArrowLeft,
-    Download,
-    Share2,
-    ChevronDown,
-    ChevronUp,
-    BookOpen,
-    BarChart3,
-    FileText,
-    Award,
-    TrendingUp,
-    AlertTriangle,
-    Loader2
-} from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import {
+    AlertTriangle,
+    ArrowLeft,
+    BarChart3,
+    BookOpen,
+    CheckCircle,
+    Clock,
+    Copy,
+    Download,
+    Loader2,
+    Target,
+    Trophy,
+    XCircle,
+} from 'lucide-react';
+import { getSupabaseBrowserClient } from '@/lib/supabase';
 
-// Types
+interface SectionResult {
+    name: string;
+    attempted: number;
+    correct: number;
+    incorrect: number;
+    score: number;
+    maxScore: number;
+    accuracy: number;
+}
+
 interface QuestionResult {
     id: string;
-    questionNumber: number;
+    displayOrder: number;
+    section: string;
     questionText: string;
     questionType: 'MCQ' | 'NUMERICAL' | 'ASSERTION_REASON';
     yourAnswer: string | null;
@@ -38,313 +43,350 @@ interface QuestionResult {
     maxMarks: number;
     negativeMarks: number;
     solution: string;
-    solutionImage?: string | null;
-    section: string;
-    timeSpent: number;
+    solutionImageUrl: string | null;
+    timeSpentSeconds: number;
 }
 
-interface SectionResult {
-    name: string;
-    totalQuestions: number;
-    attempted: number;
-    correct: number;
-    incorrect: number;
-    score: number;
-    maxScore: number;
-    accuracy: number;
-    avgTimePerQuestion: number;
-}
-
-interface TestResult {
-    id: string;
+interface TestResultData {
+    attemptId: string;
+    testId: string;
     testTitle: string;
-    testType: 'JEE' | 'NEET' | 'custom';
-    submittedAt: string;
-    duration: number; // in minutes
-    timeTaken: number; // in seconds
-
-    // Scores
+    testLabel: string;
+    submittedAt: string | null;
+    durationMinutes: number;
+    timeTakenSeconds: number;
     totalScore: number;
     maxScore: number;
-    percentage: number;
-    percentile: number;
+    accuracyPercent: number;
+    percentile: number | null;
     rank: number | null;
-
-    // Question stats
-    totalQuestions: number;
-    attempted: number;
-    correct: number;
-    incorrect: number;
-    unattempted: number;
-
-    // Accuracy
-    accuracy: number;
-
-    // Section-wise
-    sections: SectionResult[];
-
-    // Question details
+    predictedRank: number | null;
+    correctCount: number;
+    incorrectCount: number;
+    unattemptedCount: number;
     questions: QuestionResult[];
+    sections: SectionResult[];
 }
-
-// Mock data for demonstration
-const MOCK_RESULT: TestResult = {
-    id: 'attempt-123',
-    testTitle: 'JEE Main Full Mock Test #1',
-    testType: 'JEE',
-    submittedAt: new Date().toISOString(),
-    duration: 180,
-    timeTaken: 9360, // 2 hours 36 minutes
-
-    totalScore: 245,
-    maxScore: 300,
-    percentage: 81.67,
-    percentile: 94.5,
-    rank: 1250,
-
-    totalQuestions: 90,
-    attempted: 75,
-    correct: 62,
-    incorrect: 13,
-    unattempted: 15,
-
-    accuracy: 82.67,
-
-    sections: [
-        {
-            name: 'Physics',
-            totalQuestions: 30,
-            attempted: 26,
-            correct: 21,
-            incorrect: 5,
-            score: 79,
-            maxScore: 120,
-            accuracy: 80.77,
-            avgTimePerQuestion: 112,
-        },
-        {
-            name: 'Chemistry',
-            totalQuestions: 30,
-            attempted: 24,
-            correct: 20,
-            incorrect: 4,
-            score: 76,
-            maxScore: 120,
-            accuracy: 83.33,
-            avgTimePerQuestion: 98,
-        },
-        {
-            name: 'Mathematics',
-            totalQuestions: 30,
-            attempted: 25,
-            correct: 21,
-            incorrect: 4,
-            score: 90,
-            maxScore: 120,
-            accuracy: 84.00,
-            avgTimePerQuestion: 125,
-        },
-    ],
-
-    questions: [
-        {
-            id: 'q1',
-            questionNumber: 1,
-            questionText: 'The dimensional formula of Planck\'s constant is:',
-            questionType: 'MCQ',
-            yourAnswer: 'A',
-            correctAnswer: 'A',
-            isCorrect: true,
-            isAttempted: true,
-            marksObtained: 4,
-            maxMarks: 4,
-            negativeMarks: 1,
-            solution: 'Using E = hν, we get h = E/ν = [ML²T⁻²]/[T⁻¹] = [ML²T⁻¹]',
-            section: 'Physics',
-            timeSpent: 45,
-        },
-        {
-            id: 'q2',
-            questionNumber: 2,
-            questionText: 'A particle moves in a circle of radius R with constant angular velocity ω. The magnitude of its acceleration is:',
-            questionType: 'MCQ',
-            yourAnswer: 'B',
-            correctAnswer: 'C',
-            isCorrect: false,
-            isAttempted: true,
-            marksObtained: -1,
-            maxMarks: 4,
-            negativeMarks: 1,
-            solution: 'For circular motion, a = ω²R',
-            section: 'Physics',
-            timeSpent: 120,
-        },
-        {
-            id: 'q3',
-            questionNumber: 3,
-            questionText: 'The escape velocity from Earth\'s surface is 11.2 km/s. If a body is projected with a velocity of 20 km/s, what will be its velocity at infinity?',
-            questionType: 'NUMERICAL',
-            yourAnswer: null,
-            correctAnswer: '16.6',
-            isCorrect: false,
-            isAttempted: false,
-            marksObtained: 0,
-            maxMarks: 4,
-            negativeMarks: 0,
-            solution: 'Using conservation of energy: v_∞ = √(v² - v_e²) = √(400 - 125.44) = √274.56 ≈ 16.6 km/s',
-            section: 'Physics',
-            timeSpent: 0,
-        },
-    ],
-};
-
-const COLORS = {
-    correct: 'bg-green-500',
-    incorrect: 'bg-red-500',
-    unattempted: 'bg-gray-300',
-    physics: 'bg-blue-500',
-    chemistry: 'bg-emerald-500',
-    mathematics: 'bg-purple-500',
-    biology: 'bg-amber-500',
-};
 
 export default function TestResultsPage() {
     const params = useParams();
-    const router = useRouter();
     const attemptId = params.attemptId as string;
 
-    const [result, setResult] = useState<TestResult | null>(null);
+    const [result, setResult] = useState<TestResultData | null>(null);
+    const [activeTab, setActiveTab] = useState<'overview' | 'solutions'>('overview');
     const [isLoading, setIsLoading] = useState(true);
-    const [expandedQuestion, setExpandedQuestion] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<'overview' | 'solutions' | 'analysis'>('overview');
-    const [filterSection, setFilterSection] = useState<string>('all');
-    const [filterStatus, setFilterStatus] = useState<'all' | 'correct' | 'incorrect' | 'unattempted'>('all');
-    const [isDownloadingPDF, setIsDownloadingPDF] = useState(false);
-
-    // Refs for PDF generation
-    const resultRef = useRef<HTMLDivElement>(null);
+    const [error, setError] = useState<string | null>(null);
+    const [isDownloading, setIsDownloading] = useState(false);
+    const [copied, setCopied] = useState(false);
 
     useEffect(() => {
-        // Fetch result data
-        const fetchResult = async () => {
+        async function fetchResult() {
             setIsLoading(true);
-            try {
-                // In real app, fetch from API
-                // const response = await fetch(`/api/test-engine?action=get_result&attemptId=${attemptId}`);
-                // const data = await response.json();
+            setError(null);
 
-                // Mock data for now
-                await new Promise(resolve => setTimeout(resolve, 1000));
-                setResult(MOCK_RESULT);
+            try {
+                const supabase = getSupabaseBrowserClient();
+                if (!supabase) {
+                    throw new Error('Supabase client is unavailable');
+                }
+
+                const {
+                    data: { user },
+                    error: authError,
+                } = await supabase.auth.getUser();
+
+                if (authError || !user) {
+                    throw new Error('Please sign in to view your test analysis');
+                }
+
+                const { data: attemptRow, error: attemptError } = await supabase
+                    .from('test_attempts')
+                    .select(`
+                        id,
+                        test_id,
+                        submitted_at,
+                        time_taken_seconds,
+                        total_score,
+                        max_score,
+                        accuracy_percent,
+                        percentile,
+                        rank,
+                        correct_count,
+                        incorrect_count,
+                        unattempted_count,
+                        answers,
+                        status,
+                        section_scores,
+                        test:test_id(
+                            title,
+                            test_type,
+                            duration_minutes,
+                            total_marks,
+                            exam:exam_id(name)
+                        )
+                    `)
+                    .eq('id', attemptId)
+                    .eq('user_id', user.id)
+                    .single();
+
+                if (attemptError || !attemptRow) {
+                    throw attemptError || new Error('Result not found');
+                }
+
+                const attempt = attemptRow as {
+                    id: string;
+                    test_id: string;
+                    submitted_at: string | null;
+                    time_taken_seconds: number | null;
+                    total_score: number | null;
+                    max_score: number;
+                    accuracy_percent: number | null;
+                    percentile: number | null;
+                    rank: number | null;
+                    correct_count: number | null;
+                    incorrect_count: number | null;
+                    unattempted_count: number | null;
+                    answers: Record<string, string> | null;
+                    status: string;
+                    section_scores: Record<string, number> | null;
+                    test: {
+                        title: string;
+                        test_type: string;
+                        duration_minutes: number;
+                        total_marks: number;
+                        exam: { name: string } | null;
+                    } | null;
+                };
+
+                if (attempt.status !== 'completed' && attempt.status !== 'time_up') {
+                    throw new Error('This attempt is not submitted yet');
+                }
+
+                const [{ data: testQuestionRows, error: testQuestionsError }, { data: answerRows, error: answersError }, { data: studentProfile }] = await Promise.all([
+                    supabase
+                        .from('test_questions')
+                        .select(`
+                            display_order,
+                            marks,
+                            negative_marks,
+                            section,
+                            question:question_id(
+                                id,
+                                question_text,
+                                question_type,
+                                correct_answer,
+                                solution_text,
+                                solution_image_url
+                            )
+                        `)
+                        .eq('test_id', attempt.test_id)
+                        .order('display_order', { ascending: true }),
+                    supabase
+                        .from('test_answers')
+                        .select('question_id, selected_answer, is_correct, marks_obtained, time_spent_seconds')
+                        .eq('attempt_id', attempt.id),
+                    supabase
+                        .from('student_profiles')
+                        .select('rank_prediction')
+                        .eq('id', user.id)
+                        .maybeSingle(),
+                ]);
+
+                if (testQuestionsError) {
+                    throw testQuestionsError;
+                }
+
+                if (answersError) {
+                    throw answersError;
+                }
+
+                const typedAnswerRows = (answerRows ?? []) as Array<{
+                    question_id: string | null;
+                    selected_answer: string | null;
+                    is_correct: boolean | null;
+                    marks_obtained: number | null;
+                    time_spent_seconds: number | null;
+                }>;
+                const answersByQuestionId = new Map(
+                    typedAnswerRows.map((row) => [row.question_id ?? '', row])
+                );
+                const rawAnswers = (attempt.answers ?? {}) as Record<string, string>;
+
+                const questions: QuestionResult[] = ((testQuestionRows ?? []) as Array<{
+                    display_order: number;
+                    marks: number;
+                    negative_marks: number | null;
+                    section: string | null;
+                    question: {
+                        id: string;
+                        question_text: string;
+                        question_type: 'MCQ' | 'NUMERICAL' | 'ASSERTION_REASON';
+                        correct_answer: string;
+                        solution_text: string;
+                        solution_image_url: string | null;
+                    };
+                }>).map((row) => {
+                    const answer = answersByQuestionId.get(row.question.id);
+                    const fallbackAnswer = rawAnswers[row.question.id] ?? null;
+                    const yourAnswer = answer?.selected_answer ?? fallbackAnswer;
+                    const isAttempted = Boolean(yourAnswer && yourAnswer.trim().length > 0);
+                    const isCorrect = answer?.is_correct ?? false;
+                    return {
+                        id: row.question.id,
+                        displayOrder: row.display_order,
+                        section: row.section || 'General',
+                        questionText: row.question.question_text,
+                        questionType: row.question.question_type,
+                        yourAnswer,
+                        correctAnswer: row.question.correct_answer,
+                        isCorrect,
+                        isAttempted,
+                        marksObtained: answer?.marks_obtained ?? 0,
+                        maxMarks: row.marks,
+                        negativeMarks: row.negative_marks ?? 0,
+                        solution: row.question.solution_text,
+                        solutionImageUrl: row.question.solution_image_url,
+                        timeSpentSeconds: answer?.time_spent_seconds ?? 0,
+                    };
+                });
+
+                const sectionAccumulator = new Map<string, SectionResult>();
+                for (const question of questions) {
+                    const section = sectionAccumulator.get(question.section) ?? {
+                        name: question.section,
+                        attempted: 0,
+                        correct: 0,
+                        incorrect: 0,
+                        score: 0,
+                        maxScore: 0,
+                        accuracy: 0,
+                    };
+
+                    section.maxScore += question.maxMarks;
+                    section.score += question.marksObtained;
+                    if (question.isAttempted) {
+                        section.attempted += 1;
+                    }
+                    if (question.isCorrect) {
+                        section.correct += 1;
+                    }
+                    if (question.isAttempted && !question.isCorrect) {
+                        section.incorrect += 1;
+                    }
+
+                    sectionAccumulator.set(question.section, section);
+                }
+
+                const sections = Array.from(sectionAccumulator.values()).map((section) => ({
+                    ...section,
+                    accuracy: section.attempted > 0 ? Number(((section.correct / section.attempted) * 100).toFixed(2)) : 0,
+                }));
+
+                const testLabel = attempt.test?.exam?.name || attempt.test?.test_type || 'Mock Test';
+                const predictedRank = (studentProfile as { rank_prediction?: number | null } | null)?.rank_prediction ?? null;
+                setResult({
+                    attemptId: attempt.id,
+                    testId: attempt.test_id,
+                    testTitle: attempt.test?.title || 'Mock Test',
+                    testLabel,
+                    submittedAt: attempt.submitted_at,
+                    durationMinutes: attempt.test?.duration_minutes || 0,
+                    timeTakenSeconds: attempt.time_taken_seconds || 0,
+                    totalScore: attempt.total_score || 0,
+                    maxScore: attempt.max_score,
+                    accuracyPercent: attempt.accuracy_percent || 0,
+                    percentile: attempt.percentile,
+                    rank: attempt.rank,
+                    predictedRank,
+                    correctCount: attempt.correct_count || 0,
+                    incorrectCount: attempt.incorrect_count || 0,
+                    unattemptedCount: attempt.unattempted_count || 0,
+                    questions,
+                    sections,
+                });
+            } catch (fetchError) {
+                console.error('Failed to load test result:', fetchError);
+                setError(fetchError instanceof Error ? fetchError.message : 'Failed to load result');
             } finally {
                 setIsLoading(false);
             }
-        };
+        }
 
-        fetchResult();
+        void fetchResult();
     }, [attemptId]);
 
-    const handleDownloadPDF = async () => {
-        if (!result) return;
+    const scorePercent = useMemo(() => {
+        if (!result || result.maxScore <= 0) {
+            return 0;
+        }
 
-        setIsDownloadingPDF(true);
+        return Number(((result.totalScore / result.maxScore) * 100).toFixed(2));
+    }, [result]);
+
+    async function handleDownload() {
+        if (!result) {
+            return;
+        }
+
+        setIsDownloading(true);
         try {
-            // For mock data, use client-side generation
-            if (result.id.startsWith('attempt-')) {
-                // Client-side generation for demo/mock data
-                const { downloadAnswerKeyPDF } = await import('@/lib/pdf/test-pdf-generator');
-                await downloadAnswerKeyPDF(result, {
-                    name: 'Demo Student',
-                }, `answer-key-${result.testTitle.replace(/\s+/g, '-').toLowerCase()}.pdf`);
-                return;
-            }
-
-            // Server-side generation via API
-            const response = await fetch(`/api/tests/${result.testType === 'JEE' ? 'jee' : result.testType === 'NEET' ? 'neet' : 'custom'}/${result.id}/answer-key?attemptId=${attemptId}`, {
-                method: 'GET',
+            const response = await fetch(`/api/tests/${result.testId}/answer-key?attemptId=${result.attemptId}`, {
                 credentials: 'include',
             });
 
             if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'Failed to download PDF');
+                const payload = await response.json().catch(() => null);
+                throw new Error(payload?.error || 'Failed to download answer key PDF');
             }
 
-            // Get the blob from response
             const blob = await response.blob();
-
-            // Create download link
             const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `answer-key-${result.testTitle.replace(/\s+/g, '-').toLowerCase()}.pdf`;
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
+            const anchor = document.createElement('a');
+            anchor.href = url;
+            anchor.download = `answer-key-${result.testTitle.replace(/\s+/g, '-').toLowerCase()}.pdf`;
+            document.body.appendChild(anchor);
+            anchor.click();
+            document.body.removeChild(anchor);
             window.URL.revokeObjectURL(url);
-        } catch (error) {
-            console.error('Error downloading PDF:', error);
-            alert('Failed to download PDF. Please try again.');
+        } catch (downloadError) {
+            console.error('Failed to download answer key:', downloadError);
+            setError(downloadError instanceof Error ? downloadError.message : 'Failed to download answer key');
         } finally {
-            setIsDownloadingPDF(false);
+            setIsDownloading(false);
         }
-    };
+    }
 
-    const handleShare = async () => {
-        if (navigator.share) {
-            try {
-                await navigator.share({
-                    title: `Test Result: ${result?.testTitle}`,
-                    text: `I scored ${result?.totalScore}/${result?.maxScore} (${result?.percentage}%) on ${result?.testTitle}!`,
-                    url: window.location.href,
-                });
-            } catch (error) {
-                console.error('Error sharing:', error);
-            }
-        } else {
-            // Fallback: copy to clipboard
-            navigator.clipboard.writeText(window.location.href);
-            alert('Link copied to clipboard!');
+    async function handleCopyLink() {
+        try {
+            await navigator.clipboard.writeText(window.location.href);
+            setCopied(true);
+            window.setTimeout(() => setCopied(false), 1500);
+        } catch (copyError) {
+            console.error('Failed to copy result link:', copyError);
         }
-    };
-
-    const getPerformanceMessage = (percentage: number) => {
-        if (percentage >= 90) return { message: 'Outstanding!', color: 'text-green-600', icon: Trophy };
-        if (percentage >= 75) return { message: 'Excellent!', color: 'text-blue-600', icon: Award };
-        if (percentage >= 60) return { message: 'Good Job!', color: 'text-purple-600', icon: Target };
-        if (percentage >= 40) return { message: 'Keep Practicing!', color: 'text-orange-600', icon: TrendingUp };
-        return { message: 'Needs Improvement', color: 'text-red-600', icon: AlertTriangle };
-    };
-
-    const filteredQuestions = result?.questions.filter(q => {
-        if (filterSection !== 'all' && q.section !== filterSection) return false;
-        if (filterStatus === 'correct' && !q.isCorrect) return false;
-        if (filterStatus === 'incorrect' && (q.isCorrect || !q.isAttempted)) return false;
-        if (filterStatus === 'unattempted' && q.isAttempted) return false;
-        return true;
-    }) || [];
+    }
 
     if (isLoading) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
                 <div className="flex flex-col items-center gap-4">
                     <div className="w-12 h-12 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin" />
-                    <p className="text-gray-600">Loading results...</p>
+                    <p className="text-gray-600">Loading test analysis...</p>
                 </div>
             </div>
         );
     }
 
-    if (!result) {
+    if (error || !result) {
         return (
-            <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center">
-                    <AlertTriangle className="w-16 h-16 text-orange-500 mx-auto mb-4" />
-                    <h2 className="text-xl font-bold text-gray-900 mb-2">Results Not Found</h2>
-                    <p className="text-gray-600 mb-4">The test results you are looking for could not be found.</p>
+            <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4">
+                <div className="max-w-md w-full rounded-3xl border border-red-200 bg-white p-8 text-center shadow-sm">
+                    <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
+                    <h1 className="text-xl font-semibold text-slate-900 mb-2">Result unavailable</h1>
+                    <p className="text-slate-600 mb-6">{error || 'The requested attempt could not be loaded.'}</p>
                     <Link
                         href="/dashboard/tests"
-                        className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium"
+                        className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-white hover:bg-primary-700"
                     >
                         <ArrowLeft className="w-4 h-4" />
                         Back to Tests
@@ -354,500 +396,227 @@ export default function TestResultsPage() {
         );
     }
 
-    const performance = getPerformanceMessage(result.percentage);
-    const PerformanceIcon = performance.icon;
-
     return (
-        <div className="min-h-screen bg-gray-50 pb-12" ref={resultRef}>
-            {/* Header */}
-            <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
-                <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        <div className="min-h-screen bg-gray-50 pb-10">
+            <header className="sticky top-0 z-10 border-b border-gray-200 bg-white/95 backdrop-blur">
+                <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
                     <div className="flex items-center gap-4">
-                        <Link
-                            href="/dashboard/tests"
-                            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors"
-                        >
+                        <Link href="/dashboard/tests" className="text-slate-600 hover:text-slate-900">
                             <ArrowLeft className="w-5 h-5" />
-                            <span className="hidden sm:inline">Back</span>
                         </Link>
-                        <h1 className="text-lg font-semibold text-gray-900 hidden sm:block">
-                            Test Results
-                        </h1>
+                        <div>
+                            <p className="text-sm text-slate-500">{result.testLabel}</p>
+                            <h1 className="text-lg font-semibold text-slate-900">{result.testTitle}</h1>
+                        </div>
                     </div>
                     <div className="flex items-center gap-2">
                         <button
-                            onClick={handleShare}
-                            className="flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 text-gray-700 hover:bg-gray-50 transition-colors"
+                            onClick={handleCopyLink}
+                            className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-700 hover:bg-slate-50"
                         >
-                            <Share2 className="w-4 h-4" />
-                            <span className="hidden sm:inline">Share</span>
+                            <Copy className="w-4 h-4" />
+                            {copied ? 'Copied' : 'Copy Link'}
                         </button>
                         <button
-                            onClick={handleDownloadPDF}
-                            disabled={isDownloadingPDF}
-                            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            onClick={handleDownload}
+                            disabled={isDownloading}
+                            className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-3 py-2 text-sm text-white hover:bg-primary-700 disabled:opacity-60"
                         >
-                            {isDownloadingPDF ? (
-                                <>
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                    <span className="hidden sm:inline">Generating...</span>
-                                </>
-                            ) : (
-                                <>
-                                    <Download className="w-4 h-4" />
-                                    <span className="hidden sm:inline">Download PDF</span>
-                                </>
-                            )}
+                            {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                            Download PDF
                         </button>
                     </div>
                 </div>
             </header>
 
-            {/* Main Content */}
-            <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                {/* Score Card */}
-                <div className="bg-gradient-to-br from-primary-600 to-primary-700 rounded-3xl p-8 text-white mb-8">
-                    <div className="grid md:grid-cols-2 gap-8 items-center">
+            <main className="mx-auto max-w-6xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+                <section className="rounded-3xl bg-gradient-to-br from-primary-700 to-primary-500 p-6 text-white shadow-sm">
+                    <div className="grid gap-6 lg:grid-cols-[1.5fr_1fr] lg:items-center">
                         <div>
-                            <p className="text-primary-100 text-sm font-medium mb-1">{result.testTitle}</p>
-                            <h2 className="text-3xl font-bold mb-4">{performance.message}</h2>
-                            <p className="text-primary-100 mb-6">
-                                Submitted on {new Date(result.submittedAt).toLocaleDateString('en-IN', {
-                                    weekday: 'long',
-                                    year: 'numeric',
-                                    month: 'long',
-                                    day: 'numeric'
-                                })}
-                            </p>
-                            <div className="flex flex-wrap gap-4">
-                                <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-xl">
+                            <p className="text-sm text-white/80">Submitted {result.submittedAt ? new Date(result.submittedAt).toLocaleString('en-IN') : 'recently'}</p>
+                            <h2 className="mt-2 text-3xl font-bold">Score {result.totalScore} / {result.maxScore}</h2>
+                            <div className="mt-4 flex flex-wrap gap-3 text-sm text-white/90">
+                                <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5">
                                     <Clock className="w-4 h-4" />
-                                    <span>{Math.floor(result.timeTaken / 60)} min used</span>
-                                </div>
-                                <div className="flex items-center gap-2 bg-white/10 px-4 py-2 rounded-xl">
+                                    {Math.floor(result.timeTakenSeconds / 60)} min used
+                                </span>
+                                <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5">
                                     <Target className="w-4 h-4" />
-                                    <span>{result.accuracy.toFixed(1)}% Accuracy</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="flex flex-col items-center justify-center">
-                            <div className="relative">
-                                <svg className="w-40 h-40 transform -rotate-90">
-                                    <circle
-                                        cx="80"
-                                        cy="80"
-                                        r="70"
-                                        stroke="currentColor"
-                                        strokeWidth="12"
-                                        fill="none"
-                                        className="text-primary-400/30"
-                                    />
-                                    <circle
-                                        cx="80"
-                                        cy="80"
-                                        r="70"
-                                        stroke="currentColor"
-                                        strokeWidth="12"
-                                        fill="none"
-                                        strokeDasharray={`${(result.percentage / 100) * 440} 440`}
-                                        strokeLinecap="round"
-                                        className="text-white"
-                                    />
-                                </svg>
-                                <div className="absolute inset-0 flex flex-col items-center justify-center">
-                                    <span className="text-4xl font-bold">{result.percentage.toFixed(1)}%</span>
-                                    <span className="text-sm text-primary-100">Score</span>
-                                </div>
-                            </div>
-                            <div className="mt-4 text-center">
-                                <p className="text-2xl font-bold">{result.totalScore} / {result.maxScore}</p>
-                                <p className="text-sm text-primary-100">Marks Obtained</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* Tabs */}
-                <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
-                    {(['overview', 'solutions', 'analysis'] as const).map((tab) => (
-                        <button
-                            key={tab}
-                            onClick={() => setActiveTab(tab)}
-                            className={`px-6 py-3 rounded-xl font-medium capitalize whitespace-nowrap transition-colors ${activeTab === tab
-                                ? 'bg-primary-600 text-white'
-                                : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-200'
-                                }`}
-                        >
-                            {tab === 'overview' && <BarChart3 className="w-4 h-4 inline mr-2" />}
-                            {tab === 'solutions' && <BookOpen className="w-4 h-4 inline mr-2" />}
-                            {tab === 'analysis' && <FileText className="w-4 h-4 inline mr-2" />}
-                            {tab}
-                        </button>
-                    ))}
-                </div>
-
-                {/* Overview Tab */}
-                {activeTab === 'overview' && (
-                    <div className="space-y-6">
-                        {/* Stats Grid */}
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="bg-white rounded-2xl p-6 border border-gray-200">
-                                <div className="flex items-center gap-3 mb-2">
-                                    <div className="w-10 h-10 rounded-xl bg-green-100 flex items-center justify-center">
-                                        <CheckCircle className="w-5 h-5 text-green-600" />
-                                    </div>
-                                    <span className="text-sm text-gray-500">Correct</span>
-                                </div>
-                                <p className="text-2xl font-bold text-gray-900">{result.correct}</p>
-                                <p className="text-xs text-green-600 mt-1">+{result.correct * 4} marks</p>
-                            </div>
-                            <div className="bg-white rounded-2xl p-6 border border-gray-200">
-                                <div className="flex items-center gap-3 mb-2">
-                                    <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center">
-                                        <XCircle className="w-5 h-5 text-red-600" />
-                                    </div>
-                                    <span className="text-sm text-gray-500">Incorrect</span>
-                                </div>
-                                <p className="text-2xl font-bold text-gray-900">{result.incorrect}</p>
-                                <p className="text-xs text-red-600 mt-1">-{result.incorrect * 1} marks</p>
-                            </div>
-                            <div className="bg-white rounded-2xl p-6 border border-gray-200">
-                                <div className="flex items-center gap-3 mb-2">
-                                    <div className="w-10 h-10 rounded-xl bg-gray-100 flex items-center justify-center">
-                                        <HelpCircle className="w-5 h-5 text-gray-600" />
-                                    </div>
-                                    <span className="text-sm text-gray-500">Unattempted</span>
-                                </div>
-                                <p className="text-2xl font-bold text-gray-900">{result.unattempted}</p>
-                                <p className="text-xs text-gray-500 mt-1">0 marks</p>
-                            </div>
-                            <div className="bg-white rounded-2xl p-6 border border-gray-200">
-                                <div className="flex items-center gap-3 mb-2">
-                                    <div className="w-10 h-10 rounded-xl bg-purple-100 flex items-center justify-center">
-                                        <Trophy className="w-5 h-5 text-purple-600" />
-                                    </div>
-                                    <span className="text-sm text-gray-500">Percentile</span>
-                                </div>
-                                <p className="text-2xl font-bold text-gray-900">{result.percentile.toFixed(1)}</p>
-                                {result.rank && (
-                                    <p className="text-xs text-purple-600 mt-1">Rank #{result.rank}</p>
+                                    {result.accuracyPercent.toFixed(1)}% accuracy
+                                </span>
+                                {result.percentile !== null && (
+                                    <span className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1.5">
+                                        <Trophy className="w-4 h-4" />
+                                        {result.percentile.toFixed(1)} percentile
+                                    </span>
                                 )}
                             </div>
                         </div>
-
-                        {/* Section-wise Performance */}
-                        <div className="bg-white rounded-2xl border border-gray-200 p-6">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-6">Section-wise Performance</h3>
-                            <div className="space-y-6">
-                                {result.sections.map((section) => (
-                                    <div key={section.name} className="space-y-3">
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <span className={`w-3 h-3 rounded-full ${section.name === 'Physics' ? COLORS.physics :
-                                                    section.name === 'Chemistry' ? COLORS.chemistry :
-                                                        section.name === 'Mathematics' ? COLORS.mathematics :
-                                                            COLORS.biology
-                                                    }`} />
-                                                <span className="font-medium text-gray-900">{section.name}</span>
-                                            </div>
-                                            <div className="flex items-center gap-4 text-sm">
-                                                <span className="text-gray-500">
-                                                    {section.attempted}/{section.totalQuestions} attempted
-                                                </span>
-                                                <span className="font-semibold text-gray-900">
-                                                    {section.score}/{section.maxScore}
-                                                </span>
-                                            </div>
-                                        </div>
-                                        <div className="relative h-3 bg-gray-100 rounded-full overflow-hidden">
-                                            <div
-                                                className={`absolute inset-y-0 left-0 rounded-full ${section.name === 'Physics' ? 'bg-blue-500' :
-                                                    section.name === 'Chemistry' ? 'bg-emerald-500' :
-                                                        section.name === 'Mathematics' ? 'bg-purple-500' :
-                                                            'bg-amber-500'
-                                                    }`}
-                                                style={{ width: `${(section.score / section.maxScore) * 100}%` }}
-                                            />
-                                        </div>
-                                        <div className="flex items-center gap-4 text-xs text-gray-500">
-                                            <span className="flex items-center gap-1">
-                                                <CheckCircle className="w-3 h-3 text-green-500" />
-                                                {section.correct} correct
-                                            </span>
-                                            <span className="flex items-center gap-1">
-                                                <XCircle className="w-3 h-3 text-red-500" />
-                                                {section.incorrect} wrong
-                                            </span>
-                                            <span className="flex items-center gap-1">
-                                                <Target className="w-3 h-3 text-blue-500" />
-                                                {section.accuracy.toFixed(1)}% accuracy
-                                            </span>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <MetricCard label="Correct" value={String(result.correctCount)} accent="green" />
+                            <MetricCard label="Incorrect" value={String(result.incorrectCount)} accent="red" />
+                            <MetricCard label="Unattempted" value={String(result.unattemptedCount)} accent="slate" />
+                            <MetricCard label="Rank" value={result.rank ? `AIR ${result.rank}` : result.predictedRank ? `Pred ${result.predictedRank}` : 'Pending'} accent="amber" />
                         </div>
                     </div>
-                )}
+                </section>
 
-                {/* Solutions Tab */}
-                {activeTab === 'solutions' && (
-                    <div className="space-y-6">
-                        {/* Filters */}
-                        <div className="flex flex-wrap gap-4 bg-white rounded-2xl border border-gray-200 p-4">
-                            <div className="flex items-center gap-2">
-                                <span className="text-sm text-gray-500">Section:</span>
-                                <select
-                                    value={filterSection}
-                                    onChange={(e) => setFilterSection(e.target.value)}
-                                    className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-                                >
-                                    <option value="all">All Sections</option>
-                                    {result.sections.map(s => (
-                                        <option key={s.name} value={s.name}>{s.name}</option>
-                                    ))}
-                                </select>
-                            </div>
-                            <div className="flex items-center gap-2">
-                                <span className="text-sm text-gray-500">Status:</span>
-                                <select
-                                    value={filterStatus}
-                                    onChange={(e) => setFilterStatus(e.target.value as any)}
-                                    className="px-3 py-1.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-                                >
-                                    <option value="all">All Questions</option>
-                                    <option value="correct">Correct</option>
-                                    <option value="incorrect">Incorrect</option>
-                                    <option value="unattempted">Unattempted</option>
-                                </select>
-                            </div>
-                            <div className="ml-auto text-sm text-gray-500">
-                                Showing {filteredQuestions.length} of {result.questions.length} questions
-                            </div>
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <StatCard icon={BarChart3} label="Score Percent" value={`${scorePercent.toFixed(1)}%`} />
+                    <StatCard icon={CheckCircle} label="Correct Answers" value={String(result.correctCount)} />
+                    <StatCard icon={XCircle} label="Incorrect Answers" value={String(result.incorrectCount)} />
+                    <StatCard icon={Clock} label="Avg Time / Attempt" value={result.correctCount + result.incorrectCount > 0 ? `${Math.round(result.timeTakenSeconds / Math.max(result.correctCount + result.incorrectCount, 1))} sec` : '0 sec'} />
+                </div>
+
+                <div className="flex gap-2 overflow-x-auto pb-1">
+                    <button
+                        onClick={() => setActiveTab('overview')}
+                        className={`rounded-xl px-4 py-2 text-sm font-medium ${activeTab === 'overview' ? 'bg-primary-600 text-white' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
+                    >
+                        Overview
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('solutions')}
+                        className={`rounded-xl px-4 py-2 text-sm font-medium ${activeTab === 'solutions' ? 'bg-primary-600 text-white' : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50'}`}
+                    >
+                        Solutions
+                    </button>
+                </div>
+
+                {activeTab === 'overview' ? (
+                    <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                        <div className="flex items-center gap-2 mb-4">
+                            <BookOpen className="w-5 h-5 text-primary-600" />
+                            <h3 className="text-lg font-semibold text-slate-900">Section Analysis</h3>
                         </div>
-
-                        {/* Questions List */}
                         <div className="space-y-4">
-                            {filteredQuestions.map((question) => (
-                                <div
-                                    key={question.id}
-                                    className="bg-white rounded-2xl border border-gray-200 overflow-hidden"
-                                >
-                                    <button
-                                        onClick={() => setExpandedQuestion(
-                                            expandedQuestion === question.id ? null : question.id
-                                        )}
-                                        className="w-full flex items-center justify-between p-6 hover:bg-gray-50 transition-colors"
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <span className={`flex-shrink-0 w-10 h-10 rounded-xl flex items-center justify-center font-semibold text-sm ${question.isCorrect ? 'bg-green-100 text-green-700' :
-                                                !question.isAttempted ? 'bg-gray-100 text-gray-600' :
-                                                    'bg-red-100 text-red-700'
-                                                }`}>
-                                                {question.questionNumber}
-                                            </span>
-                                            <div className="text-left">
-                                                <p className="font-medium text-gray-900 line-clamp-1">
-                                                    {question.questionText}
-                                                </p>
-                                                <div className="flex items-center gap-3 mt-1 text-sm text-gray-500">
-                                                    <span>{question.section}</span>
-                                                    <span>•</span>
-                                                    <span>{question.questionType}</span>
-                                                    {question.isAttempted && (
-                                                        <>
-                                                            <span>•</span>
-                                                            <span className={question.isCorrect ? 'text-green-600' : 'text-red-600'}>
-                                                                {question.isCorrect ? `+${question.marksObtained}` : question.marksObtained}
-                                                                marks
-                                                            </span>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </div>
+                            {result.sections.map((section) => (
+                                <div key={section.name} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                                    <div className="flex flex-wrap items-center justify-between gap-3">
+                                        <div>
+                                            <h4 className="font-semibold text-slate-900">{section.name}</h4>
+                                            <p className="text-sm text-slate-500">
+                                                {section.correct} correct, {section.incorrect} incorrect, {section.attempted} attempted
+                                            </p>
                                         </div>
-                                        <div className="flex items-center gap-3">
-                                            {!question.isAttempted ? (
-                                                <span className="px-3 py-1 rounded-full bg-gray-100 text-gray-600 text-sm">
-                                                    Not Attempted
-                                                </span>
-                                            ) : question.isCorrect ? (
-                                                <span className="px-3 py-1 rounded-full bg-green-100 text-green-700 text-sm flex items-center gap-1">
-                                                    <CheckCircle className="w-3 h-3" />
-                                                    Correct
-                                                </span>
-                                            ) : (
-                                                <span className="px-3 py-1 rounded-full bg-red-100 text-red-700 text-sm flex items-center gap-1">
-                                                    <XCircle className="w-3 h-3" />
-                                                    Incorrect
-                                                </span>
-                                            )}
-                                            {expandedQuestion === question.id ? (
-                                                <ChevronUp className="w-5 h-5 text-gray-400" />
-                                            ) : (
-                                                <ChevronDown className="w-5 h-5 text-gray-400" />
-                                            )}
+                                        <div className="text-right">
+                                            <p className="text-lg font-semibold text-slate-900">{section.score} / {section.maxScore}</p>
+                                            <p className="text-sm text-slate-500">{section.accuracy.toFixed(1)}% accuracy</p>
                                         </div>
-                                    </button>
-
-                                    {expandedQuestion === question.id && (
-                                        <div className="px-6 pb-6 border-t border-gray-100 pt-4">
-                                            <div className="space-y-4">
-                                                {/* Your Answer vs Correct Answer */}
-                                                <div className="grid sm:grid-cols-2 gap-4">
-                                                    <div className={`p-4 rounded-xl ${question.isCorrect ? 'bg-green-50 border border-green-200' :
-                                                        question.isAttempted ? 'bg-red-50 border border-red-200' :
-                                                            'bg-gray-50 border border-gray-200'
-                                                        }`}>
-                                                        <p className="text-sm text-gray-500 mb-1">Your Answer</p>
-                                                        <p className={`font-semibold ${question.isCorrect ? 'text-green-700' :
-                                                            question.isAttempted ? 'text-red-700' :
-                                                                'text-gray-600'
-                                                            }`}>
-                                                            {question.yourAnswer || 'Not Attempted'}
-                                                        </p>
-                                                    </div>
-                                                    <div className="p-4 rounded-xl bg-green-50 border border-green-200">
-                                                        <p className="text-sm text-gray-500 mb-1">Correct Answer</p>
-                                                        <p className="font-semibold text-green-700">
-                                                            {question.correctAnswer}
-                                                        </p>
-                                                    </div>
-                                                </div>
-
-                                                {/* Solution */}
-                                                <div className="bg-blue-50 rounded-xl p-4 border border-blue-200">
-                                                    <h4 className="font-semibold text-blue-900 mb-2 flex items-center gap-2">
-                                                        <BookOpen className="w-4 h-4" />
-                                                        Solution
-                                                    </h4>
-                                                    <p className="text-blue-800 leading-relaxed">
-                                                        {question.solution}
-                                                    </p>
-                                                    {question.solutionImage && (
-                                                        <img
-                                                            src={question.solutionImage}
-                                                            alt="Solution"
-                                                            className="mt-4 max-w-full rounded-lg border border-blue-200"
-                                                        />
-                                                    )}
-                                                </div>
-
-                                                {/* Time Spent */}
-                                                <div className="flex items-center gap-2 text-sm text-gray-500">
-                                                    <Clock className="w-4 h-4" />
-                                                    <span>Time spent: {question.timeSpent} seconds</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
+                                    </div>
+                                    <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-200">
+                                        <div
+                                            className="h-full rounded-full bg-primary-600"
+                                            style={{ width: `${Math.max(0, Math.min(100, section.maxScore > 0 ? (section.score / section.maxScore) * 100 : 0))}%` }}
+                                        />
+                                    </div>
                                 </div>
                             ))}
                         </div>
-                    </div>
-                )}
+                    </section>
+                ) : (
+                    <section className="space-y-4">
+                        {result.questions.map((question) => (
+                            <article key={question.id} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+                                <div className="flex flex-wrap items-start justify-between gap-4">
+                                    <div>
+                                        <div className="flex items-center gap-2 text-sm text-slate-500">
+                                            <span>Q{question.displayOrder}</span>
+                                            <span>-</span>
+                                            <span>{question.section}</span>
+                                            <span>-</span>
+                                            <span>{question.questionType}</span>
+                                        </div>
+                                        <h3 className="mt-2 font-medium text-slate-900">{question.questionText}</h3>
+                                    </div>
+                                    <span className={`rounded-full px-3 py-1 text-sm font-medium ${question.isCorrect ? 'bg-green-100 text-green-700' : question.isAttempted ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-600'}`}>
+                                        {question.isCorrect ? 'Correct' : question.isAttempted ? 'Incorrect' : 'Unattempted'}
+                                    </span>
+                                </div>
 
-                {/* Analysis Tab */}
-                {activeTab === 'analysis' && (
-                    <div className="space-y-6">
-                        {/* Time Analysis */}
-                        <div className="bg-white rounded-2xl border border-gray-200 p-6">
-                            <h3 className="text-lg font-semibold text-gray-900 mb-4">Time Management</h3>
-                            <div className="grid sm:grid-cols-3 gap-4">
-                                <div className="text-center p-4 bg-gray-50 rounded-xl">
-                                    <p className="text-3xl font-bold text-gray-900">
-                                        {Math.floor(result.timeTaken / 60)}
-                                    </p>
-                                    <p className="text-sm text-gray-500">Minutes Used</p>
+                                <div className="mt-4 grid gap-3 md:grid-cols-2">
+                                    <AnswerBox label="Your Answer" value={question.yourAnswer || 'Not attempted'} tone={question.isCorrect ? 'success' : question.isAttempted ? 'danger' : 'neutral'} />
+                                    <AnswerBox label="Correct Answer" value={question.correctAnswer} tone="success" />
                                 </div>
-                                <div className="text-center p-4 bg-gray-50 rounded-xl">
-                                    <p className="text-3xl font-bold text-gray-900">
-                                        {Math.floor((result.duration * 60 - result.timeTaken) / 60)}
-                                    </p>
-                                    <p className="text-sm text-gray-500">Minutes Remaining</p>
-                                </div>
-                                <div className="text-center p-4 bg-gray-50 rounded-xl">
-                                    <p className="text-3xl font-bold text-gray-900">
-                                        {Math.floor(result.timeTaken / result.attempted)}
-                                    </p>
-                                    <p className="text-sm text-gray-500">Avg Sec/Question</p>
-                                </div>
-                            </div>
-                        </div>
 
-                        {/* Strengths & Weaknesses */}
-                        <div className="grid md:grid-cols-2 gap-6">
-                            <div className="bg-green-50 rounded-2xl border border-green-200 p-6">
-                                <h3 className="text-lg font-semibold text-green-900 mb-4 flex items-center gap-2">
-                                    <TrendingUp className="w-5 h-5" />
-                                    Strong Areas
-                                </h3>
-                                <ul className="space-y-2">
-                                    {result.sections
-                                        .filter(s => s.accuracy >= 80)
-                                        .map(s => (
-                                            <li key={s.name} className="flex items-center justify-between text-green-800">
-                                                <span>{s.name}</span>
-                                                <span className="font-semibold">{s.accuracy.toFixed(1)}%</span>
-                                            </li>
-                                        ))}
-                                    {result.sections.filter(s => s.accuracy >= 80).length === 0 && (
-                                        <li className="text-green-700">Keep practicing to improve your accuracy!</li>
+                                <div className="mt-4 rounded-2xl border border-blue-200 bg-blue-50 p-4">
+                                    <p className="text-sm font-medium text-blue-900">Step-by-step solution</p>
+                                    <p className="mt-2 text-sm leading-6 text-blue-900">{question.solution}</p>
+                                    {question.solutionImageUrl && (
+                                        <img
+                                            src={question.solutionImageUrl}
+                                            alt="Solution"
+                                            className="mt-3 max-h-64 rounded-xl border border-blue-200"
+                                        />
                                     )}
-                                </ul>
-                            </div>
-                            <div className="bg-orange-50 rounded-2xl border border-orange-200 p-6">
-                                <h3 className="text-lg font-semibold text-orange-900 mb-4 flex items-center gap-2">
-                                    <AlertTriangle className="w-5 h-5" />
-                                    Areas to Improve
-                                </h3>
-                                <ul className="space-y-2">
-                                    {result.sections
-                                        .filter(s => s.accuracy < 70)
-                                        .map(s => (
-                                            <li key={s.name} className="flex items-center justify-between text-orange-800">
-                                                <span>{s.name}</span>
-                                                <span className="font-semibold">{s.accuracy.toFixed(1)}%</span>
-                                            </li>
-                                        ))}
-                                    {result.sections.filter(s => s.accuracy < 70).length === 0 && (
-                                        <li className="text-orange-700">Great job! All sections above 70% accuracy.</li>
-                                    )}
-                                </ul>
-                            </div>
-                        </div>
+                                </div>
 
-                        {/* Recommendations */}
-                        <div className="bg-blue-50 rounded-2xl border border-blue-200 p-6">
-                            <h3 className="text-lg font-semibold text-blue-900 mb-4">Recommendations</h3>
-                            <ul className="space-y-3 text-blue-800">
-                                {result.unattempted > 10 && (
-                                    <li className="flex items-start gap-2">
-                                        <span className="text-blue-500">•</span>
-                                        <span>You left {result.unattempted} questions unattempted. Try to attempt all questions, even if unsure.</span>
-                                    </li>
-                                )}
-                                {result.incorrect > 0 && (
-                                    <li className="flex items-start gap-2">
-                                        <span className="text-blue-500">•</span>
-                                        <span>Review the incorrect answers carefully. Understanding mistakes is key to improvement.</span>
-                                    </li>
-                                )}
-                                {result.accuracy < 80 && (
-                                    <li className="flex items-start gap-2">
-                                        <span className="text-blue-500">•</span>
-                                        <span>Focus on improving accuracy by practicing similar questions.</span>
-                                    </li>
-                                )}
-                                <li className="flex items-start gap-2">
-                                    <span className="text-blue-500">•</span>
-                                    <span>Keep practicing regularly to maintain and improve your performance.</span>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
+                                <div className="mt-4 flex flex-wrap gap-4 text-sm text-slate-500">
+                                    <span>Marks: {question.marksObtained}</span>
+                                    <span>Max: {question.maxMarks}</span>
+                                    <span>Negative: {question.negativeMarks}</span>
+                                    <span>Time: {question.timeSpentSeconds} sec</span>
+                                </div>
+                            </article>
+                        ))}
+                    </section>
                 )}
             </main>
+        </div>
+    );
+}
+
+function MetricCard({ label, value, accent }: { label: string; value: string; accent: 'green' | 'red' | 'slate' | 'amber' }) {
+    const accentClass = {
+        green: 'bg-green-100 text-green-700',
+        red: 'bg-red-100 text-red-700',
+        slate: 'bg-slate-100 text-slate-700',
+        amber: 'bg-amber-100 text-amber-700',
+    }[accent];
+
+    return (
+        <div className={`rounded-2xl ${accentClass} p-4`}>
+            <p className="text-sm opacity-80">{label}</p>
+            <p className="mt-2 text-2xl font-semibold">{value}</p>
+        </div>
+    );
+}
+
+function StatCard({ icon: Icon, label, value }: { icon: typeof Clock; label: string; value: string }) {
+    return (
+        <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <div className="flex items-center gap-3">
+                <div className="rounded-xl bg-primary-50 p-2 text-primary-600">
+                    <Icon className="w-5 h-5" />
+                </div>
+                <div>
+                    <p className="text-sm text-slate-500">{label}</p>
+                    <p className="text-lg font-semibold text-slate-900">{value}</p>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+function AnswerBox({
+    label,
+    value,
+    tone,
+}: {
+    label: string;
+    value: string;
+    tone: 'success' | 'danger' | 'neutral';
+}) {
+    const toneClass = {
+        success: 'border-green-200 bg-green-50 text-green-800',
+        danger: 'border-red-200 bg-red-50 text-red-800',
+        neutral: 'border-slate-200 bg-slate-50 text-slate-700',
+    }[tone];
+
+    return (
+        <div className={`rounded-2xl border p-4 ${toneClass}`}>
+            <p className="text-xs font-medium uppercase tracking-wide opacity-70">{label}</p>
+            <p className="mt-2 text-sm font-medium">{value}</p>
         </div>
     );
 }

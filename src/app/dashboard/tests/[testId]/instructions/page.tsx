@@ -12,51 +12,17 @@ import {
     ChevronRight,
     AlertOctagon,
     BookOpen,
-    ArrowLeft
+    ArrowLeft,
 } from 'lucide-react';
 import Link from 'next/link';
-
-// Test patterns for JEE and NEET
-const TEST_PATTERNS = {
-    JEE: {
-        name: 'JEE Main',
-        duration: 180, // minutes
-        totalQuestions: 90,
-        sections: [
-            { name: 'Physics', questions: 30 },
-            { name: 'Chemistry', questions: 30 },
-            { name: 'Mathematics', questions: 30 },
-        ],
-        marking: {
-            correct: 4,
-            incorrect: -1,
-            unattempted: 0,
-        },
-        maxMarks: 300,
-    },
-    NEET: {
-        name: 'NEET',
-        duration: 180, // minutes
-        totalQuestions: 180,
-        sections: [
-            { name: 'Physics', questions: 45 },
-            { name: 'Chemistry', questions: 45 },
-            { name: 'Biology', questions: 90 },
-        ],
-        marking: {
-            correct: 4,
-            incorrect: -1,
-            unattempted: 0,
-        },
-        maxMarks: 720,
-    },
-};
+import { getSupabaseBrowserClient } from '@/lib/supabase';
+import { formatTestLabel } from '@/lib/learning/assessment';
 
 interface TestDetails {
     id: string;
     title: string;
     description: string;
-    testType: 'JEE' | 'NEET' | 'custom';
+    testTypeLabel: string;
     durationMinutes: number;
     totalQuestions: number;
     totalMarks: number;
@@ -71,105 +37,131 @@ export default function TestInstructionsPage() {
     const testId = params.testId as string;
 
     const [testDetails, setTestDetails] = useState<TestDetails | null>(null);
+    const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [hasAgreed, setHasAgreed] = useState(false);
     const [isStarting, setIsStarting] = useState(false);
 
     useEffect(() => {
-        // In a real app, fetch test details from API
-        // For now, using mock data based on testId
-        const fetchTestDetails = async () => {
+        async function fetchTestDetails() {
             setIsLoading(true);
-            try {
-                // Simulate API call
-                await new Promise(resolve => setTimeout(resolve, 500));
+            setError(null);
 
-                // Mock test data - in real app, fetch from backend
-                const mockTests: Record<string, TestDetails> = {
-                    'jee-mock-1': {
-                        id: 'jee-mock-1',
-                        title: 'JEE Main Full Mock Test #1',
-                        description: 'Complete JEE Main mock test covering Physics, Chemistry, and Mathematics with the latest pattern.',
-                        testType: 'JEE',
-                        durationMinutes: 180,
-                        totalQuestions: 90,
-                        totalMarks: 300,
-                        negativeMarking: 1,
-                        sections: TEST_PATTERNS.JEE.sections,
-                        instructions: [
-                            'This test consists of 90 questions to be completed in 3 hours.',
-                            'Each correct answer carries +4 marks.',
-                            'Each incorrect answer carries -1 mark (negative marking).',
-                            'Unattempted questions carry 0 marks.',
-                            'You can navigate between questions using the question palette.',
-                            'Questions can be marked for review and answered later.',
-                            'The test will auto-submit when time expires.',
-                            'Do not refresh the page or navigate away during the test.',
-                            'Use of calculators is not allowed for numerical questions.',
-                            'All the best for your test!',
-                        ],
-                    },
-                    'neet-mock-1': {
-                        id: 'neet-mock-1',
-                        title: 'NEET Full Mock Test #1',
-                        description: 'Complete NEET mock test covering Physics, Chemistry, and Biology as per NTA pattern.',
-                        testType: 'NEET',
-                        durationMinutes: 180,
-                        totalQuestions: 180,
-                        totalMarks: 720,
-                        negativeMarking: 1,
-                        sections: TEST_PATTERNS.NEET.sections,
-                        instructions: [
-                            'This test consists of 180 questions to be completed in 3 hours.',
-                            'Each correct answer carries +4 marks.',
-                            'Each incorrect answer carries -1 mark (negative marking).',
-                            'Unattempted questions carry 0 marks.',
-                            'Biology section has 90 questions (45 Botany + 45 Zoology).',
-                            'You can navigate between questions using the question palette.',
-                            'Questions can be marked for review and answered later.',
-                            'The test will auto-submit when time expires.',
-                            'Do not refresh the page or navigate away during the test.',
-                            'All the best for your test!',
-                        ],
-                    },
+            try {
+                const supabase = getSupabaseBrowserClient();
+                if (!supabase) {
+                    throw new Error('Supabase client is unavailable');
+                }
+
+                const { data, error: testError } = await supabase
+                    .from('tests')
+                    .select(`
+                        id,
+                        title,
+                        description,
+                        test_type,
+                        duration_minutes,
+                        total_marks,
+                        negative_marking,
+                        question_count,
+                        exam:exam_id(name),
+                        test_questions(section)
+                    `)
+                    .eq('id', testId)
+                    .eq('is_published', true)
+                    .single();
+
+                if (testError || !data) {
+                    throw testError || new Error('Test not found');
+                }
+
+                const row = data as {
+                    id: string;
+                    title: string;
+                    description: string | null;
+                    test_type: string;
+                    duration_minutes: number;
+                    total_marks: number;
+                    negative_marking: number;
+                    question_count: number;
+                    exam: { name: string } | null;
+                    test_questions: Array<{ section: string | null }> | null;
                 };
 
-                const details = mockTests[testId] || mockTests['jee-mock-1'];
-                setTestDetails(details);
+                const sectionCounts = new Map<string, number>();
+                for (const item of row.test_questions ?? []) {
+                    const sectionName = item.section || 'General';
+                    sectionCounts.set(sectionName, (sectionCounts.get(sectionName) ?? 0) + 1);
+                }
+
+                const sections = Array.from(sectionCounts.entries()).map(([name, questions]) => ({
+                    name,
+                    questions,
+                }));
+
+                const marksPerQuestion = row.question_count > 0
+                    ? Math.round((row.total_marks / row.question_count) * 100) / 100
+                    : 0;
+                const testTypeLabel = formatTestLabel(row.test_type, row.exam?.name || null);
+
+                setTestDetails({
+                    id: row.id,
+                    title: row.title,
+                    description: row.description || 'Practice a full-length simulated exam with detailed analysis after submission.',
+                    testTypeLabel,
+                    durationMinutes: row.duration_minutes,
+                    totalQuestions: row.question_count,
+                    totalMarks: row.total_marks,
+                    negativeMarking: row.negative_marking,
+                    sections,
+                    instructions: [
+                        `This assessment contains ${row.question_count} questions to be completed in ${row.duration_minutes} minutes.`,
+                        `Every correct answer awards +${marksPerQuestion} marks.`,
+                        row.negative_marking > 0
+                            ? `Every incorrect answer deducts ${row.negative_marking} mark${row.negative_marking === 1 ? '' : 's'}.`
+                            : 'There is no negative marking for incorrect answers in this test.',
+                        'Use the navigator to move between questions and mark difficult ones for review.',
+                        'Your progress auto-saves while you are attempting the test.',
+                        'The test submits automatically when the timer reaches zero.',
+                        'Do not refresh the page or close the browser tab during the test.',
+                    ],
+                });
+            } catch (fetchError) {
+                console.error('Failed to load test instructions:', fetchError);
+                setError(fetchError instanceof Error ? fetchError.message : 'Failed to load test instructions');
             } finally {
                 setIsLoading(false);
             }
-        };
+        }
 
-        fetchTestDetails();
+        void fetchTestDetails();
     }, [testId]);
 
     const handleStartTest = async () => {
-        if (!hasAgreed) return;
+        if (!hasAgreed) {
+            return;
+        }
 
         setIsStarting(true);
         try {
-            // Create attempt in backend
-            const response = await fetch('/api/test-engine', {
+            const response = await fetch('/api/test-attempts', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     action: 'start_attempt',
-                    testId: testId,
+                    testId,
                 }),
             });
 
-            if (response.ok) {
-                const data = await response.json();
-                // Navigate to the test page with attempt ID
-                router.push(`/dashboard/tests/${testId}?attempt=${data.attemptId}`);
-            } else {
-                throw new Error('Failed to start test');
+            const payload = await response.json().catch(() => null);
+            if (!response.ok) {
+                throw new Error(payload?.error || 'Failed to start test');
             }
-        } catch (error) {
-            console.error('Error starting test:', error);
-            // For demo, just navigate without attempt ID
-            router.push(`/dashboard/tests/${testId}`);
+
+            router.push(`/dashboard/tests/${testId}?attempt=${payload.attemptId}`);
+        } catch (startError) {
+            console.error('Error starting test:', startError);
+            setError(startError instanceof Error ? startError.message : 'Failed to start test');
         } finally {
             setIsStarting(false);
         }
@@ -186,13 +178,13 @@ export default function TestInstructionsPage() {
         );
     }
 
-    if (!testDetails) {
+    if (error || !testDetails) {
         return (
             <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-                <div className="text-center">
+                <div className="text-center max-w-md px-4">
                     <AlertOctagon className="w-16 h-16 text-red-500 mx-auto mb-4" />
-                    <h2 className="text-xl font-bold text-gray-900 mb-2">Test Not Found</h2>
-                    <p className="text-gray-600 mb-4">The test you are looking for does not exist.</p>
+                    <h2 className="text-xl font-bold text-gray-900 mb-2">Test Not Available</h2>
+                    <p className="text-gray-600 mb-4">{error || 'The test you are looking for does not exist.'}</p>
                     <Link
                         href="/dashboard/tests"
                         className="inline-flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium"
@@ -205,9 +197,12 @@ export default function TestInstructionsPage() {
         );
     }
 
+    const marksPerQuestion = testDetails.totalQuestions > 0
+        ? Math.round((testDetails.totalMarks / testDetails.totalQuestions) * 100) / 100
+        : 0;
+
     return (
         <div className="min-h-screen bg-gray-50">
-            {/* Header */}
             <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
                 <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
                     <div className="flex items-center gap-4">
@@ -222,18 +217,15 @@ export default function TestInstructionsPage() {
                     </div>
                     <div className="flex items-center gap-3">
                         <span className="px-3 py-1 rounded-full bg-primary-100 text-primary-700 text-sm font-medium">
-                            {testDetails.testType}
+                            {testDetails.testTypeLabel}
                         </span>
                     </div>
                 </div>
             </header>
 
-            {/* Main Content */}
             <main className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div className="grid lg:grid-cols-3 gap-8">
-                    {/* Left Column - Test Info */}
                     <div className="lg:col-span-2 space-y-6">
-                        {/* Test Overview Card */}
                         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
                             <h2 className="text-2xl font-bold text-gray-900 mb-2">
                                 {testDetails.title}
@@ -282,16 +274,15 @@ export default function TestInstructionsPage() {
                             </div>
                         </div>
 
-                        {/* Section Breakdown */}
                         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
                             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                                 <BookOpen className="w-5 h-5 text-primary-600" />
                                 Section Breakdown
                             </h3>
                             <div className="space-y-3">
-                                {testDetails.sections.map((section, index) => (
+                                {(testDetails.sections.length > 0 ? testDetails.sections : [{ name: 'General', questions: testDetails.totalQuestions }]).map((section, index) => (
                                     <div
-                                        key={index}
+                                        key={`${section.name}-${index}`}
                                         className="flex items-center justify-between p-4 bg-gray-50 rounded-xl"
                                     >
                                         <div className="flex items-center gap-3">
@@ -308,7 +299,6 @@ export default function TestInstructionsPage() {
                             </div>
                         </div>
 
-                        {/* Marking Scheme */}
                         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
                             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                                 <Calculator className="w-5 h-5 text-primary-600" />
@@ -319,7 +309,7 @@ export default function TestInstructionsPage() {
                                     <CheckCircle className="w-6 h-6 text-green-600" />
                                     <div>
                                         <p className="font-semibold text-green-900">Correct Answer</p>
-                                        <p className="text-2xl font-bold text-green-700">+{testDetails.totalMarks / testDetails.totalQuestions}</p>
+                                        <p className="text-2xl font-bold text-green-700">+{marksPerQuestion}</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3 p-4 bg-red-50 border border-red-200 rounded-xl">
@@ -339,7 +329,6 @@ export default function TestInstructionsPage() {
                             </div>
                         </div>
 
-                        {/* Instructions */}
                         <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
                             <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
                                 <FileText className="w-5 h-5 text-primary-600" />
@@ -347,7 +336,7 @@ export default function TestInstructionsPage() {
                             </h3>
                             <ul className="space-y-3">
                                 {testDetails.instructions.map((instruction, index) => (
-                                    <li key={index} className="flex items-start gap-3">
+                                    <li key={instruction} className="flex items-start gap-3">
                                         <span className="flex-shrink-0 w-6 h-6 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center text-sm font-semibold mt-0.5">
                                             {index + 1}
                                         </span>
@@ -358,7 +347,6 @@ export default function TestInstructionsPage() {
                         </div>
                     </div>
 
-                    {/* Right Column - Start Test */}
                     <div className="lg:col-span-1">
                         <div className="sticky top-24 space-y-6">
                             <div className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6">
@@ -366,11 +354,10 @@ export default function TestInstructionsPage() {
                                     Ready to Start?
                                 </h3>
                                 <p className="text-sm text-gray-600 mb-6">
-                                    Once you start the test, the timer will begin and cannot be paused.
-                                    Make sure you have a stable internet connection and are in a quiet environment.
+                                    Once you start the test, the timer begins immediately and cannot be paused.
+                                    Make sure your connection is stable before continuing.
                                 </p>
 
-                                {/* Agreement Checkbox */}
                                 <label className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl cursor-pointer hover:bg-gray-100 transition-colors mb-6">
                                     <input
                                         type="checkbox"
@@ -379,13 +366,16 @@ export default function TestInstructionsPage() {
                                         className="w-5 h-5 rounded border-gray-300 text-primary-600 focus:ring-primary-500 mt-0.5"
                                     />
                                     <span className="text-sm text-gray-700">
-                                        I have read and understood all the instructions.
-                                        I agree to abide by the test rules and understand that
-                                        any malpractice will result in disqualification.
+                                        I have read and understood the instructions and will follow the test rules.
                                     </span>
                                 </label>
 
-                                {/* Start Button */}
+                                {error && (
+                                    <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                                        {error}
+                                    </div>
+                                )}
+
                                 <button
                                     onClick={handleStartTest}
                                     disabled={!hasAgreed || isStarting}
@@ -406,12 +396,11 @@ export default function TestInstructionsPage() {
 
                                 {!hasAgreed && (
                                     <p className="mt-3 text-xs text-center text-orange-600">
-                                        Please agree to the terms to start the test
+                                        Please confirm the instructions before starting.
                                     </p>
                                 )}
                             </div>
 
-                            {/* Quick Tips */}
                             <div className="bg-blue-50 border border-blue-200 rounded-2xl p-6">
                                 <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
                                     <AlertTriangle className="w-4 h-4" />
@@ -419,20 +408,20 @@ export default function TestInstructionsPage() {
                                 </h4>
                                 <ul className="space-y-2 text-sm text-blue-800">
                                     <li className="flex items-start gap-2">
-                                        <span className="text-blue-500">•</span>
-                                        Read questions carefully before answering
+                                        <span className="text-blue-500">-</span>
+                                        Read each question fully before locking an answer.
                                     </li>
                                     <li className="flex items-start gap-2">
-                                        <span className="text-blue-500">•</span>
-                                        Mark difficult questions for review
+                                        <span className="text-blue-500">-</span>
+                                        Mark difficult questions for review and return later.
                                     </li>
                                     <li className="flex items-start gap-2">
-                                        <span className="text-blue-500">•</span>
-                                        Manage your time wisely across sections
+                                        <span className="text-blue-500">-</span>
+                                        Track your time section by section instead of rushing the last third.
                                     </li>
                                     <li className="flex items-start gap-2">
-                                        <span className="text-blue-500">•</span>
-                                        Review all answers before submitting
+                                        <span className="text-blue-500">-</span>
+                                        Submit only after checking unanswered and marked questions.
                                     </li>
                                 </ul>
                             </div>

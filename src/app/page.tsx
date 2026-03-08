@@ -1,3 +1,4 @@
+import dynamic from 'next/dynamic';
 import { Hero } from '@/components/hero';
 import { LeadForm } from '@/components/lead-form';
 import { Features } from '@/components/features';
@@ -5,12 +6,42 @@ import { FacultySection } from '@/components/faculty-section';
 import { Stats } from '@/components/stats';
 import { Testimonials } from '@/components/testimonials';
 import { DailyChallengePreview } from '@/components/daily-challenge-preview';
+import { AsyncErrorBoundary } from '@/components/error-boundary';
+
+const AIQuerySystem = dynamic(
+    () => import('@/components/ai-query-system').then((module) => module.AIQuerySystem),
+    {
+        loading: () => (
+            <div className="mx-auto mt-12 w-full max-w-2xl rounded-3xl border border-white/15 bg-white/5 p-6 text-white shadow-2xl">
+                <div className="animate-pulse space-y-4">
+                    <div className="h-6 w-40 rounded bg-white/10" />
+                    <div className="h-20 rounded-2xl bg-white/10" />
+                    <div className="h-12 rounded-2xl bg-white/10" />
+                </div>
+            </div>
+        ),
+    }
+);
 
 export default function HomePage() {
     return (
         <div className="min-h-screen page-bg-education">
             <Hero />
             <Stats />
+            <section className="py-16 bg-gradient-to-br from-slate-900 via-slate-800 to-primary-900">
+                <AsyncErrorBoundary
+                    fallback={
+                        <div className="mx-auto mt-12 w-full max-w-2xl rounded-3xl border border-white/15 bg-white/5 p-6 text-white shadow-2xl">
+                            <h3 className="text-xl font-bold">SaviEdu AI is temporarily unavailable</h3>
+                            <p className="mt-2 text-sm text-slate-300">
+                                Ask again in a moment, or use the dashboard for lectures, practice, and mock tests.
+                            </p>
+                        </div>
+                    }
+                >
+                    <AIQuerySystem />
+                </AsyncErrorBoundary>
+            </section>
             <Features />
             <FacultySection />
             <DailyChallengePreview />

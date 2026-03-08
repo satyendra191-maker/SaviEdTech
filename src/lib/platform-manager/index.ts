@@ -1,5 +1,5 @@
 /**
- * AI Autonomous Platform Manager
+ * SaviEduTech Team Autonomous Platform Manager
  * 
  * Comprehensive monitoring and alerting infrastructure for the SaviEdTech platform.
  * 

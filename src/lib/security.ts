@@ -292,16 +292,17 @@ export const SECURITY_HEADERS = {
  */
 export const CONTENT_SECURITY_POLICY = [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://checkout.razorpay.com https://cdn.razorpay.com https://js.razorpay.com",
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: https: blob:",
     "font-src 'self'",
-    "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+    "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.razorpay.com https://cdn.razorpay.com https://lumberjack.razorpay.com",
     "media-src 'self' https:",
+    "frame-src 'self' https://checkout.razorpay.com https://api.razorpay.com",
     "object-src 'none'",
     "frame-ancestors 'none'",
     "base-uri 'self'",
-    "form-action 'self'",
+    "form-action 'self' https://api.razorpay.com https://checkout.razorpay.com",
 ].join('; ');
 
 // ============================================================================
@@ -437,7 +438,8 @@ export const SECURITY_CONSTANTS = {
         /\b(union\s+select|insert\s+into|delete\s+from|drop\s+table)\b/i,
         /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/i,
         /javascript:/i,
-        /on\w+\s*=/i,
+        // Match event handlers only in HTML-like attribute context (avoids false positives like "phone=")
+        /<[^>]*\son\w+\s*=/i,
         /\.\.\//, // Path traversal
         /%00/, // Null byte injection
     ],

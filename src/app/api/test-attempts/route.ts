@@ -4,6 +4,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import type { Database } from '@/types/supabase';
 import type { TestAttempt } from '@/types';
+import { calculateAccuracy, evaluateQuestion, sumMarks } from '@/lib/learning/assessment';
+import { upsertLearningProgress } from '@/lib/learning/progress';
 
 /**
  * Test Attempts API
@@ -270,11 +272,21 @@ export async function POST(request: NextRequest) {
                 if (questionsError) throw questionsError;
 
                 // Calculate scores
-                let totalScore = 0;
                 let correctCount = 0;
                 let incorrectCount = 0;
                 let unattemptedCount = 0;
                 const sectionScores: Record<string, number> = {};
+                const answeredQuestionCount = Object.values(answers).filter((answer) => typeof answer === 'string' && answer.trim().length > 0).length;
+                const averageTimePerAnsweredQuestion = answeredQuestionCount > 0
+                    ? Math.max(1, Math.round(timeTakenSeconds / answeredQuestionCount))
+                    : 0;
+                const questionAttemptRecords: Array<{
+                    questionId: string;
+                    userAnswer: string | null;
+                    isCorrect: boolean;
+                    marksObtained: number;
+                    timeTakenSeconds: number;
+                }> = [];
 
                 // Initialize section scores
                 testQuestions?.forEach(tq => {
@@ -287,42 +299,100 @@ export async function POST(request: NextRequest) {
                     const question = testQuestion.question;
                     const userAnswer = answers[question.id];
                     const section = testQuestion.section || 'General';
+                    const outcome = evaluateQuestion(
+                        question,
+                        userAnswer,
+                        {
+                            marks: testQuestion.marks || question.marks,
+                            negativeMarks: testQuestion.negative_marks || question.negative_marks,
+                        }
+                    );
 
-                    if (!userAnswer) {
+                    if (!outcome.isAttempted) {
                         unattemptedCount++;
                         continue;
                     }
 
-                    const isCorrect = userAnswer.toLowerCase().trim() === question.correct_answer.toLowerCase().trim();
-
-                    if (isCorrect) {
-                        const marks = testQuestion.marks || question.marks;
-                        totalScore += marks;
-                        sectionScores[section] += marks;
+                    if (outcome.isCorrect) {
+                        sectionScores[section] += outcome.marksObtained;
                         correctCount++;
                     } else {
-                        const negativeMarks = testQuestion.negative_marks || question.negative_marks;
-                        totalScore -= negativeMarks;
-                        sectionScores[section] -= negativeMarks;
+                        sectionScores[section] += outcome.marksObtained;
                         incorrectCount++;
                     }
 
-                    // Save individual answer
-                    await supabase.from('test_answers').insert({
-                        attempt_id: attemptId,
-                        question_id: question.id,
-                        selected_answer: userAnswer,
-                        is_correct: isCorrect,
-                        marks_obtained: isCorrect
-                            ? (testQuestion.marks || question.marks)
-                            : -(testQuestion.negative_marks || question.negative_marks),
-                        time_spent_seconds: 0, // Could track per-question time in future
+                    questionAttemptRecords.push({
+                        questionId: question.id,
+                        userAnswer: outcome.userAnswer,
+                        isCorrect: outcome.isCorrect,
+                        marksObtained: outcome.marksObtained,
+                        timeTakenSeconds: averageTimePerAnsweredQuestion,
                     });
                 }
 
-                const accuracy = correctCount + incorrectCount > 0
-                    ? (correctCount / (correctCount + incorrectCount)) * 100
-                    : 0;
+                const totalScore = sumMarks(
+                    questionAttemptRecords.map((record) => ({
+                        questionId: record.questionId,
+                        userAnswer: record.userAnswer,
+                        correctAnswer: '',
+                        isCorrect: record.isCorrect,
+                        isAttempted: true,
+                        marksObtained: record.marksObtained,
+                    }))
+                );
+
+                const accuracy = calculateAccuracy(correctCount, correctCount + incorrectCount);
+
+                if (questionAttemptRecords.length > 0) {
+                    const { error: deleteAnswersError } = await supabase
+                        .from('test_answers')
+                        .delete()
+                        .eq('attempt_id', attemptId);
+
+                    if (deleteAnswersError) throw deleteAnswersError;
+
+                    const { error: insertAnswersError } = await supabase
+                        .from('test_answers')
+                        .insert(
+                            questionAttemptRecords.map((record) => ({
+                                attempt_id: attemptId,
+                                question_id: record.questionId,
+                                selected_answer: record.userAnswer,
+                                is_correct: record.isCorrect,
+                                marks_obtained: record.marksObtained,
+                                time_spent_seconds: record.timeTakenSeconds,
+                            }))
+                        );
+
+                    if (insertAnswersError) throw insertAnswersError;
+
+                    const { error: insertQuestionAttemptsError } = await supabase
+                        .from('question_attempts')
+                        .insert(
+                            questionAttemptRecords.map((record) => ({
+                                user_id: user.id,
+                                question_id: record.questionId,
+                                is_correct: record.isCorrect,
+                                time_taken_seconds: record.timeTakenSeconds,
+                                user_answer: record.userAnswer,
+                                correct_answer: (testQuestions || [])
+                                    .find((item) => item.question.id === record.questionId)
+                                    ?.question.correct_answer || null,
+                            }))
+                        );
+
+                    if (insertQuestionAttemptsError) throw insertQuestionAttemptsError;
+
+                    await upsertLearningProgress(
+                        supabase,
+                        user.id,
+                        questionAttemptRecords.map((record) => ({
+                            questionId: record.questionId,
+                            isCorrect: record.isCorrect,
+                            timeTakenSeconds: record.timeTakenSeconds,
+                        }))
+                    );
+                }
 
                 // Update attempt
                 const { data: updatedAttempt, error: updateError } = await supabase

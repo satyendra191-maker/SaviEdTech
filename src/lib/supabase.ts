@@ -30,7 +30,9 @@ import { createClient } from '@supabase/supabase-js';
 import { createBrowserClient, createServerClient } from '@supabase/ssr';
 import type { Database } from '@/types/supabase';
 
-type DatabaseClient = Database['public'];
+declare global {
+    var __saviAdminSupabaseClient: ReturnType<typeof createClient<Database>> | undefined;
+}
 
 // Environment variables - validated at runtime (lazy evaluation to prevent build failures)
 const getSupabaseUrl = () => {
@@ -92,19 +94,19 @@ export const createBrowserSupabaseClient = () => {
 export const createServerSupabaseClient = () => {
     return createServerClient<Database>(getSupabaseUrl(), getSupabaseAnonKey(), {
         cookies: {
-            get(name: string) {
+            get(_name: string) {
                 // In actual server context (API routes), cookies will be provided via request
                 // This default implementation is for cases where cookies aren't available
                 return '';
             },
-            set(name: string, value: string, options: Record<string, unknown>) {
+            set(name: string, _value: string, _options: Record<string, unknown>) {
                 // No-op - will be overridden in actual server context
-                // eslint-disable-next-line no-console
+                 
                 console.warn(`[Security] Cookie 'set' called outside of request context: ${name}`);
             },
-            remove(name: string, options: Record<string, unknown>) {
+            remove(name: string, _options: Record<string, unknown>) {
                 // No-op - will be overridden in actual server context
-                // eslint-disable-next-line no-console
+                 
                 console.warn(`[Security] Cookie 'remove' called outside of request context: ${name}`);
             },
         },
@@ -148,15 +150,20 @@ export const createAdminSupabaseClient = () => {
         );
     }
 
-    // Log admin client creation for security auditing
-    console.log(`[Security] Admin Supabase client created at ${new Date().toISOString()}`);
+    if (globalThis.__saviAdminSupabaseClient) {
+        return globalThis.__saviAdminSupabaseClient;
+    }
 
-    return createClient<Database>(getSupabaseUrl(), getSupabaseServiceKey(), {
+    const client = createClient<Database>(getSupabaseUrl(), getSupabaseServiceKey(), {
         auth: {
             autoRefreshToken: false,
             persistSession: false,
         },
     });
+
+    globalThis.__saviAdminSupabaseClient = client;
+
+    return client;
 };
 
 /**
@@ -238,6 +245,10 @@ export const isBrowser = (): boolean => typeof window !== 'undefined';
  */
 export const isAuthenticated = async (): Promise<boolean> => {
     const supabase = getSupabaseBrowserClient();
+    if (!supabase) {
+        return false;
+    }
+
     const { data: { session } } = await supabase.auth.getSession();
     return !!session;
 };
@@ -252,6 +263,10 @@ export const isAuthenticated = async (): Promise<boolean> => {
  */
 export const getCurrentUser = async () => {
     const supabase = getSupabaseBrowserClient();
+    if (!supabase) {
+        return null;
+    }
+
     const { data: { user } } = await supabase.auth.getUser();
     return user;
 };
@@ -266,6 +281,10 @@ export const getCurrentUser = async () => {
  */
 export const getUserRole = async (): Promise<string | null> => {
     const supabase = getSupabaseBrowserClient();
+    if (!supabase) {
+        return null;
+    }
+
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) return null;

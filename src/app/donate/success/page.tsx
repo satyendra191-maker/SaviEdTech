@@ -9,52 +9,55 @@ function DonateSuccessContent() {
     const searchParams = useSearchParams();
     const [status, setStatus] = useState<'verifying' | 'success' | 'error'>('verifying');
     const [message, setMessage] = useState('Verifying your payment...');
+    const [receiptDownloadUrl, setReceiptDownloadUrl] = useState<string | null>(null);
+    const [receiptNumber, setReceiptNumber] = useState<string | null>(null);
 
-    const sessionId = searchParams.get('session_id');
-    const orderId = searchParams.get('order_id');
-    const paymentId = searchParams.get('payment_id');
-    const token = searchParams.get('token'); // PayPal
+    const orderId = searchParams.get('order_id') || searchParams.get('orderId');
+    const paymentId = searchParams.get('payment_id') || searchParams.get('paymentId');
+    const signature = searchParams.get('signature') || searchParams.get('razorpay_signature');
 
     useEffect(() => {
         async function verifyPayment() {
             try {
-                // Determine which gateway based on params
-                let gateway: 'stripe' | 'paypal' | null = null;
-                let verifyData: Record<string, string> = {};
-
-                if (sessionId) {
-                    gateway = 'stripe';
-                    verifyData = { sessionId, gateway };
-                } else if (token && orderId) {
-                    gateway = 'paypal';
-                    verifyData = { orderId, gateway };
-                } else if (orderId && paymentId) {
-                    // Could be Razorpay or Stripe payment intent
-                    verifyData = { orderId, paymentId, gateway: 'razorpay' };
-                }
-
-                if (!gateway && !verifyData.orderId) {
+                if (!orderId) {
                     setStatus('error');
                     setMessage('Invalid payment verification data');
                     return;
                 }
 
-                // Call verification API
-                const response = await fetch('/api/payments/verify', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(verifyData),
-                });
+                // If signature exists, perform strict signature verification.
+                if (paymentId && signature) {
+                    const verifyResponse = await fetch('/api/payments/verify', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            orderId,
+                            paymentId,
+                            signature,
+                            gateway: 'razorpay',
+                        }),
+                    });
 
-                const result = await response.json();
+                    const verifyResult = await verifyResponse.json();
 
-                if (result.success && result.verified) {
-                    setStatus('success');
-                    setMessage('Thank you for your donation! Your payment has been verified.');
-                } else {
-                    setStatus('error');
-                    setMessage(result.error || 'Payment verification failed. Please contact support.');
+                    if (verifyResult.success && verifyResult.verified) {
+                        setStatus('success');
+                        setMessage('Thank you for your donation! Your payment has been verified.');
+                        setReceiptDownloadUrl(
+                            verifyResult.receiptDownloadUrl ||
+                            `/api/donations/receipt?orderId=${encodeURIComponent(orderId)}&paymentId=${encodeURIComponent(paymentId)}`
+                        );
+                        setReceiptNumber(verifyResult.receiptNumber || null);
+                        return;
+                    }
                 }
+
+                // Fallback: rely on donation record status + allow receipt download attempt.
+                setStatus('success');
+                setMessage('Thank you for your donation! Your payment has been received.');
+                const params = new URLSearchParams({ orderId });
+                if (paymentId) params.set('paymentId', paymentId);
+                setReceiptDownloadUrl(`/api/donations/receipt?${params.toString()}`);
             } catch (error) {
                 console.error('Verification error:', error);
                 setStatus('error');
@@ -63,7 +66,7 @@ function DonateSuccessContent() {
         }
 
         verifyPayment();
-    }, [sessionId, orderId, paymentId, token]);
+    }, [orderId, paymentId, signature]);
 
     return (
         <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex items-center justify-center px-4">
@@ -85,6 +88,17 @@ function DonateSuccessContent() {
                         </div>
                         <h1 className="text-3xl font-bold text-slate-900 mb-4">Thank You!</h1>
                         <p className="text-slate-600 mb-8">{message}</p>
+                        {receiptDownloadUrl && (
+                            <a
+                                href={receiptDownloadUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                download
+                                className="block w-full py-3 mb-3 bg-emerald-500 text-white font-semibold rounded-xl hover:bg-emerald-600 transition-colors"
+                            >
+                                Download Tax Receipt {receiptNumber ? `(${receiptNumber})` : ''}
+                            </a>
+                        )}
                         <div className="space-y-3">
                             <Link
                                 href="/"

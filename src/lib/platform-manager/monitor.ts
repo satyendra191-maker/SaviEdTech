@@ -1,5 +1,5 @@
 /**
- * AI Autonomous Platform Manager - Monitoring Client
+ * SaviEduTech Team Autonomous Platform Manager - Monitoring Client
  * 
  * Connects to Supabase and provides monitoring capabilities for:
  * - Error logs tracking

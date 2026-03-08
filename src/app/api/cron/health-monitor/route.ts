@@ -21,9 +21,9 @@ import {
     detectServerCrash,
     detectBrokenBuild,
     detectDatabaseOutage,
-    getRecentRecoveryActions,
     type FailureDetection,
 } from '@/lib/platform-manager/selfhealing';
+import { runPlatformAudit } from '@/lib/platform-manager/auditor';
 import { sendAlert } from '@/lib/platform-manager/alerts';
 import { recordHealthCheck } from '@/lib/platform-manager/monitor';
 
@@ -185,6 +185,19 @@ export async function GET(request: NextRequest) {
                 recovery_actions: selfHealResult.actions,
             },
         } as any);
+
+        try {
+            await runPlatformAudit({
+                includeCodebaseInspection: false,
+                eagerChecks: false,
+                autoRecover: false,
+                sendNotifications: false,
+                persist: true,
+                initiatedBy: 'cron:health-monitor',
+            });
+        } catch (auditorError) {
+            console.error('[Health Monitor] Platform auditor sync failed:', auditorError);
+        }
 
         console.log(`[Health Monitor] Cycle completed in ${duration}ms`);
 

@@ -44,6 +44,12 @@ export default function ParentVerifyPage() {
         }
     }, [user, authLoading]);
 
+    useEffect(() => {
+        if (!authLoading && !user) {
+            router.replace('/login');
+        }
+    }, [authLoading, user, router]);
+
     const fetchExistingLinks = async () => {
         if (!user || !supabase) return;
         
@@ -108,8 +114,11 @@ export default function ParentVerifyPage() {
     }
 
     if (!user) {
-        router.push('/login');
-        return null;
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
+            </div>
+        );
     }
 
     return (

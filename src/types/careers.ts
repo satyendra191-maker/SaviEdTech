@@ -35,6 +35,7 @@ export interface JobApplication {
     full_name: string;
     email: string;
     phone: string;
+    position_applied?: string | null;
     linkedin: string | null;
     portfolio: string | null;
     current_company: string | null;
@@ -45,8 +46,10 @@ export interface JobApplication {
     cover_letter: string | null;
     referrer: string | null;
     resume_url: string;
+    resume_storage_path?: string | null;
     resume_file_name: string;
     resume_file_size: number;
+    additional_info?: Record<string, unknown> | null;
     status: ApplicationStatus;
     created_at: string;
     updated_at: string;
@@ -85,6 +88,7 @@ export interface SubmitApplicationInput {
     fullName: string;
     email: string;
     phone: string;
+    positionApplied: string;
     linkedin?: string;
     portfolio?: string;
     currentCompany?: string;
@@ -94,7 +98,8 @@ export interface SubmitApplicationInput {
     noticePeriod?: string;
     coverLetter?: string;
     referrer?: string;
-    resumeUrl: string;
+    resumeUrl?: string;
+    resumePath?: string;
     fileName: string;
     fileSize: number;
 }

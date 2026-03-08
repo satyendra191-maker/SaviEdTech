@@ -1,10 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { createBrowserSupabaseClient } from '@/lib/supabase';
 import {
-  Sparkles,
-  BookOpen,
   FileQuestion,
   Play,
   Settings,
@@ -14,8 +11,7 @@ import {
   Brain,
   Wand2,
   Calendar,
-  Target,
-  Users
+  Target
 } from 'lucide-react';
 
 const FACULTY_MEMBERS = [
@@ -78,12 +74,13 @@ const SAMPLE_TOPICS: Record<string, string[]> = {
 };
 
 export default function AIContentGeneratorPage() {
-  const supabase = createBrowserSupabaseClient();
   const [generating, setGenerating] = useState(false);
   const [generatedContent, setGeneratedContent] = useState<any>(null);
+  const [generatedKind, setGeneratedKind] = useState<'lecture' | 'question-set' | 'dpp' | 'mock-test' | 'calendar' | 'growth'>('lecture');
   const [error, setError] = useState<string | null>(null);
   const [savedSuccessfully, setSavedSuccessfully] = useState(false);
-  
+  const [validationResult, setValidationResult] = useState<any>(null);
+
   const [config, setConfig] = useState({
     facultyId: 'dharmendra',
     subject: 'physics',
@@ -98,6 +95,8 @@ export default function AIContentGeneratorPage() {
     questionCount: 15,
     questionDifficulty: 'mixed',
     questionType: 'mixed',
+    syllabusContext: '',
+    generationDays: 365,
   });
 
   const topics = SAMPLE_TOPICS[config.subject] || [];
@@ -132,12 +131,15 @@ export default function AIContentGeneratorPage() {
       });
 
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.error || 'Failed to generate lecture');
       }
 
-      setGeneratedContent(data.lecture);
+      setGeneratedKind('lecture');
+      setGeneratedContent(data.data?.lecture || null);
+      setSavedSuccessfully(Boolean(data.data?.savedId));
+      setValidationResult(null);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -172,12 +174,107 @@ export default function AIContentGeneratorPage() {
       });
 
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error(data.error || 'Failed to generate questions');
       }
 
-      setGeneratedContent(data.questions);
+      setGeneratedKind('question-set');
+      setGeneratedContent(data.data?.questionSet || null);
+      setSavedSuccessfully(Boolean(data.data?.savedId));
+      setValidationResult(null);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const runAdminSuite = async (action: 'generate_dpp' | 'generate_mock_test' | 'academic_calendar' | 'growth_assets') => {
+    if (!config.topic) {
+      setError('Please select a topic');
+      return;
+    }
+
+    setGenerating(true);
+    setError(null);
+    setSavedSuccessfully(false);
+
+    try {
+      const response = await fetch('/api/ai/admin-suite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action,
+          teacherId: config.facultyId,
+          topic: config.topic,
+          subject: config.subject,
+          targetExam: config.targetExam,
+          duration: config.duration,
+          questionCount: config.questionCount,
+          syllabusContext: config.syllabusContext,
+          generationDays: config.generationDays,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Failed to complete AI automation task');
+      }
+
+      if (action === 'generate_dpp') {
+        setGeneratedKind('dpp');
+      } else if (action === 'generate_mock_test') {
+        setGeneratedKind('mock-test');
+      } else if (action === 'academic_calendar') {
+        setGeneratedKind('calendar');
+      } else {
+        setGeneratedKind('growth');
+      }
+
+      setGeneratedContent(data.data);
+      setValidationResult(data.data?.validation || null);
+    } catch (err: any) {
+      setError(err.message);
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const validateCurrentContent = async () => {
+    if (!generatedContent) {
+      setError('Generate content first, then validate it.');
+      return;
+    }
+
+    if (generatedKind === 'calendar' || generatedKind === 'growth') {
+      setError('Quality validation is available for lectures, question sets, DPP, and mock tests only.');
+      return;
+    }
+
+    setGenerating(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/ai/admin-suite', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'validate',
+          content: generatedContent,
+          contentKind: generatedKind === 'lecture' ? 'lecture' : generatedKind === 'question-set' ? 'question-set' : generatedKind === 'dpp' ? 'dpp' : 'mock-test',
+          topic: config.topic,
+          subject: config.subject,
+          targetExam: config.targetExam,
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok || !data.success) {
+        throw new Error(data.error || 'Validation failed');
+      }
+
+      setValidationResult(data.data);
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -206,7 +303,7 @@ export default function AIContentGeneratorPage() {
               <Settings className="w-5 h-5" />
               Content Configuration
             </h2>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Faculty</label>
@@ -220,7 +317,7 @@ export default function AIContentGeneratorPage() {
                   ))}
                 </select>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Subject</label>
                 <select
@@ -234,7 +331,7 @@ export default function AIContentGeneratorPage() {
                   <option value="biology">Biology</option>
                 </select>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Topic</label>
                 <select
@@ -248,7 +345,7 @@ export default function AIContentGeneratorPage() {
                   ))}
                 </select>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Subtopic (Optional)</label>
                 <input
@@ -259,7 +356,7 @@ export default function AIContentGeneratorPage() {
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Duration (minutes)</label>
                 <input
@@ -271,7 +368,7 @@ export default function AIContentGeneratorPage() {
                   className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Difficulty</label>
                 <select
@@ -284,7 +381,7 @@ export default function AIContentGeneratorPage() {
                   <option value="advanced">Advanced</option>
                 </select>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Target Exam</label>
                 <select
@@ -298,7 +395,7 @@ export default function AIContentGeneratorPage() {
                   <option value="boards">Board Exams</option>
                 </select>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Language</label>
                 <select
@@ -309,6 +406,17 @@ export default function AIContentGeneratorPage() {
                   <option value="english">English</option>
                   <option value="hinglish">Hinglish</option>
                 </select>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-sm font-medium text-slate-700 mb-1">Syllabus Context / Admin Material</label>
+                <textarea
+                  value={config.syllabusContext}
+                  onChange={e => setConfig({ ...config, syllabusContext: e.target.value })}
+                  rows={3}
+                  placeholder="Paste syllabus notes, chapter scope, or admin instructions for controlled generation..."
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                />
               </div>
             </div>
 
@@ -336,7 +444,7 @@ export default function AIContentGeneratorPage() {
 
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <h2 className="text-lg font-semibold mb-4">Generate Content</h2>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <button
                 onClick={generateLecture}
@@ -350,7 +458,7 @@ export default function AIContentGeneratorPage() {
                 )}
                 Generate Lecture
               </button>
-              
+
               <button
                 onClick={generateQuestions}
                 disabled={generating}
@@ -363,7 +471,67 @@ export default function AIContentGeneratorPage() {
                 )}
                 Generate Questions
               </button>
+
+              <button
+                onClick={() => runAdminSuite('generate_dpp')}
+                disabled={generating}
+                className="flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white py-4 px-6 rounded-xl font-medium hover:from-amber-600 hover:to-orange-700 transition disabled:opacity-50"
+              >
+                {generating ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Target className="w-5 h-5" />
+                )}
+                Generate DPP
+              </button>
+
+              <button
+                onClick={() => runAdminSuite('generate_mock_test')}
+                disabled={generating}
+                className="flex items-center justify-center gap-2 bg-gradient-to-r from-fuchsia-600 to-violet-600 text-white py-4 px-6 rounded-xl font-medium hover:from-fuchsia-700 hover:to-violet-700 transition disabled:opacity-50"
+              >
+                {generating ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Play className="w-5 h-5" />
+                )}
+                Generate Mock Test
+              </button>
+
+              <button
+                onClick={() => runAdminSuite('academic_calendar')}
+                disabled={generating}
+                className="flex items-center justify-center gap-2 bg-gradient-to-r from-sky-600 to-cyan-600 text-white py-4 px-6 rounded-xl font-medium hover:from-sky-700 hover:to-cyan-700 transition disabled:opacity-50"
+              >
+                {generating ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Calendar className="w-5 h-5" />
+                )}
+                365-Day Calendar
+              </button>
+
+              <button
+                onClick={() => runAdminSuite('growth_assets')}
+                disabled={generating}
+                className="flex items-center justify-center gap-2 bg-gradient-to-r from-slate-800 to-slate-600 text-white py-4 px-6 rounded-xl font-medium hover:from-slate-900 hover:to-slate-700 transition disabled:opacity-50"
+              >
+                {generating ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Wand2 className="w-5 h-5" />
+                )}
+                Growth Assets
+              </button>
             </div>
+
+            <button
+              onClick={validateCurrentContent}
+              disabled={generating || !generatedContent || generatedKind === 'calendar' || generatedKind === 'growth'}
+              className="mt-4 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700 transition hover:bg-slate-100 disabled:opacity-50"
+            >
+              Validate Current Content
+            </button>
 
             {error && (
               <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-start gap-3">
@@ -392,12 +560,12 @@ export default function AIContentGeneratorPage() {
                 <CheckCircle className="w-5 h-5 text-green-600" />
                 Generated Content Preview
               </h2>
-              
+
               <div className="prose prose-slate max-w-none">
-                {Array.isArray(generatedContent) ? (
+                {generatedKind === 'question-set' && generatedContent?.questions ? (
                   <div className="space-y-4">
-                    <p className="text-slate-600">Generated {generatedContent.length} questions</p>
-                    {generatedContent.slice(0, 3).map((q: any, i: number) => (
+                    <p className="text-slate-600">Generated {generatedContent.questions.length} questions</p>
+                    {generatedContent.questions.slice(0, 3).map((q: any, i: number) => (
                       <div key={i} className="p-4 bg-slate-50 rounded-lg">
                         <p className="font-medium">{i + 1}. {q.question}</p>
                         {q.options && (
@@ -412,7 +580,7 @@ export default function AIContentGeneratorPage() {
                       </div>
                     ))}
                   </div>
-                ) : (
+                ) : generatedKind === 'lecture' ? (
                   <div className="space-y-4">
                     <h3 className="text-xl font-bold">{generatedContent.title}</h3>
                     <p className="text-slate-600">{generatedContent.description}</p>
@@ -426,6 +594,71 @@ export default function AIContentGeneratorPage() {
                         ))}
                       </div>
                     )}
+                  </div>
+                ) : generatedKind === 'dpp' ? (
+                  <div className="space-y-4">
+                    <h3 className="text-xl font-bold">{generatedContent.title}</h3>
+                    <p className="text-slate-600">
+                      Blueprint: {generatedContent.blueprint?.easy} easy, {generatedContent.blueprint?.medium} medium, {generatedContent.blueprint?.hard} hard
+                    </p>
+                    <div className="space-y-3">
+                      {(generatedContent.questions || []).slice(0, 5).map((q: any, i: number) => (
+                        <div key={i} className="p-4 bg-slate-50 rounded-lg">
+                          <p className="font-medium">{i + 1}. {q.question}</p>
+                          <p className="text-sm text-slate-500 uppercase">{q.difficulty}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : generatedKind === 'mock-test' ? (
+                  <div className="space-y-4">
+                    <h3 className="text-xl font-bold">{generatedContent.title}</h3>
+                    <p className="text-slate-600">
+                      {generatedContent.questionCount} questions | {generatedContent.durationMinutes} minutes | {generatedContent.totalMarks} marks
+                    </p>
+                    {generatedContent.sections?.map((section: any, i: number) => (
+                      <div key={i} className="p-4 bg-slate-50 rounded-lg">
+                        <h4 className="font-medium">{section.name}</h4>
+                        <p className="text-sm text-slate-600">{section.questions?.length || 0} questions generated</p>
+                      </div>
+                    ))}
+                  </div>
+                ) : generatedKind === 'calendar' ? (
+                  <div className="space-y-4">
+                    <h3 className="text-xl font-bold">{generatedContent.title}</h3>
+                    <p className="text-slate-600">{generatedContent.summary}</p>
+                    <div className="space-y-3">
+                      {(generatedContent.schedule || []).slice(0, 5).map((day: any) => (
+                        <div key={day.date} className="p-4 bg-slate-50 rounded-lg">
+                          <p className="font-medium">{day.date}</p>
+                          <p className="text-sm text-slate-600">{day.lecture}</p>
+                          <p className="text-sm text-slate-600">{day.dpp}</p>
+                          {day.mockTest ? <p className="text-sm text-indigo-600">{day.mockTest}</p> : null}
+                          {day.revisionTest ? <p className="text-sm text-amber-600">{day.revisionTest}</p> : null}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <h3 className="text-xl font-bold">Growth Engine Output</h3>
+                    <div className="space-y-3">
+                      <div className="p-4 bg-slate-50 rounded-lg">
+                        <p className="font-medium">SEO Page</p>
+                        <p className="text-sm text-slate-600">{generatedContent.seoPage?.title}</p>
+                        <p className="text-sm text-slate-500">{generatedContent.seoPage?.metaDescription}</p>
+                      </div>
+                      {['youtube', 'telegram', 'instagram', 'facebook', 'linkedin'].map((key) => (
+                        <div key={key} className="p-4 bg-slate-50 rounded-lg">
+                          <p className="font-medium uppercase">{key}</p>
+                          <p className="text-sm text-slate-600 whitespace-pre-line">
+                            {typeof generatedContent[key] === 'string'
+                              ? generatedContent[key]
+                              : JSON.stringify(generatedContent[key], null, 2)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
@@ -513,8 +746,59 @@ export default function AIContentGeneratorPage() {
                   <option value="mixed">Mixed</option>
                 </select>
               </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Calendar Horizon (days)</label>
+                <input
+                  type="number"
+                  value={config.generationDays}
+                  onChange={e => setConfig({ ...config, generationDays: parseInt(e.target.value || '365', 10) })}
+                  min={30}
+                  max={365}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                />
+              </div>
             </div>
           </div>
+
+          {validationResult && (
+            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
+              <h3 className="font-semibold mb-4 flex items-center gap-2">
+                <Brain className="w-5 h-5" />
+                AI Content Quality Validator
+              </h3>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="rounded-lg bg-slate-50 p-3">
+                  <p className="text-slate-500">Overall Score</p>
+                  <p className="text-xl font-bold text-slate-900">{validationResult.overallScore}/100</p>
+                </div>
+                <div className="rounded-lg bg-slate-50 p-3">
+                  <p className="text-slate-500">Answer Accuracy</p>
+                  <p className="text-xl font-bold text-slate-900">{validationResult.answerAccuracy}/100</p>
+                </div>
+                <div className="rounded-lg bg-slate-50 p-3">
+                  <p className="text-slate-500">Formula Correctness</p>
+                  <p className="text-xl font-bold text-slate-900">{validationResult.formulaCorrectness}/100</p>
+                </div>
+                <div className="rounded-lg bg-slate-50 p-3">
+                  <p className="text-slate-500">Syllabus Alignment</p>
+                  <p className="text-xl font-bold text-slate-900">{validationResult.syllabusAlignment}/100</p>
+                </div>
+              </div>
+              {validationResult.issues?.length > 0 ? (
+                <div className="mt-4 space-y-2">
+                  {validationResult.issues.map((issue: any, index: number) => (
+                    <div key={`${issue.message}-${index}`} className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+                      <span className="font-semibold uppercase">{issue.severity}</span> - {issue.message}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                  Validation passed without material issues.
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
             <h3 className="font-semibold mb-4">Daily Automation Status</h3>

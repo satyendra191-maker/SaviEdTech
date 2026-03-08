@@ -1,17 +1,15 @@
 /**
  * Payment Webhook Handler
- * 
+ *
  * POST /api/payments/webhook
  * Handles webhooks from Razorpay
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import * as razorpay from '@/lib/payments/razorpay';
+import { grantCourseAccess, grantPremiumSubscription } from '@/lib/payments/access';
 import { createAdminSupabaseClient } from '@/lib/supabase';
 
-/**
- * POST handler for processing webhooks
- */
 export async function POST(request: NextRequest): Promise<NextResponse> {
     try {
         const razorpaySignature = request.headers.get('x-razorpay-signature');
@@ -35,7 +33,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             );
         }
 
-        const result = await razorpay.processWebhook(payload, razorpaySignature);
+        const result = await razorpay.processWebhook(rawBody, payload, razorpaySignature);
 
         if (!result.success) {
             console.error('Webhook processing failed for razorpay:', result.error);
@@ -46,6 +44,27 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
         }
 
         const supabase = createAdminSupabaseClient();
+
+        if (result.paymentMetadata?.type === 'course_purchase' && result.userId && result.paymentMetadata.courseId) {
+            try {
+                await grantCourseAccess(supabase, result.userId, result.paymentMetadata.courseId, result.paymentRecordId ?? null);
+            } catch (error) {
+                console.error('Webhook course grant failed:', error);
+            }
+        }
+
+        if (result.paymentMetadata?.type === 'subscription' && result.userId) {
+            try {
+                await grantPremiumSubscription(
+                    supabase,
+                    result.userId,
+                    result.paymentMetadata.durationDays ?? 30
+                );
+            } catch (error) {
+                console.error('Webhook subscription grant failed:', error);
+            }
+        }
+
         await supabase.from('webhook_logs').insert({
             gateway: 'razorpay',
             event_type: result.event || 'unknown',
@@ -58,7 +77,6 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             { success: true, event: result.event, gateway: 'razorpay' },
             { status: 200 }
         );
-
     } catch (error) {
         console.error('Webhook processing error:', error);
         return NextResponse.json(
@@ -68,13 +86,9 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     }
 }
 
-/**
- * GET handler for webhook configuration/info
- */
 export async function GET(request: NextRequest): Promise<NextResponse> {
     const url = new URL(request.url);
     const gateway = url.searchParams.get('gateway');
-
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 
     if (!gateway) {

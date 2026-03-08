@@ -19,6 +19,7 @@ interface SignUpUserData {
     class_level?: ClassLevel;
     city?: string;
     role?: string;
+    referred_by_code?: string;
 }
 
 interface UseAuthReturn extends AuthState {
@@ -40,12 +41,31 @@ function getBaseUrl(): string {
     return process.env.NEXT_PUBLIC_APP_URL || 'https://saviedutech.com';
 }
 
+async function withTimeout<T>(
+    operation: Promise<T>,
+    timeoutMs: number,
+    timeoutMessage: string
+): Promise<T> {
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    const timeoutPromise = new Promise<T>((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error(timeoutMessage)), timeoutMs);
+    });
+
+    try {
+        return await Promise.race([operation, timeoutPromise]);
+    } finally {
+        if (timeoutId) {
+            clearTimeout(timeoutId);
+        }
+    }
+}
+
 export function useAuth(): UseAuthReturn {
     const router = useRouter();
     const [state, setState] = useState<AuthState>({
         user: null,
         role: null,
-        isLoading: false,
+        isLoading: true,
         isAuthenticated: false,
     });
 
@@ -84,11 +104,27 @@ export function useAuth(): UseAuthReturn {
             }
 
             // Fetch user profile
-            const { data: profile, error } = await supabase
+            let { data: profile, error } = await supabase
                 .from('profiles')
                 .select('*')
                 .eq('id', authUser.id)
                 .single();
+
+            // Recover from missing profile by invoking server-side bootstrap.
+            if ((error || !profile) && typeof window !== 'undefined') {
+                try {
+                    await fetch('/api/auth/bootstrap-profile', { method: 'POST' });
+                    const retry = await supabase
+                        .from('profiles')
+                        .select('*')
+                        .eq('id', authUser.id)
+                        .single();
+                    profile = retry.data;
+                    error = retry.error;
+                } catch (bootstrapError) {
+                    console.error('Profile bootstrap request failed:', bootstrapError);
+                }
+            }
 
             if (error || !profile) {
                 setState({
@@ -150,10 +186,14 @@ export function useAuth(): UseAuthReturn {
             return { error: 'Authentication service unavailable. Please try again later.' };
         }
         try {
-            const { error } = await supabase.auth.signInWithPassword({
-                email,
-                password,
-            });
+            const { error } = await withTimeout(
+                supabase.auth.signInWithPassword({
+                    email,
+                    password,
+                }),
+                20000,
+                'Sign in request timed out. Please try again.'
+            );
 
             if (error) {
                 // Handle specific error cases
@@ -180,14 +220,43 @@ export function useAuth(): UseAuthReturn {
             return { error: 'Authentication service unavailable. Please try again later.' };
         }
         try {
-            const { error } = await supabase.auth.signInWithOAuth({
+            const baseUrl = getBaseUrl();
+            const primaryRedirect = `${baseUrl}/auth/callback`;
+            const fallbackRedirect = `${baseUrl}/api/auth/callback`;
+
+            let { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: `${getBaseUrl()}/auth/callback`,
+                    redirectTo: primaryRedirect,
+                    queryParams: { prompt: 'select_account' },
                 },
             });
 
-            if (error) return { error: error.message };
+            // Compatibility fallback: some Supabase projects only allow /api/auth/callback.
+            if (
+                error &&
+                /redirect|callback|uri|allow|mismatch/i.test(error.message)
+            ) {
+                const fallbackResult = await supabase.auth.signInWithOAuth({
+                    provider: 'google',
+                    options: {
+                        redirectTo: fallbackRedirect,
+                        queryParams: { prompt: 'select_account' },
+                    },
+                });
+                error = fallbackResult.error;
+            }
+
+            if (error) {
+                const message = error.message.toLowerCase();
+                if (message.includes('provider') && message.includes('disabled')) {
+                    return { error: 'Google login is not enabled in Supabase Auth settings.' };
+                }
+                if (message.includes('redirect') || message.includes('callback') || message.includes('uri')) {
+                    return { error: 'Google login redirect URL is not configured in Supabase. Add both /auth/callback and /api/auth/callback.' };
+                }
+                return { error: error.message };
+            }
             return { error: null };
         } catch (err) {
             return { error: err instanceof Error ? err.message : 'Google sign in failed' };
@@ -204,20 +273,25 @@ export function useAuth(): UseAuthReturn {
         }
         try {
             // Step 1: Sign up with Supabase Auth
-            const { data: authData, error: authError } = await supabase.auth.signUp({
-                email,
-                password,
-                options: {
-                    data: {
-                        full_name: userData.full_name,
-                        phone: userData.phone,
-                        exam_target: userData.exam_target,
-                        class_level: userData.class_level,
-                        role: userData.role || 'student',
+            const { data: authData, error: authError } = await withTimeout(
+                supabase.auth.signUp({
+                    email,
+                    password,
+                    options: {
+                        data: {
+                            full_name: userData.full_name,
+                            phone: userData.phone,
+                            exam_target: userData.exam_target,
+                            class_level: userData.class_level,
+                            role: userData.role || 'student',
+                            referred_by_code: userData.referred_by_code,
+                        },
+                        emailRedirectTo: `${getBaseUrl()}/login`,
                     },
-                    emailRedirectTo: `${getBaseUrl()}/login`,
-                },
-            });
+                }),
+                25000,
+                'Sign up request timed out. Please try again.'
+            );
 
             if (authError) {
                 console.error('Auth error:', authError.message);

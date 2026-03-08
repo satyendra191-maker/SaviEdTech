@@ -301,7 +301,7 @@ export async function getPointsLeaderboard(
 }[]> {
     const supabase = createBrowserSupabaseClient();
 
-    let query = supabase
+    const query = supabase
         .from('student_profiles')
         .select(`
             id,

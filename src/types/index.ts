@@ -1,5 +1,5 @@
 // User Types
-export type UserRole = 'student' | 'admin' | 'super_admin' | 'content_manager' | 'parent' | 'hr' | 'faculty';
+export type UserRole = 'student' | 'admin' | 'super_admin' | 'content_manager' | 'parent' | 'hr' | 'faculty' | 'finance_manager';
 
 // Exam target types
 export type ExamTarget = 'JEE' | 'NEET' | 'Both' | 'JEE Mains' | 'JEE Advanced' | 'CBSE Board' | 'Foundation';
@@ -338,12 +338,15 @@ export interface TopicMastery {
 export interface RankPrediction {
     id: string;
     user_id: string;
+    student_id: string | null;
     exam_id: string | null;
     prediction_date: string;
     predicted_rank: number | null;
     predicted_percentile: number | null;
+    percentile: number | null;
     confidence_score: number | null;
     exam_readiness_percent: number | null;
+    exam_readiness: string | null;
     test_scores_avg: number | null;
     accuracy_avg: number | null;
     solve_time_avg: number | null;
@@ -467,16 +470,21 @@ export interface StudyStreak {
 // Notification Types
 export interface Notification {
     id: string;
-    user_id: string;
+    user_id: string | null;
     title: string;
     message: string;
+    type: string;
     notification_type: 'dpp_ready' | 'revision_reminder' | 'test_reminder' | 'achievement' | 'challenge' | 'system';
     data: Record<string, unknown>;
     is_read: boolean;
     read_at: string | null;
     action_url: string | null;
     sent_via: string[];
+    is_active: boolean;
+    target_surface: string[];
+    priority: number;
     created_at: string;
+    updated_at: string;
 }
 
 // Popup Ad Types
@@ -484,10 +492,14 @@ export interface PopupAd {
     id: string;
     title: string;
     content: string | null;
+    ad_title: string | null;
+    ad_message: string | null;
     image_url: string | null;
     button_text: string | null;
     button_url: string | null;
     display_duration_seconds: number;
+    display_frequency: string;
+    placements: string[];
     start_date: string | null;
     end_date: string | null;
     priority: number;
@@ -495,7 +507,9 @@ export interface PopupAd {
     current_impressions: number;
     target_audience: Record<string, unknown>;
     is_active: boolean;
+    created_by?: string | null;
     created_at: string;
+    updated_at: string;
 }
 
 // API Response Types
@@ -885,17 +899,23 @@ export type PaymentStatus = 'pending' | 'completed' | 'failed' | 'refunded' | 'c
 export interface Donation {
     id: string;
     gateway: PaymentGateway;
+    user_id?: string | null;
     amount: number;
     currency: string;
     status: PaymentStatus;
     donor_email: string | null;
     donor_name: string | null;
     donor_phone: string | null;
+    email?: string | null;
+    message?: string | null;
     order_id: string | null;
     payment_id: string | null;
+    transaction_id?: string | null;
+    receipt_number?: string | null;
     gateway_response: Record<string, unknown> | null;
     error_message: string | null;
     metadata: Record<string, unknown> | null;
+    timestamp?: string;
     created_at: string;
     updated_at: string;
     completed_at: string | null;
@@ -928,6 +948,24 @@ export interface Transaction {
     createdAt: string;
     updatedAt: string;
     completedAt?: string;
+}
+
+export interface PaymentRecord {
+    id: string;
+    user_id: string | null;
+    amount: number;
+    currency: string;
+    status: PaymentStatus;
+    payment_type: 'donation' | 'course_purchase' | 'subscription';
+    payment_method: string;
+    transaction_id: string | null;
+    razorpay_order_id: string | null;
+    razorpay_payment_id: string | null;
+    metadata: Record<string, unknown>;
+    timestamp: string;
+    processed_at: string | null;
+    created_at: string;
+    updated_at: string;
 }
 
 export interface TransactionStats {

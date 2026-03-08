@@ -1,5 +1,6 @@
 import jsPDF from 'jspdf';
 import { format } from 'date-fns';
+import { addSaviFooter, addSaviWatermark } from '@/lib/pdf/branding';
 
 // Types matching the results page
 interface QuestionResult {
@@ -102,6 +103,16 @@ export async function generateAnswerKeyPDF(
     addQuestionPaperHeader(doc, result);
     addQuestionsWithSolutions(doc, result);
 
+    const totalPages = doc.getNumberOfPages();
+    for (let page = 1; page <= totalPages; page += 1) {
+        doc.setPage(page);
+        addSaviWatermark(doc);
+        addSaviFooter(doc, {
+            generatedAt: format(new Date(), 'dd MMM yyyy, hh:mm a'),
+            pageNumber: page,
+        });
+    }
+
     // Return as blob
     return doc.output('blob');
 }
@@ -153,7 +164,7 @@ function addHeader(
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(PDF_CONSTANTS.SUBTEXT_COLOR);
-    const submittedDate = format(new Date(result.submittedAt), 'MMMM d, yyyy • h:mm a');
+    const submittedDate = format(new Date(result.submittedAt), 'MMMM d, yyyy | h:mm a');
     doc.text(`Submitted on: ${submittedDate}`, MARGIN, 62);
     doc.text(`Duration: ${result.duration} minutes`, MARGIN, 68);
     doc.text(`Time Taken: ${Math.floor(result.timeTaken / 60)}m ${result.timeTaken % 60}s`, MARGIN, 74);
@@ -597,30 +608,8 @@ function groupQuestionsBySection(questions: QuestionResult[]): { section: string
 /**
  * Add footer to the current page
  */
-function addFooter(doc: jsPDF): void {
-    const { MARGIN, PAGE_WIDTH, PAGE_HEIGHT } = PDF_CONSTANTS;
-
-    const footerY = PAGE_HEIGHT - 15;
-
-    // Separator line
-    doc.setDrawColor(229, 231, 235);
-    doc.line(MARGIN, footerY, PAGE_WIDTH - MARGIN, footerY);
-
-    // Footer text
-    doc.setFontSize(7);
-    doc.setFont('helvetica', 'normal');
-    doc.setTextColor(PDF_CONSTANTS.SUBTEXT_COLOR);
-    doc.text(
-        '© SaviEdTech - Answer Key generated on ' + format(new Date(), 'MMMM d, yyyy • h:mm a'),
-        MARGIN,
-        footerY + 5
-    );
-    doc.text(
-        'This answer key is for personal use only. Reproduction is prohibited.',
-        PAGE_WIDTH - MARGIN,
-        footerY + 5,
-        { align: 'right' }
-    );
+function addFooter(_doc: jsPDF): void {
+    // Footer is applied after all pages are generated so page numbering stays accurate.
 }
 
 /**

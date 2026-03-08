@@ -97,12 +97,13 @@ const nextConfig: NextConfig = {
                             "style-src 'self' 'unsafe-inline'",
                             "img-src 'self' data: https: blob:",
                             "font-src 'self'",
-                            "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.razorpay.com https://cdn.razorpay.com",
+                            "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.razorpay.com https://cdn.razorpay.com https://lumberjack.razorpay.com",
                             "media-src 'self' https:",
+                            "frame-src 'self' https://checkout.razorpay.com https://api.razorpay.com",
                             "object-src 'none'",
                             "frame-ancestors 'none'",
                             "base-uri 'self'",
-                            "form-action 'self'",
+                            "form-action 'self' https://api.razorpay.com https://checkout.razorpay.com",
                         ].join('; '),
                     },
                 ],
@@ -120,10 +121,11 @@ const nextConfig: NextConfig = {
             },
             {
                 // Headers for static assets (caching)
-                source: '/:all*(\\.js|\\.css|\\.png|\\.jpg|\\.jpeg|\\.gif|\\.ico|\\.svg|\\.woff|\\.woff2|\\.ttf|\\.eot)',
+                source: '/:all*(\\.png|\\.jpg|\\.jpeg|\\.gif|\\.ico|\\.svg|\\.woff|\\.woff2|\\.ttf|\\.eot)',
                 headers: [
                     {
-                        // Cache static assets for 1 year with immutable flag
+                        // Cache public static assets for 1 year with immutable flag.
+                        // Do not override JS/CSS caching; Next manages chunk assets correctly.
                         key: 'Cache-Control',
                         value: 'public, max-age=31536000, immutable',
                     },

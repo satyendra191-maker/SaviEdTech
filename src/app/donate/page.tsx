@@ -1,413 +1,484 @@
 'use client';
 
-import { useState } from 'react';
-import { Heart, Users, BookOpen, GraduationCap, CheckCircle, ArrowRight, Shield, FileText, Mail } from 'lucide-react';
+import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
-import { PaymentButton, type PaymentGateway } from '@/components/payments';
+import { BookOpen, CheckCircle, FileText, GraduationCap, Heart, Mail, Shield, Users } from 'lucide-react';
+import { PaymentButton, ReceiptLookupCard, type PaymentGateway } from '@/components/payments';
 
 const donationOptions = [
-  { amount: 500, description: 'Provides study materials for 1 child for a month' },
-  { amount: 1000, description: 'Sponsors online course access for 1 child' },
-  { amount: 2500, description: 'Covers complete JEE/NEET prep for 1 month' },
-  { amount: 5000, description: 'Full scholarship for 1 child for 6 months' },
+    { amount: 500, description: 'Provides study materials for 1 child for a month' },
+    { amount: 1000, description: 'Sponsors online course access for 1 child' },
+    { amount: 2500, description: 'Supports complete JEE or NEET preparation for 1 month' },
+    { amount: 5000, description: 'Funds a six-month scholarship for 1 child' },
 ];
 
 const impactStats = [
-  { icon: Users, value: '5,000+', label: 'Children Supported' },
-  { icon: BookOpen, value: '12,000+', label: 'Study Materials Distributed' },
-  { icon: GraduationCap, value: '850+', label: 'Scholarships Awarded' },
-  { icon: Heart, value: '98%', label: 'Success Rate' },
+    { icon: Users, value: '5,000+', label: 'Children Supported' },
+    { icon: BookOpen, value: '12,000+', label: 'Study Materials Distributed' },
+    { icon: GraduationCap, value: '850+', label: 'Scholarships Awarded' },
+    { icon: Heart, value: '98%', label: 'Impact Delivery Rate' },
 ];
 
-const paymentGateways: { id: PaymentGateway; name: string; description: string; icon: string }[] = [
-  { id: 'razorpay', name: 'Razorpay', description: 'Best for India (UPI, Cards, NetBanking)', icon: '🇮🇳' },
+const paymentGateways: { id: PaymentGateway; name: string; description: string }[] = [
+    { id: 'razorpay', name: 'Razorpay', description: 'UPI, cards, wallets, and netbanking' },
 ];
+
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+function formatAmount(amount: number): string {
+    return `Rs ${amount.toLocaleString('en-IN')}`;
+}
 
 export default function DonatePage() {
-  const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
-  const [customAmount, setCustomAmount] = useState<string>('');
-  const [selectedGateway, setSelectedGateway] = useState<PaymentGateway>('razorpay');
-  const [donorInfo, setDonorInfo] = useState({
-    name: '',
-    email: '',
-    phone: '',
-  });
-  const [showPaymentForm, setShowPaymentForm] = useState(false);
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
+    const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
+    const [customAmount, setCustomAmount] = useState('');
+    const [selectedGateway, setSelectedGateway] = useState<PaymentGateway>('razorpay');
+    const [showPaymentForm, setShowPaymentForm] = useState(false);
+    const [paymentSuccess, setPaymentSuccess] = useState(false);
+    const [receiptDownloadUrl, setReceiptDownloadUrl] = useState<string | null>(null);
+    const [receiptNumber, setReceiptNumber] = useState<string | null>(null);
+    const [paymentError, setPaymentError] = useState<string | null>(null);
+    const [donorInfo, setDonorInfo] = useState({
+        name: '',
+        email: '',
+        phone: '',
+        message: '',
+    });
 
-  const finalAmount = selectedAmount || Number(customAmount) || 0;
-  const isValidAmount = finalAmount >= 10;
+    const finalAmount = selectedAmount || Number(customAmount) || 0;
+    const isValidAmount = finalAmount >= 10;
+    const cleanedPhone = donorInfo.phone.replace(/\D/g, '');
+    const isValidDonorDetails = useMemo(() => {
+        return (
+            donorInfo.name.trim().length >= 2 &&
+            emailRegex.test(donorInfo.email.trim()) &&
+            cleanedPhone.length >= 10
+        );
+    }, [cleanedPhone.length, donorInfo.email, donorInfo.name]);
 
-  const handleAmountSelect = (amount: number) => {
-    setSelectedAmount(amount);
-    setCustomAmount('');
-    setShowPaymentForm(true);
-  };
+    const handleAmountSelect = (amount: number) => {
+        setSelectedAmount(amount);
+        setCustomAmount('');
+        setShowPaymentForm(true);
+        setPaymentError(null);
+    };
 
-  const handleCustomAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setCustomAmount(value);
-    setSelectedAmount(null);
-    if (Number(value) >= 10) {
-      setShowPaymentForm(true);
+    const handleCustomAmountChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const value = event.target.value;
+        setCustomAmount(value);
+        setSelectedAmount(null);
+        setPaymentError(null);
+        setShowPaymentForm(Number(value) >= 10);
+    };
+
+    const handlePaymentSuccess = (data?: {
+        orderId: string;
+        paymentId?: string;
+        receiptDownloadUrl?: string;
+        receiptNumber?: string;
+        gateway?: PaymentGateway;
+        redirectUrl?: string;
+    }) => {
+        setPaymentSuccess(true);
+        setReceiptNumber(data?.receiptNumber || null);
+        setPaymentError(null);
+
+        if (data?.receiptDownloadUrl) {
+            setReceiptDownloadUrl(data.receiptDownloadUrl);
+            return;
+        }
+
+        if (data?.orderId) {
+            const params = new URLSearchParams({ orderId: data.orderId });
+            if (data.paymentId) {
+                params.set('paymentId', data.paymentId);
+            }
+            setReceiptDownloadUrl(`/api/donations/receipt?${params.toString()}`);
+        }
+    };
+
+    const resetDonationState = () => {
+        setPaymentSuccess(false);
+        setSelectedAmount(null);
+        setCustomAmount('');
+        setShowPaymentForm(false);
+        setReceiptDownloadUrl(null);
+        setReceiptNumber(null);
+        setPaymentError(null);
+        setDonorInfo({
+            name: '',
+            email: '',
+            phone: '',
+            message: '',
+        });
+    };
+
+    if (paymentSuccess) {
+        return (
+            <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-green-50 to-white px-4">
+                <div className="w-full max-w-md text-center">
+                    <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-green-100">
+                        <CheckCircle className="h-10 w-10 text-green-600" />
+                    </div>
+                    <h1 className="mb-4 text-3xl font-bold text-slate-900">Thank You</h1>
+                    <p className="mb-8 text-slate-600">
+                        Your donation of {formatAmount(finalAmount)} has been received and routed into the SaviEduTech education fund.
+                    </p>
+                    {receiptDownloadUrl ? (
+                        <a
+                            href={receiptDownloadUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            download
+                            className="mb-3 block w-full rounded-xl bg-emerald-500 px-4 py-3 font-semibold text-white transition-colors hover:bg-emerald-600"
+                        >
+                            Download Receipt {receiptNumber ? `(${receiptNumber})` : ''}
+                        </a>
+                    ) : null}
+                    <div className="space-y-3">
+                        <Link
+                            href="/"
+                            className="block w-full rounded-xl bg-rose-500 px-4 py-3 font-semibold text-white transition-colors hover:bg-rose-600"
+                        >
+                            Back to Home
+                        </Link>
+                        <button
+                            type="button"
+                            onClick={resetDonationState}
+                            className="block w-full rounded-xl border-2 border-slate-200 px-4 py-3 font-semibold text-slate-600 transition-colors hover:border-slate-300"
+                        >
+                            Make Another Donation
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
     }
-  };
 
-  const handlePaymentSuccess = () => {
-    setPaymentSuccess(true);
-    // Reset form after success
-    setTimeout(() => {
-      setPaymentSuccess(false);
-      setSelectedAmount(null);
-      setCustomAmount('');
-      setShowPaymentForm(false);
-      setDonorInfo({ name: '', email: '', phone: '' });
-    }, 5000);
-  };
-
-  const getCurrency = (gateway: PaymentGateway) => {
-    switch (gateway) {
-      case 'razorpay':
-        return 'INR';
-      default:
-        return 'INR';
-    }
-  };
-
-  const formatAmount = (amount: number, currency: string) => {
-    if (currency === 'INR') {
-      return `₹${amount.toLocaleString('en-IN')}`;
-    }
-    return `$${amount.toLocaleString('en-US')}`;
-  };
-
-  if (paymentSuccess) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-green-50 to-white flex items-center justify-center px-4">
-        <div className="max-w-md w-full text-center">
-          <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle className="w-10 h-10 text-green-600" />
-          </div>
-          <h1 className="text-3xl font-bold text-slate-900 mb-4">Thank You!</h1>
-          <p className="text-slate-600 mb-8">
-            Your donation of {formatAmount(finalAmount, getCurrency(selectedGateway))} has been received.
-            You're making a real difference in a child's life.
-          </p>
-          <div className="space-y-3">
-            <Link
-              href="/"
-              className="block w-full py-3 bg-rose-500 text-white font-semibold rounded-xl hover:bg-rose-600 transition-colors"
-            >
-              Back to Home
-            </Link>
-            <button
-              onClick={() => setPaymentSuccess(false)}
-              className="block w-full py-3 border-2 border-slate-200 text-slate-600 font-semibold rounded-xl hover:border-slate-300 transition-colors"
-            >
-              Make Another Donation
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="min-h-screen bg-gradient-to-b from-rose-50 to-white">
-      {/* Hero Section */}
-      <section className="py-16 md:py-20 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-2 bg-rose-100 text-rose-700 rounded-full text-sm font-medium mb-6">
-            <Heart className="w-4 h-4 fill-rose-500" />
-            <span>Education for All</span>
-          </div>
-          <h1 className="text-3xl md:text-5xl font-bold text-slate-900 mb-6">
-            Empower Vulnerable Children Through Education
-          </h1>
-          <p className="text-lg text-slate-600 max-w-2xl mx-auto mb-8">
-            Your donation helps provide quality education, study materials, and coaching support
-            to underprivileged children aspiring for JEE, NEET, and other competitive exams.
-          </p>
-        </div>
-      </section>
-
-      {/* Impact Stats */}
-      <section className="py-12 px-4 bg-white">
-        <div className="max-w-6xl mx-auto">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {impactStats.map((stat) => {
-              const Icon = stat.icon;
-              return (
-                <div key={stat.label} className="text-center">
-                  <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-rose-100 text-rose-600 mb-4">
-                    <Icon className="w-7 h-7" />
-                  </div>
-                  <div className="text-3xl font-bold text-slate-900">{stat.value}</div>
-                  <div className="text-sm text-slate-500">{stat.label}</div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </section>
-
-      {/* Donation Section */}
-      <section className="py-16 md:py-20 px-4">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-slate-900 mb-4">Choose Your Contribution</h2>
-            <p className="text-slate-600">Every donation makes a difference in a child's life</p>
-          </div>
-
-          {/* Preset Amounts */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {donationOptions.map((option) => (
-              <button
-                key={option.amount}
-                onClick={() => handleAmountSelect(option.amount)}
-                className={`bg-white rounded-2xl p-6 border-2 transition-all hover:shadow-xl text-left ${selectedAmount === option.amount
-                  ? 'border-rose-500 ring-2 ring-rose-200'
-                  : 'border-slate-100 hover:border-rose-500'
-                  }`}
-              >
-                <div className="text-3xl font-bold text-slate-900 mb-2">
-                  ₹{option.amount.toLocaleString()}
-                </div>
-                <p className="text-sm text-slate-600">{option.description}</p>
-                {selectedAmount === option.amount && (
-                  <div className="mt-4 flex items-center gap-2 text-rose-600 text-sm font-medium">
-                    <CheckCircle className="w-4 h-4" />
-                    Selected
-                  </div>
-                )}
-              </button>
-            ))}
-          </div>
-
-          {/* Custom Amount */}
-          <div className="bg-white rounded-2xl p-8 border-2 border-slate-100 max-w-xl mx-auto mb-8">
-            <h3 className="text-lg font-semibold text-slate-900 mb-4 text-center">Or Enter Custom Amount</h3>
-            <div className="flex gap-4">
-              <div className="flex-1 relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 font-medium">₹</span>
-                <input
-                  type="number"
-                  placeholder="Enter amount (min ₹10)"
-                  value={customAmount}
-                  onChange={handleCustomAmountChange}
-                  className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-200 outline-none transition-all"
-                  min="10"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Payment Form */}
-          {showPaymentForm && isValidAmount && (
-            <div className="max-w-2xl mx-auto">
-              <div className="bg-white rounded-2xl p-8 border-2 border-slate-100 shadow-lg">
-                <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-xl font-semibold text-slate-900">Complete Your Donation</h3>
-                  <div className="text-right">
-                    <div className="text-2xl font-bold text-rose-600">
-                      {formatAmount(finalAmount, getCurrency(selectedGateway))}
+        <div className="min-h-screen bg-gradient-to-b from-rose-50 to-white">
+            <section className="px-4 py-16 md:py-20">
+                <div className="mx-auto max-w-4xl text-center">
+                    <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-rose-100 px-4 py-2 text-sm font-medium text-rose-700">
+                        <Heart className="h-4 w-4 fill-rose-500" />
+                        <span>Education Donation Fund</span>
                     </div>
-                    <div className="text-sm text-slate-500">Total Amount</div>
-                  </div>
+                    <h1 className="mb-6 text-3xl font-bold text-slate-900 md:text-5xl">
+                        Fund Education for Vulnerable Children
+                    </h1>
+                    <p className="mx-auto max-w-2xl text-lg text-slate-600">
+                        Every donation helps under-resourced students access classes, study material, scholarships, and mentorship for JEE and NEET preparation.
+                    </p>
                 </div>
+            </section>
 
-                {/* Gateway Selector */}
-                <div className="mb-6">
-                  <label className="block text-sm font-medium text-slate-700 mb-3">
-                    Select Payment Method
-                  </label>
-                  <div className="grid sm:grid-cols-3 gap-3">
-                    {paymentGateways.map((gateway) => (
-                      <button
-                        key={gateway.id}
-                        onClick={() => setSelectedGateway(gateway.id)}
-                        className={`p-4 rounded-xl border-2 text-left transition-all ${selectedGateway === gateway.id
-                          ? 'border-rose-500 bg-rose-50'
-                          : 'border-slate-200 hover:border-slate-300'
-                          }`}
-                      >
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-lg">{gateway.icon}</span>
-                          <span className="font-semibold text-slate-900">{gateway.name}</span>
+            <section className="bg-white px-4 py-12">
+                <div className="mx-auto grid max-w-6xl grid-cols-2 gap-8 md:grid-cols-4">
+                    {impactStats.map((stat) => {
+                        const Icon = stat.icon;
+                        return (
+                            <div key={stat.label} className="text-center">
+                                <div className="mb-4 inline-flex h-14 w-14 items-center justify-center rounded-2xl bg-rose-100 text-rose-600">
+                                    <Icon className="h-7 w-7" />
+                                </div>
+                                <div className="text-3xl font-bold text-slate-900">{stat.value}</div>
+                                <div className="text-sm text-slate-500">{stat.label}</div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </section>
+
+            <section className="px-4 py-16 md:py-20">
+                <div className="mx-auto max-w-6xl">
+                    <div className="mb-12 text-center">
+                        <h2 className="mb-4 text-3xl font-bold text-slate-900">Choose Your Contribution</h2>
+                        <p className="text-slate-600">Donation processing is secured through Razorpay only.</p>
+                    </div>
+
+                    <div className="mb-8 grid gap-6 md:grid-cols-2 lg:grid-cols-4">
+                        {donationOptions.map((option) => (
+                            <button
+                                key={option.amount}
+                                type="button"
+                                onClick={() => handleAmountSelect(option.amount)}
+                                className={`rounded-2xl border-2 bg-white p-6 text-left transition-all hover:shadow-xl ${
+                                    selectedAmount === option.amount
+                                        ? 'border-rose-500 ring-2 ring-rose-200'
+                                        : 'border-slate-100 hover:border-rose-500'
+                                }`}
+                            >
+                                <div className="mb-2 text-3xl font-bold text-slate-900">
+                                    {formatAmount(option.amount)}
+                                </div>
+                                <p className="text-sm text-slate-600">{option.description}</p>
+                                {selectedAmount === option.amount ? (
+                                    <div className="mt-4 flex items-center gap-2 text-sm font-medium text-rose-600">
+                                        <CheckCircle className="h-4 w-4" />
+                                        Selected
+                                    </div>
+                                ) : null}
+                            </button>
+                        ))}
+                    </div>
+
+                    <div className="mx-auto mb-8 max-w-xl rounded-2xl border-2 border-slate-100 bg-white p-8">
+                        <h3 className="mb-4 text-center text-lg font-semibold text-slate-900">Or Enter a Custom Amount</h3>
+                        <div className="relative">
+                            <span className="absolute left-4 top-1/2 -translate-y-1/2 font-medium text-slate-500">Rs</span>
+                            <input
+                                type="number"
+                                min="10"
+                                value={customAmount}
+                                onChange={handleCustomAmountChange}
+                                placeholder="Enter amount (minimum Rs 10)"
+                                className="w-full rounded-xl border border-slate-200 py-3 pl-12 pr-4 outline-none transition-all focus:border-rose-500 focus:ring-2 focus:ring-rose-200"
+                            />
                         </div>
-                        <p className="text-xs text-slate-500">{gateway.description}</p>
-                      </button>
-                    ))}
-                  </div>
-                </div>
+                    </div>
 
-                {/* Donor Information */}
-                <div className="space-y-4 mb-6">
-                  <div className="grid sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">
-                        Full Name (Optional)
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="Your name"
-                        value={donorInfo.name}
-                        onChange={(e) => setDonorInfo({ ...donorInfo, name: e.target.value })}
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-200 outline-none transition-all"
-                      />
+                    {showPaymentForm && isValidAmount ? (
+                        <div className="mx-auto max-w-2xl rounded-2xl border-2 border-slate-100 bg-white p-8 shadow-lg">
+                            <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                <div>
+                                    <h3 className="text-xl font-semibold text-slate-900">Complete Your Donation</h3>
+                                    <p className="text-sm text-slate-500">Receipt generation starts automatically after successful payment verification.</p>
+                                </div>
+                                <div className="text-right">
+                                    <div className="text-2xl font-bold text-rose-600">{formatAmount(finalAmount)}</div>
+                                    <div className="text-sm text-slate-500">Total Amount</div>
+                                </div>
+                            </div>
+
+                            <div className="mb-6">
+                                <label className="mb-3 block text-sm font-medium text-slate-700">Payment Method</label>
+                                <div className="grid gap-3 sm:grid-cols-2">
+                                    {paymentGateways.map((gateway) => (
+                                        <button
+                                            key={gateway.id}
+                                            type="button"
+                                            onClick={() => setSelectedGateway(gateway.id)}
+                                            className={`rounded-xl border-2 p-4 text-left transition-all ${
+                                                selectedGateway === gateway.id
+                                                    ? 'border-rose-500 bg-rose-50'
+                                                    : 'border-slate-200 hover:border-slate-300'
+                                            }`}
+                                        >
+                                            <div className="font-semibold text-slate-900">{gateway.name}</div>
+                                            <p className="text-xs text-slate-500">{gateway.description}</p>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            <div className="mb-6 space-y-4">
+                                <div className="grid gap-4 sm:grid-cols-2">
+                                    <div>
+                                        <label className="mb-1 block text-sm font-medium text-slate-700">
+                                            Donor Name <span className="text-rose-500">*</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={donorInfo.name}
+                                            onChange={(event) => setDonorInfo((current) => ({ ...current, name: event.target.value }))}
+                                            placeholder="Full name"
+                                            className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none transition-all focus:border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="mb-1 block text-sm font-medium text-slate-700">
+                                            Email <span className="text-rose-500">*</span>
+                                        </label>
+                                        <input
+                                            type="email"
+                                            value={donorInfo.email}
+                                            onChange={(event) => setDonorInfo((current) => ({ ...current, email: event.target.value }))}
+                                            placeholder="your@email.com"
+                                            className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none transition-all focus:border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                        />
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium text-slate-700">
+                                        Phone Number <span className="text-rose-500">*</span>
+                                    </label>
+                                    <input
+                                        type="tel"
+                                        value={donorInfo.phone}
+                                        onChange={(event) => setDonorInfo((current) => ({ ...current, phone: event.target.value }))}
+                                        placeholder="+91 98765 43210"
+                                        className="w-full rounded-xl border border-slate-200 px-4 py-3 outline-none transition-all focus:border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="mb-1 block text-sm font-medium text-slate-700">Message (Optional)</label>
+                                    <textarea
+                                        rows={4}
+                                        maxLength={500}
+                                        value={donorInfo.message}
+                                        onChange={(event) => setDonorInfo((current) => ({ ...current, message: event.target.value }))}
+                                        placeholder="Add a note for the education support team"
+                                        className="w-full resize-none rounded-xl border border-slate-200 px-4 py-3 outline-none transition-all focus:border-rose-500 focus:ring-2 focus:ring-rose-200"
+                                    />
+                                </div>
+                            </div>
+
+                            {!isValidDonorDetails ? (
+                                <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                                    Enter a valid donor name, email, and phone number to continue with Razorpay checkout.
+                                </div>
+                            ) : null}
+
+                            {paymentError ? (
+                                <div className="mb-4 rounded-xl border border-red-100 bg-red-50 p-3 text-sm text-red-700">
+                                    {paymentError}
+                                </div>
+                            ) : null}
+
+                            {isValidDonorDetails ? (
+                                <PaymentButton
+                                    amount={finalAmount}
+                                    currency="INR"
+                                    gateway={selectedGateway}
+                                    donorName={donorInfo.name.trim()}
+                                    donorEmail={donorInfo.email.trim()}
+                                    donorPhone={donorInfo.phone.trim()}
+                                    donorMessage={donorInfo.message.trim() || undefined}
+                                    description="Donation to SaviEduTech"
+                                    metadata={{
+                                        type: 'donation',
+                                        donorMessage: donorInfo.message.trim() || undefined,
+                                    }}
+                                    onSuccess={handlePaymentSuccess}
+                                    onError={(error) => setPaymentError(error)}
+                                    onCancel={() => setPaymentError('Payment cancelled before completion.')}
+                                >
+                                    Pay {formatAmount(finalAmount)}
+                                </PaymentButton>
+                            ) : (
+                                <button
+                                    type="button"
+                                    disabled
+                                    className="w-full cursor-not-allowed rounded-xl bg-emerald-300 px-6 py-3 font-semibold text-white opacity-70"
+                                >
+                                    Pay {formatAmount(finalAmount)}
+                                </button>
+                            )}
+
+                            <div className="mt-6 border-t border-slate-100 pt-6">
+                                <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-slate-500">
+                                    <div className="flex items-center gap-2">
+                                        <Shield className="h-4 w-4 text-green-500" />
+                                        <span>Secure Razorpay checkout</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <FileText className="h-4 w-4 text-blue-500" />
+                                        <span>Receipt download after payment</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                        <Mail className="h-4 w-4 text-purple-500" />
+                                        <span>Donation records retained for support</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    ) : null}
+                </div>
+            </section>
+
+            <section className="bg-slate-50 px-4 py-16 md:py-20">
+                <div className="mx-auto max-w-6xl">
+                    <div className="mb-12 text-center">
+                        <h2 className="text-3xl font-bold text-slate-900">How the Fund Works</h2>
                     </div>
-                    <div>
-                      <label className="block text-sm font-medium text-slate-700 mb-1">
-                        Email (Optional)
-                      </label>
-                      <input
-                        type="email"
-                        placeholder="your@email.com"
-                        value={donorInfo.email}
-                        onChange={(e) => setDonorInfo({ ...donorInfo, email: e.target.value })}
-                        className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-200 outline-none transition-all"
-                      />
+                    <div className="grid gap-8 md:grid-cols-3">
+                        {[
+                            {
+                                step: '01',
+                                title: 'Student Identification',
+                                description: 'We work with schools and community partners to identify students who need education support.',
+                            },
+                            {
+                                step: '02',
+                                title: 'Resource Allocation',
+                                description: 'Funds are used for classes, practice material, scholarships, and academic mentoring.',
+                            },
+                            {
+                                step: '03',
+                                title: 'Impact Tracking',
+                                description: 'We track progress through platform usage and academic performance milestones.',
+                            },
+                        ].map((item) => (
+                            <div key={item.step} className="rounded-2xl bg-white p-6 shadow-sm">
+                                <div className="mb-4 text-4xl font-bold text-rose-200">{item.step}</div>
+                                <h3 className="mb-2 text-lg font-semibold text-slate-900">{item.title}</h3>
+                                <p className="text-slate-600">{item.description}</p>
+                            </div>
+                        ))}
                     </div>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">
-                      Phone Number (Optional)
-                    </label>
-                    <input
-                      type="tel"
-                      placeholder="+91 98765 43210"
-                      value={donorInfo.phone}
-                      onChange={(e) => setDonorInfo({ ...donorInfo, phone: e.target.value })}
-                      className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-rose-500 focus:ring-2 focus:ring-rose-200 outline-none transition-all"
+                </div>
+            </section>
+
+            <section className="bg-white px-4 py-16">
+                <div className="mx-auto max-w-4xl">
+                    <ReceiptLookupCard
+                        title="Need Your Receipt Later?"
+                        description="Return to this page anytime and download your donation receipt with the Razorpay Order ID and Payment ID."
                     />
-                  </div>
                 </div>
+            </section>
 
-                {/* Payment Button */}
-                <PaymentButton
-                  amount={finalAmount}
-                  currency={getCurrency(selectedGateway)}
-                  gateway={selectedGateway}
-                  donorName={donorInfo.name || undefined}
-                  donorEmail={donorInfo.email || undefined}
-                  donorPhone={donorInfo.phone || undefined}
-                  description="Donation to SaviEduTech"
-                  onSuccess={handlePaymentSuccess}
-                  onError={(error) => alert(`Payment failed: ${error}`)}
-                  onCancel={() => console.log('Payment cancelled')}
-                  className="w-full"
-                >
-                  Pay {formatAmount(finalAmount, getCurrency(selectedGateway))}
-                </PaymentButton>
-
-                {/* Trust Badges */}
-                <div className="mt-6 pt-6 border-t border-slate-100">
-                  <div className="flex flex-wrap items-center justify-center gap-6 text-sm text-slate-500">
-                    <div className="flex items-center gap-2">
-                      <Shield className="w-4 h-4 text-green-500" />
-                      <span>Secure Payment</span>
+            <section className="px-4 py-16 md:py-20">
+                <div className="mx-auto max-w-4xl text-center">
+                    <h2 className="mb-8 text-3xl font-bold text-slate-900">Transparency Commitments</h2>
+                    <div className="grid gap-6 sm:grid-cols-3">
+                        <div className="flex flex-col items-center">
+                            <CheckCircle className="mb-4 h-12 w-12 text-green-500" />
+                            <h3 className="font-semibold text-slate-900">Documented Receipts</h3>
+                            <p className="text-sm text-slate-500">Every successful donation generates a receipt with transaction details.</p>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <CheckCircle className="mb-4 h-12 w-12 text-green-500" />
+                            <h3 className="font-semibold text-slate-900">Secure Processing</h3>
+                            <p className="text-sm text-slate-500">Razorpay is the only supported gateway for donation payments.</p>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <CheckCircle className="mb-4 h-12 w-12 text-green-500" />
+                            <h3 className="font-semibold text-slate-900">Education First</h3>
+                            <p className="text-sm text-slate-500">Funds are directed toward learning access and scholarship support.</p>
+                        </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <FileText className="w-4 h-4 text-blue-500" />
-                      <span>Tax Deductible (80G)</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Mail className="w-4 h-4 text-purple-500" />
-                      <span>Receipt via Email</span>
-                    </div>
-                  </div>
                 </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </section>
+            </section>
 
-      {/* How It Works */}
-      <section className="py-16 md:py-20 px-4 bg-slate-50">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-slate-900 mb-4">How Your Donation Helps</h2>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                step: '01',
-                title: 'We Identify Students',
-                description: 'We work with schools and NGOs to identify deserving students from underprivileged backgrounds.',
-              },
-              {
-                step: '02',
-                title: 'Provide Resources',
-                description: 'Your donations fund study materials, online courses, test series, and mentorship programs.',
-              },
-              {
-                step: '03',
-                title: 'Track Progress',
-                description: "We monitor each student's progress and provide regular updates to donors on their impact.",
-              },
-            ].map((item) => (
-              <div key={item.step} className="bg-white rounded-2xl p-6 shadow-sm">
-                <div className="text-4xl font-bold text-rose-200 mb-4">{item.step}</div>
-                <h3 className="text-lg font-semibold text-slate-900 mb-2">{item.title}</h3>
-                <p className="text-slate-600">{item.description}</p>
-              </div>
-            ))}
-          </div>
+            <section className="bg-gradient-to-r from-rose-500 to-pink-500 px-4 py-16 md:py-20">
+                <div className="mx-auto max-w-4xl text-center text-white">
+                    <h2 className="mb-4 text-3xl font-bold">Ready to Contribute?</h2>
+                    <p className="mb-8 text-lg text-white/90">
+                        Join the donors helping students stay on the path to engineering and medical entrance success.
+                    </p>
+                    <div className="flex flex-col justify-center gap-4 sm:flex-row">
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setShowPaymentForm(true);
+                                window.scrollTo({ top: 0, behavior: 'smooth' });
+                            }}
+                            className="rounded-xl bg-white px-8 py-4 font-semibold text-rose-500 transition-colors hover:bg-white/90"
+                        >
+                            Donate Now
+                        </button>
+                        <Link
+                            href="/"
+                            className="rounded-xl border-2 border-white px-8 py-4 font-semibold text-white transition-colors hover:bg-white/10"
+                        >
+                            Back to Home
+                        </Link>
+                    </div>
+                </div>
+            </section>
         </div>
-      </section>
-
-      {/* Transparency */}
-      <section className="py-16 md:py-20 px-4">
-        <div className="max-w-4xl mx-auto text-center">
-          <h2 className="text-3xl font-bold text-slate-900 mb-8">100% Transparency</h2>
-          <div className="grid sm:grid-cols-3 gap-6">
-            <div className="flex flex-col items-center">
-              <CheckCircle className="w-12 h-12 text-green-500 mb-4" />
-              <h3 className="font-semibold text-slate-900">Tax Benefits</h3>
-              <p className="text-sm text-slate-500">All donations are tax deductible under 80G</p>
-            </div>
-            <div className="flex flex-col items-center">
-              <CheckCircle className="w-12 h-12 text-green-500 mb-4" />
-              <h3 className="font-semibold text-slate-900">Regular Reports</h3>
-              <p className="text-sm text-slate-500">Quarterly impact reports for all donors</p>
-            </div>
-            <div className="flex flex-col items-center">
-              <CheckCircle className="w-12 h-12 text-green-500 mb-4" />
-              <h3 className="font-semibold text-slate-900">Secure Payments</h3>
-              <p className="text-sm text-slate-500">Bank-grade encryption for all transactions</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="py-16 md:py-20 px-4 bg-gradient-to-r from-rose-500 to-pink-500">
-        <div className="max-w-4xl mx-auto text-center text-white">
-          <h2 className="text-3xl font-bold mb-4">Ready to Make a Difference?</h2>
-          <p className="text-lg text-white/90 mb-8">
-            Join thousands of donors who are helping children achieve their dreams.
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <button
-              onClick={() => {
-                setShowPaymentForm(true);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
-              className="px-8 py-4 bg-white text-rose-500 font-semibold rounded-xl hover:bg-white/90 transition-colors"
-            >
-              Donate Now
-            </button>
-            <Link
-              href="/"
-              className="px-8 py-4 border-2 border-white text-white font-semibold rounded-xl hover:bg-white/10 transition-colors"
-            >
-              Back to Home
-            </Link>
-          </div>
-        </div>
-      </section>
-    </div>
-  );
+    );
 }

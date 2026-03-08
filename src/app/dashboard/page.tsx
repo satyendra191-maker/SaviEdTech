@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
     Flame,
     Trophy,
@@ -12,7 +12,6 @@ import {
     ChevronRight,
     Play,
     Award,
-    Loader2,
     AlertCircle,
     Star,
     Users,
@@ -23,6 +22,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
 import { useAuth } from '@/hooks/useAuth';
+import { RankPredictionWidget } from '@/components/analytics/RankPredictionWidget';
 import { StreakDisplay, AchievementBadge, UserPointsDisplay } from '@/components/gamification';
 import { CompactLeaderboard } from '@/components/gamification/Leaderboard';
 import { formatTimeAgo, formatUpcomingDate } from '@/lib/utils';
@@ -51,6 +51,7 @@ interface DashboardData {
         subject: string;
         faculty: string;
         progress: number;
+        video_url: string | null;
         thumbnail_url: string | null;
         last_watched_at: string;
     }>;
@@ -74,6 +75,20 @@ interface DashboardData {
         total_participants: number;
         closes_at: string | null;
     } | null;
+    dailyProgress: {
+        questionsAttempted: number;
+        accuracyPercent: number;
+        studyMinutes: number;
+        testsCompleted: number;
+    };
+    recentMockResult: {
+        attemptId: string;
+        title: string;
+        score: number;
+        maxScore: number;
+        percentile: number | null;
+        submittedAt: string;
+    } | null;
     achievements: Array<{
         id: string;
         badge_type: string;
@@ -84,6 +99,21 @@ interface DashboardData {
 export default function DashboardPage() {
     const { user, role, isLoading: authLoading } = useAuth();
     const router = useRouter();
+    const redirectPath = role === 'super_admin'
+        ? '/super-admin'
+        : role === 'admin' || role === 'content_manager'
+            ? '/admin'
+            : role === 'finance_manager'
+                ? '/admin/finance'
+            : role === 'parent'
+                ? '/dashboard/parent'
+                : null;
+
+    useEffect(() => {
+        if (redirectPath) {
+            router.replace(redirectPath);
+        }
+    }, [redirectPath, router]);
 
     if (authLoading) {
         return <DashboardSkeleton />;
@@ -93,40 +123,59 @@ export default function DashboardPage() {
         return null;
     }
 
-    // Role-based component switching
-    switch (role) {
-        case 'faculty':
-            return <FacultyDashboard user={user} />;
-        case 'admin':
-        case 'super_admin':
-            router.push(role === 'super_admin' ? '/super-admin' : '/admin');
-            return null;
-        case 'parent':
-            router.push('/dashboard/parent');
-            return null;
-        default:
-            return <StudentDashboard user={user} />;
+    if (redirectPath) {
+        return <DashboardSkeleton />;
     }
+
+    if (role === 'faculty') {
+        return <FacultyDashboard user={user} />;
+    }
+
+    return <StudentDashboard user={user} />;
 }
 
 function StudentDashboard({ user }: { user: any }) {
+    const supabase = useMemo(() => getSupabaseBrowserClient(), []);
+    const initialLoadRef = useRef(true);
+    const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const [data, setData] = useState<DashboardData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        async function fetchDashboardData() {
-            try {
-                const supabase = getSupabaseBrowserClient();
+    const fetchDashboardData = useCallback(async () => {
+        if (!supabase) {
+            setError('Dashboard data source is unavailable. Check Supabase configuration.');
+            setLoading(false);
+            return;
+        }
 
-                // Fetch profile and student profile
-                const [{ data: profile }, { data: studentProfile }] = await Promise.all([
-                    supabase.from('profiles').select('full_name, exam_target').eq('id', user.id).maybeSingle(),
-                    supabase.from('student_profiles').select('*').eq('id', user.id).maybeSingle()
-                ]);
+        if (initialLoadRef.current) {
+            setLoading(true);
+        }
 
-                // Fetch recent lectures with progress
-                const { data: recentLectures } = await supabase
+        try {
+            const nowIso = new Date().toISOString();
+            const today = nowIso.split('T')[0] || '';
+            const startOfDay = new Date();
+            startOfDay.setHours(0, 0, 0, 0);
+            const startOfDayIso = startOfDay.toISOString();
+
+            const [
+                profileResult,
+                studentProfileResult,
+                recentLecturesResult,
+                upcomingTestsResult,
+                todayDPPResult,
+                dailyChallengeResult,
+                progressStatsResult,
+                completedTestsResult,
+                todayQuestionAttemptsResult,
+                todayCompletedTestsResult,
+                recentMockResultResult,
+            ] = await Promise.all([
+                supabase.from('profiles').select('full_name, exam_target').eq('id', user.id).maybeSingle(),
+                supabase.from('student_profiles').select('*').eq('id', user.id).maybeSingle(),
+                supabase
                     .from('lecture_progress')
                     .select(`
                         progress_percent,
@@ -134,6 +183,7 @@ function StudentDashboard({ user }: { user: any }) {
                         lectures:lecture_id (
                             id,
                             title,
+                            video_url,
                             thumbnail_url,
                             subjects:topic_id (name),
                             faculties:faculty_id (name)
@@ -141,129 +191,264 @@ function StudentDashboard({ user }: { user: any }) {
                     `)
                     .eq('user_id', user.id)
                     .order('last_watched_at', { ascending: false })
-                    .limit(2);
-
-                // Fetch upcoming tests
-                const { data: upcomingTests } = await supabase
+                    .limit(3),
+                supabase
                     .from('tests')
                     .select('id, title, scheduled_at, duration_minutes, question_count')
-                    .gte('scheduled_at', new Date().toISOString())
+                    .gte('scheduled_at', nowIso)
                     .eq('is_published', true)
                     .order('scheduled_at', { ascending: true })
-                    .limit(2);
-
-                // Fetch today's DPP
-                const today = new Date().toISOString().split('T')[0];
-                const { data: todayDPP } = await supabase
+                    .limit(2),
+                supabase
                     .from('dpp_sets')
                     .select('id, title, subject_id, total_questions, time_limit_minutes, subjects:subject_id (name)')
                     .eq('scheduled_date', today)
                     .eq('is_published', true)
-                    .maybeSingle();
-
-                // Fetch today's daily challenge
-                const { data: dailyChallenge } = await supabase
+                    .maybeSingle(),
+                supabase
                     .from('daily_challenges')
                     .select('id, title, total_participants, closes_at')
                     .eq('challenge_date', today)
-                    .maybeSingle();
-
-                // Fetch student progress stats
-                const { data: progressStats } = await supabase
+                    .maybeSingle(),
+                supabase
                     .from('student_progress')
                     .select('accuracy_percent, tests_taken')
-                    .eq('user_id', user.id);
+                    .eq('user_id', user.id),
+                supabase
+                    .from('test_attempts')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('user_id', user.id)
+                    .in('status', ['completed', 'time_up']),
+                supabase
+                    .from('question_attempts')
+                    .select('is_correct, time_taken_seconds')
+                    .eq('user_id', user.id)
+                    .gte('occurred_at', startOfDayIso),
+                supabase
+                    .from('test_attempts')
+                    .select('id', { count: 'exact', head: true })
+                    .eq('user_id', user.id)
+                    .in('status', ['completed', 'time_up'])
+                    .gte('submitted_at', startOfDayIso),
+                supabase
+                    .from('test_attempts')
+                    .select(`
+                        id,
+                        total_score,
+                        max_score,
+                        percentile,
+                        submitted_at,
+                        tests:test_id (
+                            title
+                        )
+                    `)
+                    .eq('user_id', user.id)
+                    .in('status', ['completed', 'time_up'])
+                    .order('submitted_at', { ascending: false })
+                    .limit(1)
+                    .maybeSingle(),
+            ]);
 
-                // Calculate aggregated stats
-                const progressData = (progressStats || []) as { tests_taken: number; accuracy_percent: number }[];
-                const totalTests = progressData.reduce((acc, curr) => acc + (curr.tests_taken || 0), 0);
-                const avgAccuracy = progressData.length > 0
-                    ? (progressData.reduce((acc, curr) => acc + (curr.accuracy_percent || 0), 0) / progressData.length).toFixed(1)
-                    : '0';
+            const queryErrors = [
+                profileResult.error,
+                studentProfileResult.error,
+                recentLecturesResult.error,
+                upcomingTestsResult.error,
+                todayDPPResult.error,
+                dailyChallengeResult.error,
+                progressStatsResult.error,
+                completedTestsResult.error,
+                todayQuestionAttemptsResult.error,
+                todayCompletedTestsResult.error,
+                recentMockResultResult.error,
+            ].filter(Boolean);
 
-                // Format study time
-                const studentData = studentProfile as { total_study_minutes?: number; rank_prediction?: number | null } | null;
-                const totalMinutes = studentData?.total_study_minutes || 0;
-                const hours = Math.floor(totalMinutes / 60);
-                const minutes = totalMinutes % 60;
-                const studyTimeStr = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+            if (queryErrors.length > 0) {
+                throw queryErrors[0];
+            }
 
-                // Format rank
-                const rank = studentData?.rank_prediction;
-                const rankStr = rank ? `AIR ${rank.toLocaleString()}` : 'N/A';
+            const profile = profileResult.data;
+            const studentProfile = studentProfileResult.data;
+            const recentLectures = recentLecturesResult.data;
+            const upcomingTests = upcomingTestsResult.data;
+            const todayDPP = todayDPPResult.data;
+            const dailyChallenge = dailyChallengeResult.data;
+            const progressStats = progressStatsResult.data;
+            const todayQuestionAttempts = todayQuestionAttemptsResult.data;
+            const recentMockAttempt = recentMockResultResult as {
+                data: {
+                    id: string;
+                    total_score: number | null;
+                    max_score: number;
+                    percentile: number | null;
+                    submitted_at: string | null;
+                    tests: { title: string } | null;
+                } | null;
+            };
 
-                setData({
-                    profile: profile as DashboardData['profile'],
-                    studentProfile: studentProfile as DashboardData['studentProfile'],
-                    stats: {
-                        predictedRank: rankStr,
-                        accuracy: `${avgAccuracy}%`,
-                        studyTime: studyTimeStr,
-                        testsTaken: totalTests,
-                    },
-                    recentLectures: (recentLectures || []).map((lecture: unknown) => {
-                        const l = lecture as {
-                            progress_percent: number;
-                            last_watched_at: string;
-                            lectures: {
-                                id: string;
-                                title: string;
-                                thumbnail_url: string | null;
-                                subjects: { name: string } | null;
-                                faculties: { name: string } | null;
-                            };
-                        };
-                        return {
-                            id: l.lectures.id,
-                            title: l.lectures.title,
-                            subject: l.lectures.subjects?.name || 'General',
-                            faculty: l.lectures.faculties?.name || 'Faculty',
-                            progress: l.progress_percent,
-                            thumbnail_url: l.lectures.thumbnail_url,
-                            last_watched_at: l.last_watched_at,
-                        };
-                    }),
-                    upcomingTests: (upcomingTests || []).map((test: unknown) => {
-                        const t = test as {
+            const progressData = (progressStats || []) as { tests_taken: number; accuracy_percent: number }[];
+            const totalTests = completedTestsResult.count || 0;
+            const avgAccuracy = progressData.length > 0
+                ? (progressData.reduce((acc, curr) => acc + (curr.accuracy_percent || 0), 0) / progressData.length).toFixed(1)
+                : '0';
+            const todayAttempts = (todayQuestionAttempts || []) as Array<{ is_correct: boolean; time_taken_seconds: number | null }>;
+            const todayCorrect = todayAttempts.filter((attempt) => attempt.is_correct).length;
+            const todayStudyMinutes = Math.max(
+                0,
+                Math.round(todayAttempts.reduce((total, attempt) => total + (attempt.time_taken_seconds || 0), 0) / 60)
+            );
+            const todayAccuracy = todayAttempts.length > 0
+                ? Number(((todayCorrect / todayAttempts.length) * 100).toFixed(1))
+                : 0;
+
+            const studentData = studentProfile as { total_study_minutes?: number; rank_prediction?: number | null } | null;
+            const totalMinutes = studentData?.total_study_minutes || 0;
+            const hours = Math.floor(totalMinutes / 60);
+            const minutes = totalMinutes % 60;
+            const studyTimeStr = hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
+
+            const rank = studentData?.rank_prediction;
+            const rankStr = rank ? `AIR ${rank.toLocaleString()}` : 'N/A';
+
+            setData({
+                profile: profile as DashboardData['profile'],
+                studentProfile: studentProfile as DashboardData['studentProfile'],
+                stats: {
+                    predictedRank: rankStr,
+                    accuracy: `${avgAccuracy}%`,
+                    studyTime: studyTimeStr,
+                    testsTaken: totalTests,
+                },
+                recentLectures: (recentLectures || []).map((lecture: unknown) => {
+                    const l = lecture as {
+                        progress_percent: number;
+                        last_watched_at: string;
+                        lectures: {
                             id: string;
                             title: string;
-                            scheduled_at: string;
-                            duration_minutes: number;
-                            question_count: number;
+                            video_url: string | null;
+                            thumbnail_url: string | null;
+                            subjects: { name: string } | null;
+                            faculties: { name: string } | null;
                         };
-                        return {
-                            id: t.id,
-                            title: t.title,
-                            scheduled_at: t.scheduled_at,
-                            duration_minutes: t.duration_minutes,
-                            question_count: t.question_count,
-                        };
-                    }),
-                    todayDPP: todayDPP ? {
-                        id: (todayDPP as { id: string }).id,
-                        title: (todayDPP as { title: string }).title,
-                        subject: ((todayDPP as { subjects: { name: string } | null }).subjects?.name) || 'General',
-                        total_questions: (todayDPP as { total_questions: number }).total_questions,
-                        time_limit_minutes: (todayDPP as { time_limit_minutes: number }).time_limit_minutes,
-                    } : null,
-                    dailyChallenge: dailyChallenge ? {
-                        id: (dailyChallenge as { id: string }).id,
-                        title: (dailyChallenge as { title: string | null }).title || 'Daily Challenge',
-                        total_participants: (dailyChallenge as { total_participants: number }).total_participants,
-                        closes_at: (dailyChallenge as { closes_at: string | null }).closes_at,
-                    } : null,
-                    achievements: [], // Will be populated from gamification system
-                });
-            } catch (err) {
-                console.error('Error fetching dashboard data:', err);
-                setError('Failed to load dashboard data. Please try again.');
-            } finally {
-                setLoading(false);
-            }
+                    };
+                    return {
+                        id: l.lectures.id,
+                        title: l.lectures.title,
+                        subject: l.lectures.subjects?.name || 'General',
+                        faculty: l.lectures.faculties?.name || 'Faculty',
+                        progress: l.progress_percent,
+                        video_url: l.lectures.video_url,
+                        thumbnail_url: l.lectures.thumbnail_url,
+                        last_watched_at: l.last_watched_at,
+                    };
+                }),
+                upcomingTests: (upcomingTests || []).map((test: unknown) => {
+                    const t = test as {
+                        id: string;
+                        title: string;
+                        scheduled_at: string;
+                        duration_minutes: number;
+                        question_count: number;
+                    };
+                    return {
+                        id: t.id,
+                        title: t.title,
+                        scheduled_at: t.scheduled_at,
+                        duration_minutes: t.duration_minutes,
+                        question_count: t.question_count,
+                    };
+                }),
+                todayDPP: todayDPP ? {
+                    id: (todayDPP as { id: string }).id,
+                    title: (todayDPP as { title: string }).title,
+                    subject: ((todayDPP as { subjects: { name: string } | null }).subjects?.name) || 'General',
+                    total_questions: (todayDPP as { total_questions: number }).total_questions,
+                    time_limit_minutes: (todayDPP as { time_limit_minutes: number }).time_limit_minutes,
+                } : null,
+                dailyChallenge: dailyChallenge ? {
+                    id: (dailyChallenge as { id: string }).id,
+                    title: (dailyChallenge as { title: string | null }).title || 'Daily Challenge',
+                    total_participants: (dailyChallenge as { total_participants: number }).total_participants,
+                    closes_at: (dailyChallenge as { closes_at: string | null }).closes_at,
+                } : null,
+                dailyProgress: {
+                    questionsAttempted: todayAttempts.length,
+                    accuracyPercent: todayAccuracy,
+                    studyMinutes: todayStudyMinutes,
+                    testsCompleted: todayCompletedTestsResult.count || 0,
+                },
+                recentMockResult: recentMockAttempt.data ? {
+                    attemptId: recentMockAttempt.data.id,
+                    title: recentMockAttempt.data.tests?.title || 'Mock Test',
+                    score: recentMockAttempt.data.total_score || 0,
+                    maxScore: recentMockAttempt.data.max_score,
+                    percentile: recentMockAttempt.data.percentile,
+                    submittedAt: recentMockAttempt.data.submitted_at || nowIso,
+                } : null,
+                achievements: [],
+            });
+            setError(null);
+        } catch (err) {
+            console.error('Error fetching dashboard data:', err);
+            setError('Failed to load dashboard data. Please try again.');
+        } finally {
+            initialLoadRef.current = false;
+            setLoading(false);
+        }
+    }, [supabase, user.id]);
+
+    useEffect(() => {
+        void fetchDashboardData();
+
+        if (!supabase) {
+            return undefined;
         }
 
-        fetchDashboardData();
-    }, [user.id]);
+        const scheduleRefresh = () => {
+            if (refreshTimeoutRef.current) {
+                clearTimeout(refreshTimeoutRef.current);
+            }
+
+            refreshTimeoutRef.current = setTimeout(() => {
+                void fetchDashboardData();
+            }, 250);
+        };
+
+        const channel = supabase
+            .channel(`student-dashboard-sync:${user.id}`)
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` },
+                scheduleRefresh
+            )
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'student_profiles', filter: `id=eq.${user.id}` },
+                scheduleRefresh
+            )
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'lecture_progress', filter: `user_id=eq.${user.id}` },
+                scheduleRefresh
+            )
+            .on(
+                'postgres_changes',
+                { event: '*', schema: 'public', table: 'student_progress', filter: `user_id=eq.${user.id}` },
+                scheduleRefresh
+            )
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'tests' }, scheduleRefresh)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'dpp_sets' }, scheduleRefresh)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_challenges' }, scheduleRefresh)
+            .subscribe();
+
+        return () => {
+            if (refreshTimeoutRef.current) {
+                clearTimeout(refreshTimeoutRef.current);
+            }
+            void channel.unsubscribe();
+        };
+    }, [fetchDashboardData, supabase, user.id]);
 
     if (loading) {
         return <DashboardSkeleton />;
@@ -287,6 +472,7 @@ function StudentDashboard({ user }: { user: any }) {
 
     const displayName = data?.profile?.full_name?.split(' ')[0] || 'Student';
     const streakDays = data?.studentProfile?.study_streak || 0;
+    const featuredLecture = data?.recentLectures?.[0] || null;
 
     return (
         <div className="space-y-6">
@@ -334,6 +520,154 @@ function StudentDashboard({ user }: { user: any }) {
                 />
             </div>
 
+            <RankPredictionWidget compact />
+
+            <div className="grid gap-6 xl:grid-cols-[1.6fr_1fr]">
+                <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+                    <div className="mb-4 flex items-center justify-between">
+                        <div>
+                            <h2 className="text-lg font-semibold text-slate-900">Lecture Player</h2>
+                            <p className="text-sm text-slate-500">Resume your latest class directly from the dashboard</p>
+                        </div>
+                        <Link
+                            href="/dashboard/lectures"
+                            className="text-sm font-medium text-primary-600 hover:text-primary-700"
+                        >
+                            Open Library
+                        </Link>
+                    </div>
+
+                    {featuredLecture ? (
+                        <div className="space-y-4">
+                            <div className="overflow-hidden rounded-2xl bg-slate-950">
+                                {featuredLecture.video_url ? (
+                                    <video
+                                        controls
+                                        preload="metadata"
+                                        poster={featuredLecture.thumbnail_url || undefined}
+                                        className="aspect-video w-full bg-black"
+                                    >
+                                        <source src={featuredLecture.video_url} />
+                                    </video>
+                                ) : (
+                                    <div className="flex aspect-video items-center justify-center bg-gradient-to-br from-slate-900 to-slate-700 text-white">
+                                        <div className="text-center">
+                                            <PlayCircle className="mx-auto h-12 w-12 text-white/80" />
+                                            <p className="mt-3 text-sm text-white/80">Lecture preview unavailable</p>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                                <div>
+                                    <div className="flex flex-wrap items-center gap-2">
+                                        <span className="rounded-full bg-primary-50 px-3 py-1 text-xs font-medium text-primary-700">
+                                            {featuredLecture.subject}
+                                        </span>
+                                        <span className="text-xs text-slate-500">{formatTimeAgo(featuredLecture.last_watched_at)}</span>
+                                    </div>
+                                    <h3 className="mt-2 text-lg font-semibold text-slate-900">{featuredLecture.title}</h3>
+                                    <p className="text-sm text-slate-500">{featuredLecture.faculty}</p>
+                                </div>
+                                <Link
+                                    href={`/dashboard/lectures/${featuredLecture.id}`}
+                                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-5 py-3 font-medium text-white hover:bg-primary-700"
+                                >
+                                    Resume Lecture
+                                    <ChevronRight className="h-4 w-4" />
+                                </Link>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-slate-500">
+                            <PlayCircle className="mx-auto mb-3 h-12 w-12 text-slate-300" />
+                            <p>No lecture in progress yet. Start a class to unlock the player preview here.</p>
+                        </div>
+                    )}
+                </section>
+
+                <div className="grid gap-6">
+                    <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+                        <div className="flex items-center gap-2">
+                            <BookOpen className="h-5 w-5 text-primary-600" />
+                            <h2 className="text-lg font-semibold text-slate-900">Practice Questions</h2>
+                        </div>
+                        <p className="mt-3 text-sm text-slate-500">
+                            Today's work: {data?.dailyProgress.questionsAttempted || 0} questions solved with {data?.dailyProgress.accuracyPercent.toFixed(0) || 0}% accuracy.
+                        </p>
+                        <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
+                            <div
+                                className="h-full rounded-full bg-primary-600"
+                                style={{ width: `${Math.max(0, Math.min(data?.dailyProgress.accuracyPercent || 0, 100))}%` }}
+                            />
+                        </div>
+                        <div className="mt-5 flex flex-wrap gap-3 text-sm text-slate-600">
+                            <span className="rounded-xl bg-slate-50 px-3 py-2">{data?.stats.accuracy || '0%'} overall accuracy</span>
+                            <span className="rounded-xl bg-slate-50 px-3 py-2">{data?.stats.studyTime || '0m'} study time</span>
+                        </div>
+                        <Link
+                            href="/dashboard/practice/session"
+                            className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-5 py-3 font-medium text-white hover:bg-primary-700"
+                        >
+                            Start Quick Practice
+                            <ChevronRight className="h-4 w-4" />
+                        </Link>
+                    </section>
+
+                    <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
+                        <div className="flex items-center gap-2">
+                            <Trophy className="h-5 w-5 text-primary-600" />
+                            <h2 className="text-lg font-semibold text-slate-900">Mock Tests And Daily Progress</h2>
+                        </div>
+
+                        <div className="mt-4 grid grid-cols-3 gap-3">
+                            <div className="rounded-xl bg-slate-50 p-3">
+                                <p className="text-xs uppercase tracking-wide text-slate-400">Study</p>
+                                <p className="mt-2 text-lg font-semibold text-slate-900">{data?.dailyProgress.studyMinutes || 0} min</p>
+                            </div>
+                            <div className="rounded-xl bg-slate-50 p-3">
+                                <p className="text-xs uppercase tracking-wide text-slate-400">Tests</p>
+                                <p className="mt-2 text-lg font-semibold text-slate-900">{data?.dailyProgress.testsCompleted || 0}</p>
+                            </div>
+                            <div className="rounded-xl bg-slate-50 p-3">
+                                <p className="text-xs uppercase tracking-wide text-slate-400">Rank</p>
+                                <p className="mt-2 text-lg font-semibold text-slate-900">{data?.stats.predictedRank || 'N/A'}</p>
+                            </div>
+                        </div>
+
+                        {data?.recentMockResult ? (
+                            <div className="mt-5 rounded-2xl border border-slate-100 bg-slate-50 p-4">
+                                <p className="text-xs uppercase tracking-wide text-slate-400">Latest Mock Test</p>
+                                <h3 className="mt-2 font-semibold text-slate-900">{data.recentMockResult.title}</h3>
+                                <p className="mt-1 text-sm text-slate-500">
+                                    {data.recentMockResult.score}/{data.recentMockResult.maxScore}
+                                    {typeof data.recentMockResult.percentile === 'number' ? ` · ${data.recentMockResult.percentile.toFixed(1)} percentile` : ''}
+                                </p>
+                                <div className="mt-4 flex flex-wrap gap-3">
+                                    <Link
+                                        href={`/dashboard/tests/results/${data.recentMockResult.attemptId}`}
+                                        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                                    >
+                                        View Result
+                                    </Link>
+                                    <Link
+                                        href="/dashboard/tests"
+                                        className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
+                                    >
+                                        Open Mock Tests
+                                    </Link>
+                                </div>
+                            </div>
+                        ) : (
+                            <div className="mt-5 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
+                                No mock test attempted yet. Start one from the test centre to unlock score analysis and rank updates.
+                            </div>
+                        )}
+                    </section>
+                </div>
+            </div>
+
             <div className="grid lg:grid-cols-3 gap-6">
                 {/* Continue Learning */}
                 <div className="lg:col-span-2 space-y-6">
@@ -350,6 +684,7 @@ function StudentDashboard({ user }: { user: any }) {
                                 data.recentLectures.map((lecture) => (
                                     <ContinueLearningCard
                                         key={lecture.id}
+                                        href={`/dashboard/lectures/${lecture.id}`}
                                         title={lecture.title}
                                         subject={lecture.subject}
                                         faculty={lecture.faculty}
@@ -389,10 +724,10 @@ function StudentDashboard({ user }: { user: any }) {
                             <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
                                 <div>
                                     <h3 className="font-semibold text-slate-900">{data.todayDPP.title}</h3>
-                                    <p className="text-sm text-slate-500">{data.todayDPP.total_questions} Questions • {data.todayDPP.time_limit_minutes} Minutes</p>
+                                    <p className="text-sm text-slate-500">{data.todayDPP.total_questions} Questions - {data.todayDPP.time_limit_minutes} Minutes</p>
                                 </div>
                                 <Link
-                                    href="/dashboard/dpp"
+                                    href={`/dashboard/dpp/${data.todayDPP.id}`}
                                     className="px-6 py-3 bg-primary-600 text-white font-medium rounded-xl hover:bg-primary-700 transition-colors"
                                 >
                                     Start Now
@@ -603,6 +938,7 @@ function StatCard({
 }
 
 function ContinueLearningCard({
+    href,
     title,
     subject,
     faculty,
@@ -610,6 +946,7 @@ function ContinueLearningCard({
     thumbnail,
     lastWatched,
 }: {
+    href: string;
     title: string;
     subject: string;
     faculty: string;
@@ -625,7 +962,7 @@ function ContinueLearningCard({
     };
 
     return (
-        <div className="flex gap-4 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer group">
+        <Link href={href} className="flex gap-4 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer group">
             <div className="w-24 h-16 bg-slate-200 rounded-lg flex items-center justify-center flex-shrink-0">
                 <Play className="w-8 h-8 text-slate-400 group-hover:text-primary-600 transition-colors" />
             </div>
@@ -648,7 +985,7 @@ function ContinueLearningCard({
                     <span className="text-xs text-slate-500">{progress}%</span>
                 </div>
             </div>
-        </div>
+        </Link>
     );
 }
 
@@ -669,7 +1006,7 @@ function UpcomingTestCard({
             <p className="text-xs text-slate-500 mt-1">{date}</p>
             <div className="flex items-center gap-3 mt-2 text-xs text-slate-400">
                 <span>{duration}</span>
-                <span>•</span>
+                <span>-</span>
                 <span>{questions} Questions</span>
             </div>
         </div>
@@ -775,4 +1112,5 @@ function FacultyDashboard({ user }: { user: any }) {
         </div>
     );
 }
+
 

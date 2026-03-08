@@ -1,0 +1,8 @@
+-- Legacy placeholder for a migration version that already exists in the
+-- production Supabase migration history table.
+--
+-- The remote project reports version 20260307220839 as applied, but this repo
+-- only retained the earlier non-standard `fix_schema.sql` file. Keeping this
+-- no-op migration in the ordered chain allows future `supabase db push`
+-- operations to reconcile local and remote history without mutating the live
+-- database.

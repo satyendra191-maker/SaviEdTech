@@ -23,7 +23,7 @@ interface QuestionRequestBody {
     topic: string;
     count?: number;
     difficulty?: 'easy' | 'medium' | 'hard' | 'mixed';
-    questionType?: 'mcq' | 'numerical' | 'theoretical' | 'mixed';
+    questionType?: 'mcq' | 'numerical' | 'theoretical' | 'assertion_reason' | 'mixed';
     targetExam?: 'jee-main' | 'jee-advanced' | 'neet' | 'boards';
     includeSolution?: boolean;
     saveToDatabase?: boolean;
@@ -180,7 +180,7 @@ function validateRequest(body: QuestionRequestBody): string | null {
         return `Invalid difficulty. Valid options: ${validDifficulties.join(', ')}`;
     }
 
-    const validQuestionTypes = ['mcq', 'numerical', 'theoretical', 'mixed'];
+    const validQuestionTypes = ['mcq', 'numerical', 'theoretical', 'assertion_reason', 'mixed'];
     if (body.questionType && !validQuestionTypes.includes(body.questionType)) {
         return `Invalid question type. Valid options: ${validQuestionTypes.join(', ')}`;
     }
@@ -319,6 +319,13 @@ function getQuestionTypes() {
             description: 'Descriptive and explanatory questions',
             bestFor: ['Board exams', 'Biology', 'Concept explanation'],
             format: 'Detailed written answer',
+        },
+        {
+            id: 'assertion_reason',
+            name: 'Assertion-Reason',
+            description: 'Statement-based reasoning questions with linked explanations',
+            bestFor: ['Concept checks', 'Board exams', 'Deep understanding'],
+            format: 'Assertion and reason analysis',
         },
         {
             id: 'mixed',
@@ -494,7 +501,7 @@ function getGenerationInfo() {
                         topic: 'string (required) - Question topic',
                         count: 'number (optional) - Number of questions (1-50, default: 10)',
                         difficulty: 'string (optional) - easy, medium, hard, or mixed',
-                        questionType: 'string (optional) - mcq, numerical, theoretical, or mixed',
+                        questionType: 'string (optional) - mcq, numerical, theoretical, assertion_reason, or mixed',
                         targetExam: 'string (optional) - jee-main, jee-advanced, neet, or boards',
                         includeSolution: 'boolean (optional) - Include detailed solutions',
                         saveToDatabase: 'boolean (optional) - Save to database',

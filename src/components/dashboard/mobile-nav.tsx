@@ -9,6 +9,7 @@ import {
     ClipboardList,
     Trophy,
     User,
+    Shield,
 } from 'lucide-react';
 
 const navItems = [
@@ -16,6 +17,7 @@ const navItems = [
     { name: 'Learn', href: '/dashboard/lectures', icon: PlayCircle },
     { name: 'Practice', href: '/dashboard/practice', icon: BookOpen },
     { name: 'Tests', href: '/dashboard/tests', icon: ClipboardList },
+    { name: 'Exams', href: '/dashboard/online-exams', icon: Shield },
     { name: 'Challenge', href: '/dashboard/challenge', icon: Trophy },
     { name: 'Profile', href: '/dashboard/settings', icon: User },
 ];

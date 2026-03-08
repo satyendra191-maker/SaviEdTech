@@ -46,6 +46,7 @@ export default function ParentDashboardPage() {
         } else if (!authLoading && !user) {
             router.push('/login');
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user, authLoading]);
 
     const fetchLinkedStudents = async () => {

@@ -300,7 +300,7 @@ export default function SuperAdminDashboardPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-2xl font-bold text-slate-900">Super Admin Control Center</h1>
-                    <p className="text-slate-500">AI Autonomous Platform Manager Dashboard</p>
+                    <p className="text-slate-500">SaviEduTech Team Autonomous Platform Manager Dashboard</p>
                 </div>
                 <button
                     onClick={fetchDashboardData}

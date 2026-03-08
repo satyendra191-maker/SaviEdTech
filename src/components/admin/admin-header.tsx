@@ -3,7 +3,23 @@
 import { Bell, Search, User, Menu, X } from 'lucide-react';
 import { useSidebar } from './sidebar-context';
 
-export function AdminHeader() {
+interface AdminHeaderProps {
+    role?: string;
+}
+
+function formatRole(role?: string) {
+    if (!role) {
+        return 'Admin';
+    }
+
+    return role
+        .split(/[_-]+/)
+        .filter(Boolean)
+        .map((segment) => segment.charAt(0).toUpperCase() + segment.slice(1))
+        .join(' ');
+}
+
+export function AdminHeader({ role }: AdminHeaderProps) {
     const { isCollapsed, toggleSidebar } = useSidebar();
 
     return (
@@ -41,8 +57,8 @@ export function AdminHeader() {
                 {/* User */}
                 <div className="flex items-center gap-2 lg:gap-3 pl-2 lg:pl-4 border-l border-slate-200">
                     <div className="text-right hidden sm:block">
-                        <p className="text-sm font-semibold text-slate-900">Admin</p>
-                        <p className="text-xs text-slate-500">Super Admin</p>
+                        <p className="text-sm font-semibold text-slate-900">Control Center</p>
+                        <p className="text-xs text-slate-500">{formatRole(role)}</p>
                     </div>
                     <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center shadow-sm">
                         <User className="w-4 h-4 text-white" />

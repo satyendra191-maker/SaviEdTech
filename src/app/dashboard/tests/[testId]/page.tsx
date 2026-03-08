@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { Suspense, useEffect, useState, useCallback, useMemo } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
     AlertCircle,
@@ -17,7 +17,7 @@ import { Timer } from '@/components/test/Timer';
 import { QuestionCard } from '@/components/test/QuestionCard';
 import { NavigationPanel } from '@/components/test/NavigationPanel';
 import { useTest } from '@/hooks/useTest';
-import { createBrowserSupabaseClient } from '@/lib/supabase';
+import { getSupabaseBrowserClient } from '@/lib/supabase';
 import type { Question, Test, TestAttempt, TestQuestion, QuestionOption } from '@/types';
 
 interface SectionInfo {
@@ -94,7 +94,7 @@ interface SupabaseTest {
     test_questions: SupabaseTestQuestion[];
 }
 
-export default function TestTakingPage() {
+function TestTakingContent() {
     const params = useParams();
     const router = useRouter();
     const searchParams = useSearchParams();
@@ -116,8 +116,9 @@ export default function TestTakingPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [isInitializingAttempt, setIsInitializingAttempt] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [submissionError, setSubmissionError] = useState<string | null>(null);
 
-    const supabase = createBrowserSupabaseClient();
+    const supabase = useMemo(() => getSupabaseBrowserClient(), []);
 
     // Fetch test data and handle attempt
     useEffect(() => {
@@ -125,6 +126,12 @@ export default function TestTakingPage() {
             try {
                 setIsLoading(true);
                 setError(null);
+                setSubmissionError(null);
+
+                if (!supabase) {
+                    setError('Test service is unavailable. Please refresh the page.');
+                    return;
+                }
 
                 // Get current user
                 const { data: { user } } = await supabase.auth.getUser();
@@ -320,19 +327,19 @@ export default function TestTakingPage() {
             }
         }
 
-        loadTestData();
+        void loadTestData();
     }, [testId, urlAttemptId, supabase, router]);
 
     const handleSubmit = useCallback(async (answers: Record<string, string>, timeTakenSeconds: number) => {
         if (!attempt) return;
 
         try {
-            const response = await fetch('/api/test-engine', {
+            setSubmissionError(null);
+            const response = await fetch('/api/test-attempts', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     action: 'submit_attempt',
-                    testId,
                     attemptId: attempt.id,
                     answers,
                     timeTakenSeconds,
@@ -362,11 +369,16 @@ export default function TestTakingPage() {
 
                 router.push(`/dashboard/tests/results/${data.attemptId || attempt.id}`);
             } else {
-                setError('Failed to submit test. Please try again.');
+                const payload = await response.json().catch(() => null);
+                const message = payload?.error || 'Failed to submit test. Please try again.';
+                setSubmissionError(message);
+                throw new Error(message);
             }
         } catch (error) {
             console.error('Failed to submit test:', error);
-            setError('Failed to submit test. Please try again.');
+            const message = error instanceof Error ? error.message : 'Failed to submit test. Please try again.';
+            setSubmissionError(message);
+            throw error;
         }
     }, [testId, attempt, router]);
 
@@ -374,20 +386,40 @@ export default function TestTakingPage() {
         if (!attempt) return;
 
         try {
-            await fetch('/api/test-engine', {
+            const response = await fetch('/api/test-attempts', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     action: 'auto_save',
-                    testId,
                     attemptId: attempt.id,
                     answers,
                 }),
             });
+
+            if (!response.ok) {
+                console.warn('Auto-save request failed with status', response.status);
+            }
         } catch (error) {
             console.error('Auto-save failed:', error);
         }
     }, [testId, attempt]);
+
+    const initialTimeRemainingSeconds = useMemo(() => {
+        if (!test) {
+            return 0;
+        }
+
+        if (!attempt?.started_at) {
+            return test.duration_minutes * 60;
+        }
+
+        const elapsedSeconds = Math.max(
+            0,
+            Math.floor((Date.now() - new Date(attempt.started_at).getTime()) / 1000)
+        );
+
+        return Math.max(0, (test.duration_minutes * 60) - elapsedSeconds);
+    }, [attempt?.started_at, test]);
 
     const {
         currentQuestionIndex,
@@ -408,6 +440,7 @@ export default function TestTakingPage() {
         handleTimeUp,
         currentQuestion,
         currentAnswer,
+        timeRemaining,
     } = useTest({
         test: test || {
             id: '',
@@ -430,6 +463,7 @@ export default function TestTakingPage() {
         },
         questions,
         attemptId: attempt?.id,
+        initialTimeRemainingSeconds,
         onSubmit: handleSubmit,
         onAutoSave: handleAutoSave,
     });
@@ -441,6 +475,7 @@ export default function TestTakingPage() {
                 selectAnswer(questionId, answer);
             });
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [attempt?.id]);
 
     // Fullscreen handling
@@ -745,6 +780,8 @@ export default function TestTakingPage() {
                     <div className="flex items-center gap-3">
                         <Timer
                             durationMinutes={test.duration_minutes}
+                            initialTimeRemainingSeconds={initialTimeRemainingSeconds}
+                            timeRemainingSeconds={timeRemaining}
                             onTimeUp={handleTimeUp}
                             onWarning={(mins) => console.log(`Warning: ${mins} minutes remaining`)}
                         />
@@ -774,6 +811,12 @@ export default function TestTakingPage() {
 
             {/* Main Content */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                {submissionError && (
+                    <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                        {submissionError}
+                    </div>
+                )}
+
                 <div className="grid lg:grid-cols-4 gap-6">
                     {/* Question Area */}
                     <div className="lg:col-span-3 space-y-6">
@@ -834,6 +877,25 @@ export default function TestTakingPage() {
                     </div>
                 </div>
             </main>
+        </div>
+    );
+}
+
+export default function TestTakingPage() {
+    return (
+        <Suspense fallback={<TestTakingFallback />}>
+            <TestTakingContent />
+        </Suspense>
+    );
+}
+
+function TestTakingFallback() {
+    return (
+        <div className="min-h-[60vh] flex items-center justify-center">
+            <div className="flex flex-col items-center gap-4">
+                <div className="h-10 w-10 animate-spin rounded-full border-b-2 border-primary-600" />
+                <p className="text-slate-600">Loading test workspace...</p>
+            </div>
         </div>
     );
 }

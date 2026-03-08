@@ -83,7 +83,7 @@ export interface QuestionRequest {
     topic: string;
     count: number;
     difficulty: 'easy' | 'medium' | 'hard' | 'mixed';
-    questionType: 'mcq' | 'numerical' | 'theoretical' | 'mixed';
+    questionType: 'mcq' | 'numerical' | 'theoretical' | 'assertion_reason' | 'mixed';
     targetExam: 'jee-main' | 'jee-advanced' | 'neet' | 'boards';
     includeSolution?: boolean;
 }
@@ -91,7 +91,7 @@ export interface QuestionRequest {
 export interface GeneratedQuestion {
     id: string;
     question: string;
-    questionType: 'mcq' | 'numerical' | 'theoretical';
+    questionType: 'mcq' | 'numerical' | 'theoretical' | 'assertion_reason';
     options?: string[];
     correctAnswer?: string;
     solution: string;
@@ -205,7 +205,7 @@ OUTPUT FORMAT (JSON):
     {
       "id": "q1",
       "question": "Question text",
-      "questionType": "mcq|numerical|theoretical",
+      "questionType": "mcq|numerical|theoretical|assertion_reason",
       "options": ["A", "B", "C", "D"], // For MCQ only
       "correctAnswer": "Answer",
       "solution": "Detailed solution",
@@ -400,14 +400,25 @@ function generateMockQuestionSet(request: QuestionRequest, teacher: TeacherPerso
 
     for (let i = 1; i <= count; i++) {
         const difficulty = difficulties[(i - 1) % difficulties.length];
-        const isMCQ = request.questionType === 'mcq' || (request.questionType === 'mixed' && i % 2 === 1);
+        const isAssertionReason = request.questionType === 'assertion_reason'
+            || (request.questionType === 'mixed' && i % 5 === 0);
+        const isMCQ = request.questionType === 'mcq' || (request.questionType === 'mixed' && i % 2 === 1 && !isAssertionReason);
 
         questions.push({
             id: `q${i}`,
             question: `Question ${i}: Sample question on ${request.topic} (${difficulty})`,
-            questionType: isMCQ ? 'mcq' : 'numerical',
-            options: isMCQ ? ['Option A', 'Option B', 'Option C', 'Option D'] : undefined,
-            correctAnswer: isMCQ ? 'Option A' : '42',
+            questionType: isAssertionReason ? 'assertion_reason' : isMCQ ? 'mcq' : 'numerical',
+            options: isAssertionReason
+                ? [
+                    'Both assertion and reason are true, and reason is the correct explanation.',
+                    'Both assertion and reason are true, but reason is not the correct explanation.',
+                    'Assertion is true but reason is false.',
+                    'Assertion is false but reason is true.',
+                ]
+                : isMCQ
+                    ? ['Option A', 'Option B', 'Option C', 'Option D']
+                    : undefined,
+            correctAnswer: isAssertionReason ? 'Both assertion and reason are true, and reason is the correct explanation.' : isMCQ ? 'Option A' : '42',
             solution: `Detailed step-by-step solution for question ${i}.\n\n${teacher.displayName}'s approach: Start by identifying the key concept, then apply the appropriate formula/method.`,
             difficulty,
             topic: request.topic,

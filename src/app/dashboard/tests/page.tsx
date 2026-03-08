@@ -73,6 +73,7 @@ export default function TestsPage() {
 
                 // Calculate stats
                 const attempts = (testAttempts || []) as {
+                    id: string;
                     total_score: number | null;
                     max_score: number;
                     rank: number | null;
@@ -111,7 +112,7 @@ export default function TestsPage() {
 
                 // Process past tests
                 const pastTests = attempts.map((attempt) => ({
-                    id: attempt.submitted_at, // Using timestamp as ID for display
+                    id: attempt.id,
                     title: attempt.tests?.title || 'Test',
                     date: formatPastDate(attempt.submitted_at),
                     score: attempt.total_score || 0,

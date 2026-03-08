@@ -21,6 +21,15 @@ export async function GET(request: NextRequest) {
     };
 
     try {
+        const shuffle = <T,>(items: T[]) => {
+            const clone = [...items];
+            for (let index = clone.length - 1; index > 0; index -= 1) {
+                const swapIndex = Math.floor(Math.random() * (index + 1));
+                [clone[index], clone[swapIndex]] = [clone[swapIndex], clone[index]];
+            }
+            return clone;
+        };
+
         // Get all active exams
         const { data: exams, error: examsError } = await supabase
             .from('exams')
@@ -56,12 +65,29 @@ export async function GET(request: NextRequest) {
 
                 if (existingDpp) continue;
 
-                // Get topics for this subject - simplified query
+                const { data: chapters, error: chaptersError } = await supabase
+                    .from('chapters')
+                    .select('id')
+                    .eq('subject_id', subject.id)
+                    .eq('is_active', true) as any;
+
+                if (chaptersError) {
+                    results.errors.push(`Failed to get chapters for ${subject.name}: ${chaptersError.message}`);
+                    continue;
+                }
+
+                const chapterIds = (chapters as any[])?.map((chapter: any) => chapter.id) ?? [];
+                if (chapterIds.length === 0) {
+                    results.errors.push(`No chapters found for ${subject.name}`);
+                    continue;
+                }
+
                 const { data: topics, error: topicsError } = await supabase
                     .from('topics')
                     .select('id')
+                    .in('chapter_id', chapterIds)
                     .eq('is_active', true)
-                    .limit(100) as any;
+                    .limit(500) as any;
 
                 if (topicsError) {
                     results.errors.push(`Failed to get topics for ${subject.name}: ${topicsError.message}`);
@@ -75,23 +101,66 @@ export async function GET(request: NextRequest) {
                     continue;
                 }
 
-                // Select 15 random questions
-                const { data: questionsData, error: questionsError } = await supabase
-                    .from('questions')
-                    .select('id, difficulty_level')
-                    .eq('is_published', true)
-                    .in('topic_id', topicIds)
-                    .limit(15) as any;
+                const difficultyPlan = [
+                    { difficulty: 'easy', count: 5 },
+                    { difficulty: 'medium', count: 6 },
+                    { difficulty: 'hard', count: 4 },
+                ] as const;
 
-                const questions: any[] = questionsData ?? [];
+                const selectedQuestions: any[] = [];
+                const selectedQuestionIds = new Set<string>();
 
-                if (questionsError) {
-                    results.errors.push(`Failed to get questions: ${questionsError.message}`);
-                    continue;
+                for (const bucket of difficultyPlan) {
+                    const { data: bucketQuestions, error: bucketError } = await supabase
+                        .from('questions')
+                        .select('id, difficulty_level')
+                        .eq('is_published', true)
+                        .eq('difficulty_level', bucket.difficulty)
+                        .in('topic_id', topicIds)
+                        .limit(bucket.count * 8) as any;
+
+                    if (bucketError) {
+                        results.errors.push(`Failed to get ${bucket.difficulty} questions for ${subject.name}: ${bucketError.message}`);
+                        continue;
+                    }
+
+                    for (const question of shuffle((bucketQuestions as any[]) ?? []).slice(0, bucket.count)) {
+                        if (!selectedQuestionIds.has((question as any).id)) {
+                            selectedQuestions.push(question);
+                            selectedQuestionIds.add(question.id);
+                        }
+                    }
                 }
 
-                if (!questions || questions.length < 5) {
-                    results.errors.push(`Not enough questions for ${subject.name}`);
+                if (selectedQuestions.length < 15) {
+                    const { data: fallbackQuestions, error: fallbackError } = await supabase
+                        .from('questions')
+                        .select('id, difficulty_level')
+                        .eq('is_published', true)
+                        .in('topic_id', topicIds)
+                        .limit(200) as any;
+
+                    if (fallbackError) {
+                        results.errors.push(`Failed to get fallback questions for ${subject.name}: ${fallbackError.message}`);
+                        continue;
+                    }
+
+                    for (const question of shuffle((fallbackQuestions as any[]) ?? [])) {
+                        if (selectedQuestionIds.has((question as any).id)) {
+                            continue;
+                        }
+
+                        selectedQuestions.push(question);
+                        selectedQuestionIds.add((question as any).id);
+
+                        if (selectedQuestions.length === 15) {
+                            break;
+                        }
+                    }
+                }
+
+                if (selectedQuestions.length < 15) {
+                    results.errors.push(`Not enough published questions for ${subject.name} to build a 15-question DPP`);
                     continue;
                 }
 
@@ -102,7 +171,7 @@ export async function GET(request: NextRequest) {
                     subject_id: subject.id,
                     topic_ids: topicIds,
                     difficulty_mix: 'mixed',
-                    total_questions: questions.length,
+                    total_questions: 15,
                     time_limit_minutes: 30,
                     scheduled_date: today,
                     is_published: true,
@@ -122,7 +191,7 @@ export async function GET(request: NextRequest) {
                 if (!dppSet || !dppSet.id) continue;
 
                 // Map questions to DPP
-                const dppQuestions: any = questions.map((q: any, idx: number) => ({
+                const dppQuestions: any = selectedQuestions.map((q: any, idx: number) => ({
                     dpp_set_id: dppSet.id,
                     question_id: q.id,
                     display_order: idx + 1,

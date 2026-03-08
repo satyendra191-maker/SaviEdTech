@@ -67,41 +67,7 @@ function LoginForm() {
     setMounted(true);
   }, []);
 
-  // Auto-redirect based on role
-  useEffect(() => {
-    if (mounted && isAuthenticated && !authLoading) {
-      const redirect = searchParams.get('redirect');
-      if (redirect) {
-        router.push(redirect);
-        router.refresh();
-        return;
-      }
-
-      // Role-based redirection
-      switch (role) {
-        case 'super_admin':
-          router.push('/super-admin');
-          break;
-        case 'admin':
-          router.push('/admin');
-          break;
-        case 'faculty':
-          router.push('/dashboard'); // Now that /dashboard handles roles
-          break;
-        case 'content_manager':
-          router.push('/admin/courses');
-          break;
-        case 'parent':
-          router.push('/dashboard/parent');
-          break;
-        default:
-          router.push('/dashboard');
-          break;
-      }
-      router.refresh();
-    }
-  }, [isAuthenticated, role, authLoading, router, searchParams]);
-
+  // Form hooks must be called before any early returns (React Hooks rule)
   const {
     register,
     handleSubmit,
@@ -122,6 +88,61 @@ function LoginForm() {
   } = useForm<ForgotPasswordFormData>({
     resolver: zodResolver(forgotPasswordSchema),
   });
+
+  // Auto-redirect based on role - show loading spinner during auth check
+  useEffect(() => {
+    // Show loading spinner while checking authentication
+    if (!mounted || authLoading) {
+      return; // Will show loading state below
+    }
+
+    if (isAuthenticated) {
+      const redirect = searchParams.get('redirect');
+      if (redirect) {
+        router.push(redirect);
+        router.refresh();
+        return;
+      }
+
+      // Role-based redirection
+      switch (role) {
+        case 'super_admin':
+          router.push('/super-admin');
+          break;
+        case 'admin':
+          router.push('/admin');
+          break;
+        case 'finance_manager':
+          router.push('/admin/finance');
+          break;
+        case 'faculty':
+          router.push('/dashboard');
+          break;
+        case 'content_manager':
+          router.push('/admin/courses');
+          break;
+        case 'parent':
+          router.push('/dashboard/parent');
+          break;
+        default:
+          router.push('/dashboard');
+          break;
+      }
+      router.refresh();
+    }
+  }, [isAuthenticated, role, authLoading, mounted, router, searchParams]);
+
+  // Show loading spinner while checking authentication
+  if (authLoading || !mounted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600 font-medium">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   const onSubmit = async (data: LoginFormData) => {
     setIsLoading(true);
@@ -241,7 +262,7 @@ function LoginForm() {
                   Enter your email address and we'll send you a link to reset your password.
                 </p>
 
-                <form onSubmit={handleSubmitForgot(onForgotPasswordSubmit)} className="space-y-4">
+                <form method="post" onSubmit={handleSubmitForgot(onForgotPasswordSubmit)} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-1">
                       Email Address
@@ -364,7 +385,7 @@ function LoginForm() {
             </div>
           </div>
 
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <form method="post" onSubmit={handleSubmit(onSubmit)} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-slate-700 mb-1">
                 Email Address

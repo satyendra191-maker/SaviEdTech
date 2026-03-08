@@ -3,12 +3,11 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter, usePathname } from 'next/navigation';
-import { Menu, X, Heart, ChevronDown, User, LogOut, LayoutDashboard, Settings, GraduationCap, BookOpen, Trophy, Users, Briefcase, Info, Mail } from 'lucide-react';
-import { AnimatedLogo } from './animated-logo';
+import { Menu, X, Heart, ChevronDown, LogOut, LayoutDashboard, Settings, GraduationCap, BookOpen, Users, Briefcase, Home, ClipboardList, Info, Phone, MonitorPlay } from 'lucide-react';
+import { BrandLogo } from './brand-logo';
 import { useAuth } from '@/hooks/useAuth';
 
 export function Navbar() {
-  const [mounted, setMounted] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [coursesOpen, setCoursesOpen] = useState(false);
   const [facultyOpen, setFacultyOpen] = useState(false);
@@ -20,7 +19,7 @@ export function Navbar() {
   let user: any = null;
   let role: any = null;
   let isAuthenticated = false;
-  let signOut: any = () => {};
+  let signOut: any = () => { };
 
   try {
     const auth = useAuth();
@@ -33,8 +32,21 @@ export function Navbar() {
   }
 
   useEffect(() => {
-    setMounted(true);
+    // Mounted state handled for SSR compatibility
   }, []);
+
+  useEffect(() => {
+    if (typeof document === 'undefined') {
+      return undefined;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = isOpen ? 'hidden' : previousOverflow;
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isOpen]);
 
   const isDashboardRoute = pathname?.startsWith('/dashboard') ||
     pathname?.startsWith('/admin') ||
@@ -44,12 +56,6 @@ export function Navbar() {
 
   // Skip on dashboard routes but render on all other pages including home
   if (isDashboardRoute) return null;
-
-  const navLinks = [
-    { name: 'Faculty', href: '/faculty', icon: <Users className="w-4 h-4" /> },
-    { name: 'Career', href: '/careers', icon: <Briefcase className="w-4 h-4" /> },
-    { name: 'Daily Challenge', href: '/challenge', icon: <Trophy className="w-4 h-4" /> },
-  ];
 
   const courses = [
     { name: 'JEE Main', href: '/jee', description: 'Comprehensive prep for JEE Main' },
@@ -112,6 +118,8 @@ export function Navbar() {
         return '/super-admin';
       case 'content_manager':
         return '/admin/courses';
+      case 'finance_manager':
+        return '/admin/finance';
       case 'parent':
         return '/dashboard/parent';
       default:
@@ -125,7 +133,14 @@ export function Navbar() {
         <div className="flex items-center justify-between h-20">
           {/* Logo */}
           <Link href="/" className="flex-shrink-0">
-            <AnimatedLogo size="lg" showText={true} />
+            <BrandLogo
+              size="sm"
+              showText={true}
+              showTagline={true}
+              taglineTone="dark"
+              wordmarkTone="dark"
+              iconClassName="scale-[1.12]"
+            />
           </Link>
 
           {/* Desktop Navigation */}
@@ -138,8 +153,31 @@ export function Navbar() {
               Home
             </Link>
 
+            {/* Practice Link */}
+            <Link
+              href="/dashboard/practice"
+              className="flex items-center gap-1 px-4 py-2 text-sm font-semibold text-slate-700 hover:text-primary-600 rounded-lg hover:bg-white/50 transition-all"
+            >
+              Practice
+            </Link>
+
+            {/* Tests Link */}
+            <Link
+              href="/dashboard/tests"
+              className="flex items-center gap-1 px-4 py-2 text-sm font-semibold text-slate-700 hover:text-primary-600 rounded-lg hover:bg-white/50 transition-all"
+            >
+              Tests
+            </Link>
+
+            <Link
+              href="/online-exam"
+              className="flex items-center gap-1 px-4 py-2 text-sm font-semibold text-slate-700 hover:text-primary-600 rounded-lg hover:bg-white/50 transition-all"
+            >
+              Online Exam
+            </Link>
+
             {/* Faculty Dropdown */}
-            <div 
+            <div
               className="relative group"
               onMouseEnter={() => setFacultyOpen(true)}
               onMouseLeave={() => setFacultyOpen(false)}
@@ -157,10 +195,10 @@ export function Navbar() {
               >
                 <div className="grid gap-1">
                   {[
-                    { name: 'Dharmendra Sir', credentials: 'Physics Expert, 15+ Yrs Exp', href: '/faculty/dharmendra' },
-                    { name: 'Harendra Sir', credentials: 'Chemistry Expert, 12+ Yrs Exp', href: '/faculty/harendra' },
-                    { name: 'Ravindra Sir', credentials: 'Mathematics Expert, 18+ Yrs Exp', href: '/faculty/ravindra' },
-                    { name: 'Arvind Sir', credentials: 'Biology Expert, 14+ Yrs Exp', href: '/faculty/arvind' }
+                    { name: 'Dharmendra Sir', credentials: 'Physics Expert, 15+ Yrs Exp', href: '/faculty/dharmendra-sir' },
+                    { name: 'Harendra Sir', credentials: 'Chemistry Expert, 12+ Yrs Exp', href: '/faculty/harendra-sir' },
+                    { name: 'Ravindra Sir', credentials: 'Mathematics Expert, 18+ Yrs Exp', href: '/faculty/ravindra-sir' },
+                    { name: 'Arvind Sir', credentials: 'Biology Expert, 14+ Yrs Exp', href: '/faculty/arvind-sir' }
                   ].map((faculty) => (
                     <Link
                       key={faculty.name}
@@ -190,7 +228,7 @@ export function Navbar() {
             </div>
 
             {/* Courses Dropdown */}
-            <div 
+            <div
               className="relative group"
               onMouseEnter={() => setCoursesOpen(true)}
               onMouseLeave={() => setCoursesOpen(false)}
@@ -229,7 +267,7 @@ export function Navbar() {
             </div>
 
             {/* Career Dropdown */}
-            <div 
+            <div
               className="relative group"
               onMouseEnter={() => setCareerOpen(true)}
               onMouseLeave={() => setCareerOpen(false)}
@@ -279,6 +317,13 @@ export function Navbar() {
               className="flex items-center gap-1 px-4 py-2 text-sm font-semibold text-slate-700 hover:text-primary-600 rounded-lg hover:bg-white/50 transition-all"
             >
               Contact
+            </Link>
+
+            <Link
+              href="/about"
+              className="flex items-center gap-1 px-4 py-2 text-sm font-semibold text-slate-700 hover:text-primary-600 rounded-lg hover:bg-white/50 transition-all"
+            >
+              About
             </Link>
           </div>
 
@@ -357,6 +402,8 @@ export function Navbar() {
           <button
             onClick={() => setIsOpen(!isOpen)}
             className="xl:hidden p-2 rounded-xl hover:bg-slate-100 transition-colors"
+            aria-expanded={isOpen}
+            aria-label={isOpen ? 'Close mobile menu' : 'Open mobile menu'}
           >
             {isOpen ? <X className="w-6 h-6 text-slate-900" /> : <Menu className="w-6 h-6 text-slate-900" />}
           </button>
@@ -364,10 +411,10 @@ export function Navbar() {
 
         {/* Mobile Menu */}
         {isOpen && (
-          <div className="xl:hidden py-6 border-t border-slate-200 bg-white/95 backdrop-blur-md">
+          <div className="xl:hidden max-h-[calc(100vh-5rem)] overflow-y-auto border-t border-slate-200 bg-white/95 py-6 backdrop-blur-md">
             <div className="flex flex-col gap-1">
-              <Link href="/" className="px-4 py-4 rounded-xl text-slate-700 font-bold hover:bg-gradient-to-r hover:from-rose-100 hover:to-emerald-100 flex items-center gap-3 min-h-[48px]" onClick={() => setIsOpen(false)}>
-                <span>🏠</span> Home
+              <Link href="/" className="px-4 py-4 rounded-xl text-slate-700 font-bold hover:bg-gradient-to-r hover:from-rose-100 hover:to-emerald-100 flex items-center gap-3 min-h-[52px]" onClick={() => setIsOpen(false)}>
+                <Home className="h-5 w-5 text-slate-500" /> Home
               </Link>
 
               {/* Mobile Courses Section */}
@@ -375,7 +422,7 @@ export function Navbar() {
                 <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3">Courses</p>
                 <div className="grid grid-cols-2 gap-2">
                   {courses.map(course => (
-                    <Link key={course.name} href={course.href} className="p-3 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl text-xs font-bold text-slate-700 hover:from-blue-100 hover:to-indigo-100 min-h-[48px] flex items-center justify-center" onClick={() => setIsOpen(false)}>
+                    <Link key={course.name} href={course.href} className="p-3 bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl text-xs font-bold text-slate-700 hover:from-blue-100 hover:to-indigo-100 min-h-[52px] flex items-center justify-center text-center" onClick={() => setIsOpen(false)}>
                       {course.name}
                     </Link>
                   ))}
@@ -384,13 +431,17 @@ export function Navbar() {
 
               {/* Mobile Nav Links */}
               {[
-                { name: 'Faculty', href: '/faculty', icon: '👨‍🏫' },
-                { name: 'Career', href: '/careers', icon: '💼' },
-                { name: 'Contact', href: '/contact', icon: '📞' },
-                { name: 'Donate', href: '/donate', icon: '❤️' },
+                { name: 'Practice', href: '/dashboard/practice', icon: BookOpen },
+                { name: 'Tests', href: '/dashboard/tests', icon: ClipboardList },
+                { name: 'Online Exam', href: '/online-exam', icon: MonitorPlay },
+                { name: 'Faculty', href: '/faculty', icon: Users },
+                { name: 'Career', href: '/careers', icon: Briefcase },
+                { name: 'About', href: '/about', icon: Info },
+                { name: 'Contact', href: '/contact', icon: Phone },
+                { name: 'Donate', href: '/donate', icon: Heart },
               ].map((link) => (
-                <Link key={link.name} href={link.href} className="px-4 py-4 rounded-xl text-slate-700 font-bold hover:bg-gradient-to-r hover:from-rose-100 hover:to-emerald-100 flex items-center gap-3 min-h-[48px]" onClick={() => setIsOpen(false)}>
-                  <span>{link.icon}</span> {link.name}
+                <Link key={link.name} href={link.href} className="px-4 py-4 rounded-xl text-slate-700 font-bold hover:bg-gradient-to-r hover:from-rose-100 hover:to-emerald-100 flex items-center gap-3 min-h-[52px]" onClick={() => setIsOpen(false)}>
+                  <link.icon className="h-5 w-5 text-slate-500" /> {link.name}
                 </Link>
               ))}
 
@@ -398,13 +449,19 @@ export function Navbar() {
 
               {isAuthenticated ? (
                 <div className="flex flex-col gap-2 p-2 bg-gradient-to-br from-rose-50 to-orange-50 rounded-2xl">
-                  <Link href={getDashboardLink()} className="px-4 py-4 rounded-xl text-slate-700 font-bold hover:bg-white min-h-[48px] flex items-center" onClick={() => setIsOpen(false)}>📊 Go to Dashboard</Link>
-                  <button onClick={handleLogout} className="px-4 py-4 rounded-xl text-rose-600 font-bold hover:bg-rose-100 text-left min-h-[48px]">🚪 Sign Out</button>
+                  <Link href={getDashboardLink()} className="px-4 py-4 rounded-xl text-slate-700 font-bold hover:bg-white min-h-[52px] flex items-center gap-3" onClick={() => setIsOpen(false)}>
+                    <LayoutDashboard className="h-5 w-5 text-primary-600" />
+                    Go to Dashboard
+                  </Link>
+                  <button onClick={handleLogout} className="px-4 py-4 rounded-xl text-rose-600 font-bold hover:bg-rose-100 text-left min-h-[52px] flex items-center gap-3">
+                    <LogOut className="h-5 w-5" />
+                    Sign Out
+                  </button>
                 </div>
               ) : (
                 <div className="grid gap-3 pt-2">
-                  <Link href="/login" className="px-4 py-4 rounded-xl text-slate-700 font-bold text-center border-2 border-slate-200 hover:border-primary-400 min-h-[48px] flex items-center justify-center" onClick={() => setIsOpen(false)}>Login</Link>
-                  <Link href="/register" className="px-4 py-4 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white font-bold text-center shadow-lg min-h-[48px] flex items-center justify-center" onClick={() => setIsOpen(false)}>🚀 Get Started</Link>
+                  <Link href="/login" className="px-4 py-4 rounded-xl text-slate-700 font-bold text-center border-2 border-slate-200 hover:border-primary-400 min-h-[52px] flex items-center justify-center" onClick={() => setIsOpen(false)}>Login</Link>
+                  <Link href="/register" className="px-4 py-4 rounded-xl bg-gradient-to-r from-violet-600 to-purple-600 text-white font-bold text-center shadow-lg min-h-[52px] flex items-center justify-center" onClick={() => setIsOpen(false)}>Get Started</Link>
                 </div>
               )}
             </div>
