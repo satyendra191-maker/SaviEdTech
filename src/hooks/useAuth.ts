@@ -286,7 +286,7 @@ export function useAuth(): UseAuthReturn {
                             role: userData.role || 'student',
                             referred_by_code: userData.referred_by_code,
                         },
-                        emailRedirectTo: `${getBaseUrl()}/login`,
+                        emailRedirectTo: `${getBaseUrl()}/auth/callback`,
                     },
                 }),
                 25000,
@@ -404,7 +404,7 @@ export function useAuth(): UseAuthReturn {
         }
         try {
             const { error } = await supabase.auth.resetPasswordForEmail(email, {
-                redirectTo: `${getBaseUrl()}/reset-password`,
+                redirectTo: `${getBaseUrl()}/auth/callback?type=recovery`,
             });
 
             if (error) {

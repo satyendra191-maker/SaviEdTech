@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
+import { resolvePostAuthDestination } from '@/lib/auth/redirects';
 import type { Database } from '@/types/supabase';
 
 /**
@@ -10,7 +11,11 @@ import type { Database } from '@/types/supabase';
 export async function GET(request: NextRequest) {
     const requestUrl = new URL(request.url);
     const code = requestUrl.searchParams.get('code');
-    const next = requestUrl.searchParams.get('next') ?? '/dashboard';
+    const destination = resolvePostAuthDestination({
+        next: requestUrl.searchParams.get('next'),
+        redirect: requestUrl.searchParams.get('redirect'),
+        type: requestUrl.searchParams.get('type'),
+    });
 
     if (!code) {
         return NextResponse.redirect(`${requestUrl.origin}/auth/auth-code-error`);
@@ -41,7 +46,7 @@ export async function GET(request: NextRequest) {
             return NextResponse.redirect(`${requestUrl.origin}/auth/auth-code-error`);
         }
 
-        return NextResponse.redirect(`${requestUrl.origin}${next}`);
+        return NextResponse.redirect(`${requestUrl.origin}${destination}`);
     } catch {
         return NextResponse.redirect(`${requestUrl.origin}/auth/auth-code-error`);
     }

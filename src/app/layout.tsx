@@ -6,6 +6,7 @@ import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
 import { NoticeBar } from '@/components/notice-bar';
 import { NotificationBar } from '@/components/notification-bar';
+import { ScreenshotProtection } from '@/components/screenshot-protection';
 
 export const metadata: Metadata = {
     title: {
@@ -36,17 +37,19 @@ export default function RootLayout({
     return (
         <html lang="en">
             <body className="min-h-screen bg-background font-sans antialiased text-slate-900">
-                <Providers>
-                    <div className="flex flex-col min-h-screen">
-                        <Navbar />
-                        <NotificationBar />
-                        <NoticeBar />
-                        <main className="flex-1 flex flex-col">
-                            {children}
-                        </main>
-                        <Footer />
-                    </div>
-                </Providers>
+                <ScreenshotProtection>
+                    <Providers>
+                        <div className="flex flex-col min-h-screen">
+                            <Navbar />
+                            <NotificationBar />
+                            <NoticeBar />
+                            <main className="flex-1 flex flex-col">
+                                {children}
+                            </main>
+                            <Footer />
+                        </div>
+                    </Providers>
+                </ScreenshotProtection>
             </body>
         </html>
     );

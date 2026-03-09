@@ -13,12 +13,13 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Lock, GraduationCap, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { getSupabaseBrowserClient } from '@/lib/supabase';
 import { passwordSchema } from '@/lib/security';
 
 // Enhanced Zod validation schema using security module
@@ -33,12 +34,11 @@ const resetPasswordSchema = z.object({
 type ResetPasswordFormData = z.infer<typeof resetPasswordSchema>;
 
 function ResetPasswordForm() {
-    // Note: router available via useRouter() if needed for future navigation
-    // const router = useRouter();
     const searchParams = useSearchParams();
     const { updatePassword } = useAuth();
 
     const [isLoading, setIsLoading] = useState(false);
+    const [isCheckingSession, setIsCheckingSession] = useState(true);
     const [showPassword, setShowPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
@@ -58,12 +58,62 @@ function ResetPasswordForm() {
     });
 
     useEffect(() => {
-        // If no access token is present, show error
-        if (!accessToken && type !== 'recovery') {
-            setHasError(true);
-            setErrorMessage('Invalid or expired password reset link. Please request a new one.');
-        }
+        let isMounted = true;
+
+        const validateRecoverySession = async () => {
+            if (accessToken || type === 'recovery') {
+                if (isMounted) {
+                    setHasError(false);
+                    setErrorMessage('');
+                    setIsCheckingSession(false);
+                }
+                return;
+            }
+
+            try {
+                const supabase = getSupabaseBrowserClient();
+                const { data: { session } } = await supabase.auth.getSession();
+
+                if (!isMounted) {
+                    return;
+                }
+
+                if (session?.user) {
+                    setHasError(false);
+                    setErrorMessage('');
+                } else {
+                    setHasError(true);
+                    setErrorMessage('Invalid or expired password reset link. Please request a new one.');
+                }
+            } catch {
+                if (isMounted) {
+                    setHasError(true);
+                    setErrorMessage('Unable to verify your reset session. Please request a new password reset link.');
+                }
+            } finally {
+                if (isMounted) {
+                    setIsCheckingSession(false);
+                }
+            }
+        };
+
+        validateRecoverySession();
+
+        return () => {
+            isMounted = false;
+        };
     }, [accessToken, type]);
+
+    if (isCheckingSession) {
+        return (
+            <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
+                <div className="text-center">
+                    <div className="w-16 h-16 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-slate-600 font-medium">Validating reset session...</p>
+                </div>
+            </div>
+        );
+    }
 
     const onSubmit = async (data: ResetPasswordFormData) => {
         setIsLoading(true);

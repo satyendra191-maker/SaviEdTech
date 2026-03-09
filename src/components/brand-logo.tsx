@@ -63,7 +63,8 @@ export function BrandLogo({
             <svg
                 viewBox="0 0 180 200"
                 aria-hidden="true"
-                className={`${iconSizeClasses[size]} shrink-0 overflow-visible ${iconClassName}`}
+                className={`${iconSizeClasses[size]} shrink-0 overflow-visible drop-shadow-xl ${iconClassName}`}
+                style={{ filter: 'drop-shadow(0 0 8px rgba(0,0,0,0.8))' }}
             >
                 <defs>
                     <linearGradient id={shellGradient} x1="20%" y1="10%" x2="80%" y2="95%">
@@ -192,6 +193,8 @@ export function BrandLogo({
                     <circle cx="80" cy="86" r="5" />
                     <circle cx="101" cy="80" r="4" />
                 </g>
+
+                <text x="90" y="118" textAnchor="middle" fill="white" fontSize="16" fontWeight="bold" fontFamily="Arial, sans-serif" style={{ textShadow: '1px 1px 2px rgba(0,0,0,0.8)' }}>AI</text>
             </svg>
 
             {showText ? (
@@ -201,8 +204,9 @@ export function BrandLogo({
                             className={
                                 wordmarkTone === 'dark'
                                     ? 'text-[#b45309]'
-                                    : 'bg-gradient-to-b from-[#ffb545] via-[#ff8900] to-[#d75600] bg-clip-text text-transparent [text-shadow:0_2px_12px_rgba(255,126,0,0.22)]'
+                                    : 'bg-gradient-to-b from-[#ffb545] via-[#ff8900] to-[#d75600] bg-clip-text text-transparent'
                             }
+                            style={{ WebkitTextStroke: '1.5px rgba(0,0,0,0.7)' }}
                         >
                             Savi
                         </span>
@@ -210,8 +214,9 @@ export function BrandLogo({
                             className={
                                 wordmarkTone === 'dark'
                                     ? 'text-[#1e3a8a]'
-                                    : 'bg-gradient-to-b from-[#66c8ff] via-[#1d8fff] to-[#0a4db7] bg-clip-text text-transparent [text-shadow:0_2px_14px_rgba(33,128,255,0.22)]'
+                                    : 'bg-gradient-to-b from-[#66c8ff] via-[#1d8fff] to-[#0a4db7] bg-clip-text text-transparent'
                             }
+                            style={{ WebkitTextStroke: '1.5px rgba(0,0,0,0.7)' }}
                         >
                             EduTech
                         </span>
@@ -221,10 +226,15 @@ export function BrandLogo({
                             className={
                                 taglineTone === 'dark'
                                     ? `mt-1 font-semibold tracking-[0.06em] text-slate-700 ${taglineSizeClasses[size]}`
-                                    : `mt-1 bg-gradient-to-r from-[#5ca8ff] via-[#83c8ff] to-[#ffbf62] bg-clip-text font-semibold tracking-[0.06em] text-transparent ${taglineSizeClasses[size]}`
+                                    : `mt-1 font-semibold tracking-[0.06em] bg-gradient-to-r from-[#1a1a1a] via-[#333333] to-[#1a1a1a] bg-clip-text text-transparent ${taglineSizeClasses[size]}`
                             }
+                            style={{ 
+                                minWidth: 'fit-content',
+                                WebkitTextStroke: '1px rgba(0,0,0,0.8)',
+                                color: 'transparent',
+                            }}
                         >
-                            Innovate. Learn. Grow.
+                            Next-Generation Learning Platform
                         </div>
                     ) : null}
                 </div>

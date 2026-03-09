@@ -2,7 +2,7 @@ import { Buffer } from 'node:buffer';
 import { createAdminSupabaseClient } from '@/lib/supabase';
 
 export interface DoubtSolveInput {
-    userId: string;
+    userId?: string | null;
     question: string;
     description?: string;
     subject?: string;
@@ -56,10 +56,11 @@ function createAnswer(input: DoubtSolveInput): string {
     return `${subject} doubt analysis for "${statement}": focus on ${topic}. Start from the governing idea, solve the expression step by step, and then verify the conclusion against the question conditions.${extractionNote}`;
 }
 
-async function uploadDoubtImage(userId: string, imageFile: File): Promise<string | null> {
+async function uploadDoubtImage(userId: string | null | undefined, imageFile: File): Promise<string | null> {
     const supabase = createAdminSupabaseClient();
     const extension = imageFile.name.split('.').pop()?.toLowerCase() || 'png';
-    const path = `${userId}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extension}`;
+    const ownerFolder = userId || 'guest';
+    const path = `${ownerFolder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${extension}`;
     const arrayBuffer = await imageFile.arrayBuffer();
     const buffer = Buffer.from(arrayBuffer);
 
@@ -108,7 +109,15 @@ async function findRelatedPractice(subject?: string, topic?: string): Promise<So
     return filtered;
 }
 
-async function saveDoubtAndResponse(input: DoubtSolveInput, responseText: string, imageUrl: string | null): Promise<string> {
+async function saveDoubtAndResponse(
+    input: DoubtSolveInput,
+    responseText: string,
+    imageUrl: string | null
+): Promise<string | undefined> {
+    if (!input.userId) {
+        return undefined;
+    }
+
     const supabase = createAdminSupabaseClient();
 
     const { data: doubtRow, error: doubtError } = await (supabase.from('doubts') as any)
@@ -181,4 +190,3 @@ export async function solveAcademicDoubt(input: DoubtSolveInput): Promise<Solved
         imageUrl,
     };
 }
-

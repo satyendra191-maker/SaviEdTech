@@ -17,9 +17,11 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Eye, EyeOff, Mail, Lock, GraduationCap, Loader2, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, Loader2, ArrowLeft, CheckCircle } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { hasAuthCallbackArtifacts, sanitizeInternalRedirect } from '@/lib/auth/redirects';
 import { emailSchema, containsSuspiciousPatterns } from '@/lib/security';
+import { BrandLogo } from '@/components/brand-logo';
 
 // Enhanced Zod validation schema for login with security checks
 const loginSchema = z.object({
@@ -67,6 +69,47 @@ function LoginForm() {
     setMounted(true);
   }, []);
 
+  useEffect(() => {
+    if (!mounted) {
+      return;
+    }
+
+    const query = new URLSearchParams(searchParams.toString());
+    const hasCallbackCode = query.has('code');
+    const requestedRedirect = sanitizeInternalRedirect(
+      query.get('redirect') ?? query.get('next')
+    );
+
+    if (hasCallbackCode) {
+      const callbackParams = new URLSearchParams();
+      callbackParams.set('code', query.get('code') || '');
+
+      const authType = query.get('type');
+      if (authType) {
+        callbackParams.set('type', authType);
+      }
+
+      if (requestedRedirect !== '/dashboard') {
+        callbackParams.set('next', requestedRedirect);
+      }
+
+      router.replace(`/auth/callback?${callbackParams.toString()}`);
+      return;
+    }
+
+    if (!hasAuthCallbackArtifacts(query)) {
+      return;
+    }
+
+    const cleanParams = new URLSearchParams();
+    if (query.has('redirect') || query.has('next')) {
+      cleanParams.set('redirect', requestedRedirect);
+    }
+
+    const cleanUrl = cleanParams.toString() ? `/login?${cleanParams.toString()}` : '/login';
+    router.replace(cleanUrl);
+  }, [mounted, router, searchParams]);
+
   // Form hooks must be called before any early returns (React Hooks rule)
   const {
     register,
@@ -97,9 +140,10 @@ function LoginForm() {
     }
 
     if (isAuthenticated) {
-      const redirect = searchParams.get('redirect');
-      if (redirect) {
-        router.push(redirect);
+      const requestedRedirect = searchParams.get('redirect') ?? searchParams.get('next');
+      if (requestedRedirect) {
+        const redirect = sanitizeInternalRedirect(requestedRedirect);
+        router.replace(redirect);
         router.refresh();
         return;
       }
@@ -107,25 +151,25 @@ function LoginForm() {
       // Role-based redirection
       switch (role) {
         case 'super_admin':
-          router.push('/super-admin');
+          router.replace('/super-admin');
           break;
         case 'admin':
-          router.push('/admin');
+          router.replace('/admin');
           break;
         case 'finance_manager':
-          router.push('/admin/finance');
+          router.replace('/admin/finance');
           break;
         case 'faculty':
-          router.push('/dashboard');
+          router.replace('/dashboard');
           break;
         case 'content_manager':
-          router.push('/admin/courses');
+          router.replace('/admin/courses');
           break;
         case 'parent':
-          router.push('/dashboard/parent');
+          router.replace('/dashboard/parent');
           break;
         default:
-          router.push('/dashboard');
+          router.replace('/dashboard');
           break;
       }
       router.refresh();
@@ -214,14 +258,8 @@ function LoginForm() {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <Link href="/" className="inline-flex items-center gap-2">
-              <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center">
-                <GraduationCap className="w-7 h-7 text-white" />
-              </div>
-              <div>
-                <span className="text-2xl font-bold text-slate-900">Savi</span>
-                <span className="text-2xl font-bold text-primary-600">EduTech</span>
-              </div>
+            <Link href="/" className="inline-flex">
+              <BrandLogo size="md" showText={true} showTagline={true} taglineTone="dark" wordmarkTone="dark" />
             </Link>
           </div>
 
@@ -315,14 +353,8 @@ function LoginForm() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2">
-            <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center">
-              <GraduationCap className="w-7 h-7 text-white" />
-            </div>
-            <div>
-              <span className="text-2xl font-bold text-slate-900">Savi</span>
-              <span className="text-2xl font-bold text-primary-600">EduTech</span>
-            </div>
+          <Link href="/" className="inline-flex">
+            <BrandLogo size="md" showText={true} showTagline={true} taglineTone="dark" wordmarkTone="dark" />
           </Link>
         </div>
 
@@ -493,14 +525,8 @@ function LoginFormFallback() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2">
-            <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center">
-              <GraduationCap className="w-7 h-7 text-white" />
-            </div>
-            <div>
-              <span className="text-2xl font-bold text-slate-900">Savi</span>
-              <span className="text-2xl font-bold text-primary-700">EduTech</span>
-            </div>
+          <Link href="/" className="inline-flex">
+            <BrandLogo size="md" showText={true} showTagline={true} taglineTone="dark" wordmarkTone="dark" />
           </Link>
         </div>
         <div className="bg-white rounded-2xl shadow-xl p-8 flex items-center justify-center">

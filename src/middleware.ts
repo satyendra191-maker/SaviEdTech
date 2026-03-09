@@ -88,7 +88,10 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
     response.headers.set('Referrer-Policy', 'strict-origin-when-cross-origin');
     response.headers.set('X-DNS-Prefetch-Control', 'on');
     response.headers.set('Strict-Transport-Security', 'max-age=63072000; includeSubDomains; preload');
-    response.headers.set('Permissions-Policy', 'camera=(), microphone=(), geolocation=(), interest-cohort=()');
+    response.headers.set(
+        'Permissions-Policy',
+        'camera=(self), microphone=(self), display-capture=(self), geolocation=(), interest-cohort=()'
+    );
 
     const csp = [
         "default-src 'self'",

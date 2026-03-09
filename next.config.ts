@@ -83,9 +83,9 @@ const nextConfig: NextConfig = {
                     },
                     {
                         // Permissions Policy - controls browser features
-                        // Disables camera, microphone, geolocation by default
+                        // Allow the in-browser AI assistant to access media capture on same-origin pages
                         key: 'Permissions-Policy',
-                        value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+                        value: 'camera=(self), microphone=(self), display-capture=(self), geolocation=(), interest-cohort=()',
                     },
                     {
                         // Content Security Policy - controls resource loading

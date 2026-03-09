@@ -2,7 +2,6 @@
 
 import { ReactNode, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { ChunkRecovery } from './chunk-recovery';
 import { PopupProvider } from './popup-provider';
 import { GlobalErrorBoundary } from './error-boundary';
@@ -33,7 +32,6 @@ export function Providers({ children }: ProvidersProps) {
                     {children}
                 </PopupProvider>
             </GlobalErrorBoundary>
-            <ReactQueryDevtools initialIsOpen={false} />
         </QueryClientProvider>
     );
 }

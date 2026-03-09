@@ -1,0 +1,350 @@
+
+> saviedutech@1.0.0 dev
+> next dev --port 3001
+
+   ▲ Next.js 15.5.12
+   - Local:        http://localhost:3001
+   - Network:      http://10.28.131.167:3001
+   - Environments: .env.local
+   - Experiments (use with caution):
+     · optimizePackageImports
+
+ ✓ Starting...
+ ✓ Ready in 5.1s
+ ○ Compiling / ...
+ ✓ Compiled / in 6.2s (1103 modules)
+ HEAD / 200 in 7842ms
+ ✓ Compiled in 2.2s (471 modules)
+ GET / 200 in 809ms
+ GET / 200 in 238ms
+ ○ Compiling /faculty ...
+ ✓ Compiled /faculty in 1070ms (1094 modules)
+ GET /faculty 200 in 1425ms
+ ○ Compiling /careers ...
+ ✓ Compiled /careers in 1823ms (1117 modules)
+ GET /careers 200 in 2077ms
+ ○ Compiling /careers/[jobId] ...
+ ✓ Compiled /careers/[jobId] in 1293ms (1132 modules)
+ GET /careers/ca32f8fd-3ced-49cf-9a84-e44c01adfa31 200 in 2356ms
+ ○ Compiling /careers/apply ...
+ ✓ Compiled /careers/apply in 1343ms (1147 modules)
+ GET /careers/apply?jobId=ca32f8fd-3ced-49cf-9a84-e44c01adfa31 200 in 1623ms
+ ○ Compiling /middleware ...
+ ✓ Compiled /middleware in 586ms (175 modules)
+ ○ Compiling /login ...
+ ✓ Compiled /login in 1758ms (1166 modules)
+ GET /login 200 in 2087ms
+ ○ Compiling /blog ...
+ ✓ Compiled /blog in 790ms (1072 modules)
+ GET /blog 200 in 1207ms
+ ○ Compiling /donate ...
+ ✓ Compiled /donate in 2.2s (1114 modules)
+ GET /donate 200 in 3242ms
+ GET /login 200 in 121ms
+ ○ Compiling / ...
+ ✓ Compiled / in 715ms (692 modules)
+ GET / 200 in 1247ms
+ ○ Compiling /api/ai/query ...
+ ✓ Compiled /api/ai/query in 9.6s (1265 modules)
+ POST /api/ai/query 200 in 12643ms
+ ○ Compiling /challenge ...
+ ✓ Compiled /challenge in 1433ms (1193 modules)
+ GET /challenge 200 in 1997ms
+ ○ Compiling /contact ...
+ ✓ Compiled /contact in 1407ms (1193 modules)
+ GET /contact 200 in 1808ms
+ ○ Compiling /api/contact ...
+ ✓ Compiled /api/contact in 1423ms (1518 modules)
+ POST /api/contact 500 in 1996ms
+ POST /api/contact 500 in 99ms
+ POST /api/contact 500 in 70ms
+ GET / 200 in 423ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 847ms (682 modules)
+ GET /login 200 in 1421ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 3.9s (1302 modules)
+ GET /dashboard 200 in 4317ms
+ GET /dashboard 200 in 87ms
+ GET /dashboard 200 in 101ms
+ ○ Compiling /api/gamification/user-stats ...
+ ✓ Compiled /api/rank-prediction in 1963ms (1376 modules)
+ GET /api/rank-prediction 400 in 2415ms
+ GET /api/gamification/user-stats 200 in 3631ms
+ GET /api/rank-prediction 400 in 2408ms
+ GET /api/gamification/user-stats 200 in 1776ms
+ ○ Compiling /dashboard/lectures ...
+ ✓ Compiled /dashboard/lectures in 850ms (1363 modules)
+ GET /dashboard/lectures 200 in 1162ms
+ GET /api/gamification/user-stats 200 in 1551ms
+ GET /api/rank-prediction 400 in 1333ms
+ GET /api/rank-prediction 400 in 1183ms
+ GET /api/gamification/user-stats 200 in 1491ms
+ GET /dashboard/lectures 200 in 97ms
+ GET /api/gamification/user-stats 200 in 1442ms
+ GET /api/rank-prediction 400 in 787ms
+ GET /api/gamification/user-stats 200 in 1594ms
+ GET /api/rank-prediction 400 in 4303ms
+ GET /dashboard/lectures 200 in 81ms
+ GET /dashboard 200 in 126ms
+ GET /api/gamification/user-stats 200 in 1242ms
+ GET /api/rank-prediction 400 in 859ms
+ GET /api/rank-prediction 400 in 873ms
+ GET /api/gamification/user-stats 200 in 976ms
+ ○ Compiling /dashboard/practice ...
+ ✓ Compiled /dashboard/practice in 2.7s (1283 modules)
+ GET /dashboard/practice 200 in 3046ms
+ GET /dashboard/practice 200 in 80ms
+ ○ Compiling /dashboard/tests ...
+ ✓ Compiled /dashboard/tests in 1157ms (1287 modules)
+ GET /dashboard/tests 200 in 1745ms
+ ○ Compiling /dashboard/online-exams ...
+ ✓ Compiled /dashboard/online-exams in 1528ms (1301 modules)
+ GET /dashboard/online-exams 200 in 1878ms
+ ○ Compiling /api/online-exams ...
+ ✓ Compiled /api/online-exams in 1793ms (1565 modules)
+ GET /api/online-exams 200 in 2658ms
+ GET /api/online-exams 200 in 2668ms
+ ○ Compiling /dashboard/challenge ...
+ ✓ Compiled /dashboard/challenge in 1598ms (1555 modules)
+ GET /dashboard/challenge 200 in 1834ms
+ ○ Compiling /dashboard/dpp ...
+ ✓ Compiled /dashboard/dpp in 982ms (1564 modules)
+ GET /dashboard/dpp 200 in 1253ms
+ ○ Compiling /dashboard/planner ...
+ ✓ Compiled /dashboard/planner in 1933ms (1577 modules)
+ GET /dashboard/planner 200 in 2190ms
+ ○ Compiling /dashboard/doubts ...
+ ✓ Compiled /dashboard/doubts in 1648ms (1588 modules)
+ GET /dashboard/doubts 200 in 2090ms
+ ○ Compiling /dashboard/analytics ...
+ ✓ Compiled /dashboard/analytics in 3.4s (2595 modules)
+ GET /dashboard/analytics 200 in 3779ms
+ GET /dashboard/analytics 200 in 88ms
+ ○ Compiling /api/rank-prediction ...
+ ✓ Compiled /api/rank-prediction in 1284ms (1498 modules)
+ GET /api/rank-prediction 400 in 2199ms
+ GET /api/rank-prediction 400 in 2602ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 705ms (1499 modules)
+ GET /dashboard 200 in 962ms
+ ○ Compiling /api/gamification/user-stats ...
+ ✓ Compiled /api/gamification/user-stats in 694ms (1506 modules)
+ GET /api/rank-prediction 400 in 920ms
+ GET /api/rank-prediction 400 in 860ms
+ GET /api/gamification/user-stats 200 in 2396ms
+ GET /api/gamification/user-stats 200 in 1320ms
+ ○ Compiling /dashboard/settings ...
+ ✓ Compiled /dashboard/settings in 1272ms (2346 modules)
+ GET /dashboard/settings 200 in 1650ms
+ GET /dashboard 200 in 118ms
+ GET /api/rank-prediction 400 in 1015ms
+ GET /api/rank-prediction 400 in 1093ms
+ GET /api/gamification/user-stats 200 in 2199ms
+ GET /api/gamification/user-stats 200 in 2148ms
+ ○ Compiling / ...
+ ✓ Compiled / in 2.5s (1316 modules)
+ GET / 200 in 4297ms
+ GET / 200 in 1167ms
+ GET / 200 in 975ms
+ GET / 200 in 739ms
+ GET / 200 in 542ms
+ GET / 200 in 280ms
+ GET / 200 in 245ms
+ GET / 200 in 282ms
+ GET / 200 in 258ms
+ GET / 200 in 228ms
+ GET / 200 in 259ms
+ GET / 200 in 269ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 1378ms (1320 modules)
+ GET /login 200 in 1725ms
+ ○ Compiling /dashboard/parent ...
+ ✓ Compiled /dashboard/parent in 1439ms (2342 modules)
+ GET /dashboard/parent 200 in 1903ms
+ GET /dashboard/parent 200 in 128ms
+ ○ Compiling /parent/verify ...
+ ✓ Compiled /parent/verify in 1550ms (1833 modules)
+ GET /parent/verify 200 in 1902ms
+ GET / 200 in 268ms
+ GET /dashboard/parent 200 in 117ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 1409ms (1829 modules)
+ GET /dashboard/parent/reports 404 in 1648ms
+ GET /dashboard/parent/reports 404 in 537ms
+ GET /dashboard/parent/reports 404 in 74ms
+ GET /dashboard/parent 200 in 332ms
+ GET /dashboard/parent 200 in 83ms
+ GET /dashboard/parent 200 in 71ms
+ GET /dashboard/parent/attendance 404 in 30ms
+ GET /dashboard/parent/attendance 404 in 115ms
+ GET /dashboard/parent 200 in 245ms
+ GET /dashboard/parent/attendance 404 in 35ms
+ GET /dashboard/parent/attendance 404 in 104ms
+ GET /dashboard/parent 200 in 274ms
+ GET /dashboard/settings 200 in 96ms
+ ○ Compiling /dashboard ...
+ ✓ Compiled /dashboard in 911ms (720 modules)
+ GET /dashboard 200 in 1191ms
+ GET /dashboard/parent 200 in 154ms
+ GET /login 200 in 331ms
+ GET / 200 in 1263ms
+ GET / 200 in 1060ms
+ GET / 200 in 821ms
+ GET / 200 in 613ms
+ GET / 200 in 617ms
+ GET / 200 in 311ms
+ GET / 200 in 241ms
+ GET / 200 in 217ms
+ GET / 200 in 221ms
+ GET / 200 in 252ms
+ GET /login 200 in 118ms
+ ○ Compiling /super-admin ...
+ ✓ Compiled /super-admin in 5.3s (2572 modules)
+ GET /super-admin 200 in 6778ms
+ GET /super-admin 200 in 444ms
+ GET /super-admin 200 in 124ms
+ ○ Compiling /_not-found ...
+ ✓ Compiled /_not-found in 806ms (2557 modules)
+ POST /api/admin/health-check 404 in 1638ms
+ ○ Compiling /admin/backups ...
+ ✓ Compiled /admin/backups in 2.5s (2570 modules)
+ GET /admin/backups 200 in 3499ms
+ ○ Compiling /admin/payments ...
+ ✓ Compiled /admin/payments in 2.5s (2502 modules)
+ GET /admin/payments 200 in 2996ms
+ ○ Compiling /admin/analytics ...
+ ✓ Compiled /admin/analytics in 1910ms (2514 modules)
+ GET /admin/analytics 200 in 2365ms
+ ○ Compiling /admin/students ...
+ ✓ Compiled /admin/students in 1255ms (2526 modules)
+ GET /admin/students 200 in 1573ms
+ ○ Compiling /admin/courses ...
+ ✓ Compiled /admin/courses in 1924ms (2517 modules)
+ GET /admin/courses 200 in 2252ms
+ ○ Compiling /admin/careers ...
+ ✓ Compiled /admin/careers in 1349ms (2485 modules)
+ GET /admin/careers 200 in 1712ms
+ ○ Compiling /admin/leads ...
+ ✓ Compiled /admin/leads in 3.3s (2487 modules)
+ ○ Compiling /admin/finance ...
+ GET /admin/payments 200 in 2625ms
+ GET /admin/leads 200 in 5092ms
+ ✓ Compiled /admin/challenges in 11.2s (2522 modules)
+ GET /admin/finance 200 in 11840ms
+ GET /admin/challenges 200 in 11841ms
+ GET /admin/ads 200 in 11904ms
+ GET /admin/backups 200 in 130ms
+ GET /admin/ads 200 in 88ms
+ GET /admin/finance 200 in 90ms
+ ○ Compiling /api/admin/finance/summary ...
+ ✓ Compiled /api/admin/finance/summary in 9.1s (2756 modules)
+ GET /api/admin/finance/summary 200 in 10963ms
+ GET /api/admin/finance/summary 200 in 10950ms
+ ○ Compiling /admin/leads ...
+ ✓ Compiled /admin/leads in 690ms (1531 modules)
+ GET /admin/leads 200 in 1157ms
+ ○ Compiling /admin/payments ...
+ ✓ Compiled /admin/payments in 1198ms (1529 modules)
+ GET /admin/payments 200 in 1602ms
+ GET /admin/finance 200 in 185ms
+ GET /api/admin/finance/summary 200 in 801ms
+ GET /api/admin/finance/summary 200 in 1235ms
+ ○ Compiling /api/admin/finance/export ...
+ ✓ Compiled /api/admin/finance/export in 3.9s (2748 modules)
+ GET /api/admin/finance/export?report=gstr1&format=xlsx&month=2026-03 200 in 6806ms
+ GET /api/admin/finance/export?report=gstr1&format=xlsx&month=2026-03 200 in 1305ms
+ GET /api/admin/finance/export?report=gstr3b&format=pdf&month=2026-03 200 in 1117ms
+ GET /api/admin/finance/export?report=gstr3b&format=pdf&month=2026-03 200 in 1927ms
+ ○ Compiling /admin/lectures ...
+ ✓ Compiled /admin/questions in 10.3s (2432 modules)
+ GET /admin/questions 200 in 7496ms
+ GET /admin/lectures 200 in 10995ms
+ GET /admin/questions 200 in 94ms
+ GET /admin/questions 200 in 1435ms
+ ○ Compiling /admin/courses ...
+ ✓ Compiled /admin/courses in 1419ms (1201 modules)
+ GET /admin/courses 200 in 1879ms
+ ○ Compiling /admin/students ...
+ ✓ Compiled /admin/students in 625ms (1196 modules)
+ GET /admin/students 200 in 961ms
+ GET /admin/courses 200 in 98ms
+ GET /admin/lectures 200 in 123ms
+ GET /admin/questions 200 in 110ms
+ ○ Compiling /admin/analytics ...
+ ✓ Compiled /admin/analytics in 4.7s (1192 modules)
+ GET /admin/analytics 200 in 5265ms
+ ○ Compiling /admin/tests ...
+ ✓ Compiled /admin/tests in 4.9s (2440 modules)
+ GET /admin/tests 200 in 5397ms
+ ○ Compiling /admin/online-exams ...
+ ✓ Compiled /admin/online-exams in 3s (2445 modules)
+ GET /admin/online-exams 200 in 3299ms
+ ○ Compiling /api/admin/online-exams ...
+ ✓ Compiled /api/admin/online-exams in 5s (2728 modules)
+ GET /api/admin/online-exams 200 in 8301ms
+ GET /api/admin/online-exams 200 in 8461ms
+ ○ Compiling /admin/careers ...
+ ✓ Compiled /admin/careers in 3.7s (1482 modules)
+ GET /admin/careers 200 in 4172ms
+ GET /admin/careers 200 in 84ms
+ ○ Compiling /admin/leads ...
+ ✓ Compiled /admin/leads in 1272ms (952 modules)
+ GET /admin/leads 200 in 1837ms
+ GET /admin/careers 200 in 122ms
+ GET /admin/leads 200 in 97ms
+ ○ Compiling /admin/payments ...
+ ✓ Compiled /admin/payments in 4.3s (669 modules)
+ GET /admin/payments 200 in 4880ms
+ GET /admin/payments 200 in 89ms
+ ○ Compiling /admin/finance ...
+ ✓ Compiled /admin/finance in 2.4s (1187 modules)
+ GET /admin/finance 200 in 2816ms
+ ○ Compiling /api/admin/finance/summary ...
+ ✓ Compiled /api/admin/finance/summary in 3.6s (1522 modules)
+ GET /api/admin/finance/summary 200 in 4962ms
+ GET /api/admin/finance/summary 200 in 4978ms
+ ○ Compiling /admin/challenges ...
+ ✓ Compiled /admin/challenges in 1471ms (1521 modules)
+ GET /admin/challenges 200 in 1900ms
+ ○ Compiling / ...
+ ✓ Compiled / in 2.7s (1611 modules)
+ GET / 200 in 3755ms
+ GET / 200 in 475ms
+ GET / 200 in 4288ms
+ GET / 200 in 3190ms
+ GET / 200 in 282ms
+ GET / 200 in 274ms
+ ○ Compiling /login ...
+ ✓ Compiled /login in 3.9s (1622 modules)
+ GET /login 200 in 4340ms
+ ○ Compiling /admin/courses ...
+ ✓ Compiled /admin/courses in 2.3s (1282 modules)
+ GET /admin/courses 200 in 3222ms
+ GET /admin/courses 200 in 414ms
+ GET /admin/courses 200 in 87ms
+ GET /admin/courses 200 in 95ms
+ ○ Compiling /admin/tests ...
+ ✓ Compiled /admin/tests in 5.3s (1282 modules)
+ ✓ Compiled (1298 modules)
+ GET /admin/courses 200 in 8693ms
+ GET /admin/questions 200 in 9259ms
+ GET /admin/lectures 200 in 9140ms
+ GET /admin/tests 200 in 9084ms
+ GET /admin/courses 200 in 102ms
+ GET / 200 in 1772ms
+ ○ Compiling /register ...
+ ✓ Compiled /register in 9.5s (2035 modules)
+ GET /register 200 in 9880ms
+ GET /register 200 in 90ms
+ GET /register 200 in 95ms
+ ○ Compiling /lectures ...
+ ✓ Compiled /lectures in 5.6s (2031 modules)
+ GET /lectures 200 in 6533ms
+ GET /lectures 200 in 718ms
+ ✓ Compiled in 1185ms (1263 modules)
+ GET /lectures 200 in 142ms
+ GET / 200 in 289ms
+ ○ Compiling /blog ...
+ ✓ Compiled /blog in 3.6s (764 modules)
+ GET /blog 200 in 3943ms

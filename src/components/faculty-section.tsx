@@ -70,18 +70,19 @@ export function FacultySection() {
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 gap-8">
+          <div className="grid md:grid-cols-2 gap-8">
           {faculties.map((faculty) => (
             <div
               key={faculty.name}
-              className="group bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-xl transition-all duration-300"
+              className="group bg-white rounded-2xl border border-slate-200 overflow-hidden hover:shadow-2xl hover:-translate-y-2 hover:scale-[1.02] transition-all duration-300 cursor-pointer"
             >
               <div className="flex flex-col sm:flex-row">
                 {/* Image Section */}
-                <div className={`sm:w-2/5 ${faculty.bgColor} p-6 flex items-center justify-center`}>
-                  <div className={`w-32 h-32 rounded-full bg-gradient-to-br ${faculty.theme} flex items-center justify-center text-white text-3xl font-bold`}>
+                <div className={`sm:w-2/5 ${faculty.bgColor} p-6 flex items-center justify-center relative overflow-hidden`}>
+                  <div className={`w-32 h-32 rounded-full bg-gradient-to-br ${faculty.theme} flex items-center justify-center text-white text-3xl font-bold group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 shadow-lg`}>
                     {faculty.name.split(' ')[0][0]}
                   </div>
+                  <div className={`absolute inset-0 bg-gradient-to-br ${faculty.theme} opacity-0 group-hover:opacity-10 transition-opacity duration-300`} />
                 </div>
 
                 {/* Content Section */}

@@ -283,7 +283,7 @@ export const SECURITY_HEADERS = {
     'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
 
     // Permissions policy (formerly Feature Policy)
-    'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), interest-cohort=()',
+    'Permissions-Policy': 'camera=(self), microphone=(self), display-capture=(self), geolocation=(), interest-cohort=()',
 };
 
 /**

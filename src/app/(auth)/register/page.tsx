@@ -18,8 +18,9 @@ import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Eye, EyeOff, Mail, Lock, User, Phone, GraduationCap, Loader2, CheckCircle, Shield, Users, BookOpen, Heart } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Phone, Loader2, CheckCircle, Shield, Users, BookOpen, Heart } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import { BrandLogo } from '@/components/brand-logo';
 
 type UserType = 'student' | 'admin' | 'faculty' | 'parent';
 
@@ -208,14 +209,8 @@ export default function RegisterPage() {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <Link href="/" className="inline-flex items-center gap-2">
-              <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center">
-                <GraduationCap className="w-7 h-7 text-white" />
-              </div>
-              <div>
-                <span className="text-2xl font-bold text-slate-900">Savi</span>
-                <span className="text-2xl font-bold text-primary-600">EduTech</span>
-              </div>
+            <Link href="/" className="inline-flex">
+              <BrandLogo size="md" showText={true} showTagline={true} taglineTone="dark" wordmarkTone="dark" />
             </Link>
           </div>
 
@@ -255,14 +250,8 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex items-center gap-2">
-            <div className="w-12 h-12 bg-gradient-to-br from-primary-500 to-primary-600 rounded-xl flex items-center justify-center">
-              <GraduationCap className="w-7 h-7 text-white" />
-            </div>
-            <div>
-              <span className="text-2xl font-bold text-slate-900">Savi</span>
-              <span className="text-2xl font-bold text-primary-600">EduTech</span>
-            </div>
+          <Link href="/" className="inline-flex">
+            <BrandLogo size="md" showText={true} showTagline={true} taglineTone="dark" wordmarkTone="dark" />
           </Link>
         </div>
 

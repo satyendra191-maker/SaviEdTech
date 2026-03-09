@@ -34,10 +34,6 @@ export async function POST(request: NextRequest): Promise<Response> {
             const supabase = createRequestSupabaseClient(request);
             const { data: { user } } = await supabase.auth.getUser();
 
-            if (!user) {
-                throw createApiError(ErrorType.AUTHENTICATION, 'Please sign in to submit a doubt.');
-            }
-
             const formData = await request.formData();
             const question = String(formData.get('question') || '').trim();
             const description = String(formData.get('description') || '').trim();
@@ -59,7 +55,7 @@ export async function POST(request: NextRequest): Promise<Response> {
             }
 
             const solved = await solveAcademicDoubt({
-                userId: user.id,
+                userId: user?.id,
                 question,
                 description,
                 subject: subject || undefined,
