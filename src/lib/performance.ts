@@ -316,40 +316,4 @@ export function buildQueryString(options: QueryOptions): string {
     return params.toString();
 }
 
-// Throttle and debounce utilities
-/**
- * Throttle function execution
- */
-export function throttle<T extends (...args: unknown[]) => unknown>(
-    func: T,
-    limitMs: number
-): T {
-    let inThrottle = false;
 
-    return function (this: unknown, ...args: Parameters<T>) {
-        if (!inThrottle) {
-            func.apply(this, args);
-            inThrottle = true;
-            setTimeout(() => inThrottle = false, limitMs);
-        }
-    } as T;
-}
-
-/**
- * Debounce function execution
- */
-export function debounce<T extends (...args: unknown[]) => unknown>(
-    func: T,
-    waitMs: number
-): (...args: Parameters<T>) => void {
-    let timeoutId: NodeJS.Timeout | null = null;
-
-    return function (this: unknown, ...args: Parameters<T>) {
-        if (timeoutId) {
-            clearTimeout(timeoutId);
-        }
-        timeoutId = setTimeout(() => {
-            func.apply(this, args);
-        }, waitMs);
-    };
-}
