@@ -91,15 +91,16 @@ export function ScreenshotProtection({
         };
 
         const handleContextMenu = (e: MouseEvent) => {
-            e.preventDefault();
+            // Temporarily disabled for user convenience
+            // e.preventDefault();
         };
 
         document.addEventListener('keydown', handleKeyDown);
-        document.addEventListener('contextmenu', handleContextMenu);
+        // document.addEventListener('contextmenu', handleContextMenu);
 
         return () => {
             document.removeEventListener('keydown', handleKeyDown);
-            document.removeEventListener('contextmenu', handleContextMenu);
+            // document.removeEventListener('contextmenu', handleContextMenu);
         };
     }, [enabled, handleCapture]);
 
@@ -158,17 +159,18 @@ export function useScreenshotProtection() {
         };
 
         const handleContextMenu = (e: MouseEvent) => {
-            e.preventDefault();
-            setIsBlocked(true);
-            setTimeout(() => setIsBlocked(false), 100);
+            // Temporarily disabled for user convenience
+            // e.preventDefault();
+            // setIsBlocked(true);
+            // setTimeout(() => setIsBlocked(false), 100);
         };
 
         document.addEventListener('keydown', handleKeyDown);
-        document.addEventListener('contextmenu', handleContextMenu);
+        // document.addEventListener('contextmenu', handleContextMenu);
 
         return () => {
             document.removeEventListener('keydown', handleKeyDown);
-            document.removeEventListener('contextmenu', handleContextMenu);
+            // document.removeEventListener('contextmenu', handleContextMenu);
         };
     }, []);
 

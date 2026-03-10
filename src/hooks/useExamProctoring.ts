@@ -295,10 +295,10 @@ export function useExamProctoring({
         window.addEventListener('blur', handleBlur);
         document.addEventListener('visibilitychange', handleVisibilityChange);
         document.addEventListener('fullscreenchange', handleFullscreenChange);
-        document.addEventListener('copy', handleClipboardAttempt);
-        document.addEventListener('paste', handleClipboardAttempt);
-        document.addEventListener('cut', handleClipboardAttempt);
-        document.addEventListener('contextmenu', handleClipboardAttempt);
+        // document.addEventListener('copy', handleClipboardAttempt);
+        // document.addEventListener('paste', handleClipboardAttempt);
+        // document.addEventListener('cut', handleClipboardAttempt);
+        // document.addEventListener('contextmenu', handleClipboardAttempt);
 
         return () => {
             window.removeEventListener('mousemove', markActive);
@@ -308,10 +308,10 @@ export function useExamProctoring({
             window.removeEventListener('blur', handleBlur);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
             document.removeEventListener('fullscreenchange', handleFullscreenChange);
-            document.removeEventListener('copy', handleClipboardAttempt);
-            document.removeEventListener('paste', handleClipboardAttempt);
-            document.removeEventListener('cut', handleClipboardAttempt);
-            document.removeEventListener('contextmenu', handleClipboardAttempt);
+            // document.removeEventListener('copy', handleClipboardAttempt);
+            // document.removeEventListener('paste', handleClipboardAttempt);
+            // document.removeEventListener('cut', handleClipboardAttempt);
+            // document.removeEventListener('contextmenu', handleClipboardAttempt);
         };
     }, [attemptId, enabled, recordEvent]);
 

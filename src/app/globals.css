@@ -61,10 +61,6 @@
     body {
         @apply bg-background text-foreground font-sans antialiased;
         overflow-x: hidden;
-        -webkit-user-select: none;
-        -moz-user-select: none;
-        -ms-user-select: none;
-        user-select: none;
     }
 
     img,
