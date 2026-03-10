@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { ArrowRight, Play, Sparkles } from 'lucide-react';
 import { AnimatedLogo } from '@/components/animated-logo';
 import { AIAssistantWidget } from '@/components/ai-assistant-widget';
+import { AtomGraphic } from '@/components/atom-graphic';
 
 export function Hero() {
     return (
@@ -18,18 +19,21 @@ export function Hero() {
             </div>
 
             <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
-                <div className="grid items-center gap-14 lg:grid-cols-[1.1fr_0.9fr]">
+                <div className="grid items-center gap-14 lg:grid-cols-[1.1fr_0.9fr_0.6fr]">
                     <div className="text-center lg:text-left">
                         <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium text-white/90 backdrop-blur-sm">
                             <Sparkles className="h-4 w-4 text-amber-300" />
-                            SaviEduTech Driven Learning Platform
+                            SaviEduTech + SaviTech AI - National AI EdTech Platform
                         </div>
 
-                        <div className="mt-8 flex flex-col items-center gap-5 lg:flex-row lg:items-start">
-                            <div className="shrink-0">
+                        <div className="mt-8 flex flex-col items-center gap-8 lg:flex-row lg:items-start">
+                            <div className="shrink-0 order-2 lg:order-1">
                                 <AnimatedLogo size="lg" showText={false} className="drop-shadow-[0_15px_45px_rgba(14,165,233,0.28)]" />
+                                <div className="mt-2 text-center lg:text-left">
+                                    <span className="text-sm font-bold text-sky-300">SaviEduTech + SaviTech AI</span>
+                                </div>
                             </div>
-                            <div>
+                            <div className="order-1 lg:order-2">
                                 <h1 className="text-5xl font-black leading-tight text-white sm:text-6xl lg:text-7xl">
                                     Learn JEE, NEET,
                                     <br />
@@ -99,6 +103,15 @@ export function Hero() {
                                     <AIAssistantWidget variant="hero" />
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="mt-16 lg:mt-0">
+                    <div className="relative h-64 w-full lg:h-80">
+                        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-sky-400/20 via-purple-400/20 to-pink-400/20 blur-3xl" />
+                        <div className="relative h-full w-full">
+                            <AtomGraphic className="h-full w-full" />
                         </div>
                     </div>
                 </div>

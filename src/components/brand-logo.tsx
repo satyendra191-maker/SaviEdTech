@@ -234,7 +234,7 @@ export function BrandLogo({
                                 color: 'transparent',
                             }}
                         >
-                            Next-Generation Learning Platform
+                            National AI EdTech Platform
                         </div>
                     ) : null}
                 </div>

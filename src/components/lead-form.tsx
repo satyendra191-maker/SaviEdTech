@@ -11,7 +11,7 @@ const leadFormSchema = z.object({
     phone: z.string().regex(/^[6-9]\d{9}$/, 'Enter a valid 10-digit mobile number'),
     email: z.string().email('Enter a valid email').optional().or(z.literal('')),
     examTarget: z.enum(['JEE', 'NEET', 'Both', 'Other']),
-    classLevel: z.enum(['10', '11', '12', 'Dropper']),
+    classLevel: z.enum(['6', '7', '8', '9', '10', '11', '12', 'Dropper']),
     city: z.string().min(2, 'City is required'),
 });
 
@@ -161,6 +161,10 @@ export function LeadForm() {
                             className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-primary-500 focus:ring-2 focus:ring-primary-200 outline-none transition-all bg-white"
                         >
                             <option value="">Select</option>
+                            <option value="6">Class 6</option>
+                            <option value="7">Class 7</option>
+                            <option value="8">Class 8</option>
+                            <option value="9">Class 9</option>
                             <option value="10">Class 10</option>
                             <option value="11">Class 11</option>
                             <option value="12">Class 12</option>

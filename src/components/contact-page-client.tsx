@@ -29,7 +29,7 @@ const emptyForm = {
     name: '',
     phone: '',
     email: '',
-    subject: '',
+    class: '',
     message: '',
 };
 
@@ -94,13 +94,17 @@ export function ContactPageClient() {
                                 <div>
                                     <p className="font-semibold text-slate-900">Address</p>
                                     <p>
-                                        SaviEduTech - A Brand Unit of SGI
+                                        SaviEduTech
                                         <br />
-                                        302, Parth A, 3/11 Patel Colony
+                                        A Brand Unit Of SGI
                                         <br />
-                                        Jamnagar - 361008
+                                        302 Parth A
                                         <br />
-                                        Gujarat, India
+                                        3/11 Patel Colony
+                                        <br />
+                                        Jamnagar – 361008
+                                        <br />
+                                        Gujarat
                                     </p>
                                 </div>
                             </div>
@@ -192,13 +196,23 @@ export function ContactPageClient() {
                                     />
                                 </div>
                                 <div>
-                                    <label className="mb-1.5 block text-sm font-medium text-slate-700">Subject</label>
-                                    <input
-                                        value={form.subject}
-                                        onChange={(event) => updateField('subject', event.target.value)}
+                                    <label className="mb-1.5 block text-sm font-medium text-slate-700">Class</label>
+                                    <select
+                                        value={form.class}
+                                        onChange={(event) => updateField('class', event.target.value)}
                                         className="w-full rounded-2xl border border-slate-200 px-4 py-3 outline-none transition-colors focus:border-sky-400"
                                         required
-                                    />
+                                    >
+                                        <option value="">Select Class</option>
+                                        <option value="Class 6">Class 6</option>
+                                        <option value="Class 7">Class 7</option>
+                                        <option value="Class 8">Class 8</option>
+                                        <option value="Class 9">Class 9</option>
+                                        <option value="Class 10">Class 10</option>
+                                        <option value="Class 11">Class 11</option>
+                                        <option value="Class 12">Class 12</option>
+                                        <option value="Dropper">Dropper</option>
+                                    </select>
                                 </div>
                             </div>
 
