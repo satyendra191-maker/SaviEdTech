@@ -14,7 +14,6 @@ interface NotificationRow {
     user_id: string | null;
     title: string;
     message: string;
-    type: string | null;
     notification_type: string | null;
     created_at: string;
     is_active: boolean;
@@ -84,7 +83,7 @@ function toBannerNotification(row: NotificationRow): BannerNotification {
         id: row.id,
         title: row.title,
         message: row.message,
-        type: row.type || row.notification_type || 'system',
+        type: row.notification_type || 'system',
         createdAt: row.created_at,
         actionUrl: row.action_url,
         targetSurface: normalizeTargetSurface(row.target_surface),
@@ -179,7 +178,7 @@ export function NotificationBar() {
 
                 let query = supabase
                     .from('notifications')
-                    .select('id, user_id, title, message, type, notification_type, created_at, is_active, target_surface, priority, action_url')
+                    .select('id, user_id, title, message, notification_type, created_at, is_active, target_surface, priority, action_url')
                     .eq('is_active', true)
                     .order('priority', { ascending: false })
                     .order('created_at', { ascending: false })
