@@ -22,6 +22,9 @@ import {
     BarChart3,
     ShieldCheck,
     Landmark,
+    Sparkles,
+    FileCode,
+    Bot,
 } from 'lucide-react';
 import { AnimatedLogo } from '@/components/animated-logo';
 import { useAuth } from '@/hooks/useAuth';
@@ -29,6 +32,7 @@ import { useSidebar } from './sidebar-context';
 
 const adminNavItems = [
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+    { name: 'AI Assistant', href: '/admin/ai-assistant', icon: Bot },
     { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
     { name: 'Students', href: '/admin/students', icon: Users },
     { name: 'Courses', href: '/admin/courses', icon: BookOpen },
@@ -38,6 +42,8 @@ const adminNavItems = [
     { name: 'Online Exams', href: '/admin/online-exams', icon: ShieldCheck },
     { name: 'Careers', href: '/admin/careers', icon: Briefcase },
     { name: 'Leads', href: '/admin/leads', icon: FileText },
+    { name: 'CMS', href: '/admin/cms', icon: FileCode },
+    { name: 'AI Content', href: '/admin/ai-content', icon: Sparkles },
     { name: 'Payments', href: '/admin/payments', icon: CreditCard },
     { name: 'Finance', href: '/admin/finance', icon: Landmark },
     { name: 'Daily Challenge', href: '/admin/challenges', icon: Trophy },
@@ -75,13 +81,15 @@ export function AdminSidebar() {
                 )}
             </button>
 
-            {/* Logo */}
-            <div className={`flex items-center gap-2 px-4 h-16 border-b border-slate-800 ${isCollapsed ? 'justify-center' : ''}`}>
-                <AnimatedLogo size="sm" showText={false} />
+            {/* Logo - Updated Brand */}
+            <div className={`flex items-center gap-2 px-4 h-20 border-b border-slate-800 ${isCollapsed ? 'justify-center' : ''}`}>
                 {!isCollapsed && (
-                    <div>
-                        <span className="font-bold text-white">Admin</span>
-                        <span className="font-bold text-indigo-400">Panel</span>
+                    <div className="flex flex-col">
+                        <span className="font-black text-lg tracking-tight">
+                            <span className="text-amber-500">Savi</span>
+                            <span className="text-sky-400">EduTech</span>
+                        </span>
+                        <span className="text-xs text-slate-400 font-medium">Admin Panel</span>
                     </div>
                 )}
             </div>

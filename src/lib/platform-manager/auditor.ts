@@ -624,7 +624,7 @@ async function collectLiveSnapshot(options: {
         aiStatus,
         modules,
         topErrors: errorSummary.top_errors.slice(0, 5),
-        performanceRecommendations: apiRecommendations.slice(0, 3).map((recommendation) => recommendation.recommendation),
+        performanceRecommendations: [...new Set(apiRecommendations.slice(0, 3).map((recommendation) => recommendation.recommendation))],
         detections,
         recentRecoveryActions,
         autoRecoveryTriggered: false,

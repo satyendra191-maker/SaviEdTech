@@ -3,12 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import {
     BookOpen,
-    Brain,
-    Calculator,
     Camera,
-    Dna,
     FileImage,
-    FlaskConical,
     Loader2,
     Mic,
     RefreshCw,
@@ -19,18 +15,9 @@ import {
     Volume2,
     VolumeX,
     X,
-    Zap,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { cn } from '@/lib/utils';
-
-const SUBJECTS = [
-    { id: 'physics', name: 'Physics', icon: <FlaskConical className="h-4 w-4" />, color: 'blue' },
-    { id: 'chemistry', name: 'Chemistry', icon: <Brain className="h-4 w-4" />, color: 'emerald' },
-    { id: 'mathematics', name: 'Mathematics', icon: <Calculator className="h-4 w-4" />, color: 'amber' },
-    { id: 'biology', name: 'Biology', icon: <Dna className="h-4 w-4" />, color: 'red' },
-    { id: 'general', name: 'Platform Help', icon: <Zap className="h-4 w-4" />, color: 'violet' },
-] as const;
 
 type ResponseView = 'text' | 'visual';
 
@@ -118,7 +105,7 @@ function splitIntoSteps(text: string) {
 export function AIQuerySystem() {
     const { isAuthenticated } = useAuth();
     const [query, setQuery] = useState('');
-    const [subject, setSubject] = useState('physics');
+    const [subject, setSubject] = useState('general');
     const [isLoading, setIsLoading] = useState(false);
     const [reply, setReply] = useState<AssistantReply>(EMPTY_REPLY);
     const [lastPayload, setLastPayload] = useState<QueryPayload | null>(null);
@@ -139,7 +126,6 @@ export function AIQuerySystem() {
     const previewUrlRef = useRef<string | null>(null);
     const speechSupported = typeof window !== 'undefined' && 'speechSynthesis' in window;
     const voiceSupported = typeof window !== 'undefined' && Boolean(window.SpeechRecognition || window.webkitSpeechRecognition);
-    const subjectName = SUBJECTS.find((item) => item.id === subject)?.name || 'General';
 
     const clearAttachment = () => {
         if (previewUrlRef.current) {
@@ -262,7 +248,7 @@ export function AIQuerySystem() {
         if ((!normalizedQuery && !selectedFile) || isLoading) return;
 
         await submitQuery({
-            query: normalizedQuery || `Solve this ${subjectName.toLowerCase()} question from the scanned page.`,
+            query: normalizedQuery || 'Solve this question from the scanned page.',
             subject,
             imageFile: selectedFile,
         });
@@ -420,7 +406,7 @@ export function AIQuerySystem() {
                             </div>
                             <div>
                                 <h3 className="text-xl font-bold text-white">Ask SaviTech AI</h3>
-                                <p className="text-sm text-slate-400">Speak, type, or scan a question page with the back camera.</p>
+                                <p className="text-sm text-slate-400">Type your question or scan with camera for instant answers.</p>
                             </div>
                         </div>
 
@@ -431,30 +417,13 @@ export function AIQuerySystem() {
                         </div>
                     </div>
 
-                    <div className="mb-4 flex flex-wrap gap-2">
-                        {SUBJECTS.map((item) => (
-                            <button
-                                key={item.id}
-                                type="button"
-                                onClick={() => setSubject(item.id)}
-                                className={cn(
-                                    'inline-flex min-h-[40px] items-center gap-2 rounded-full px-3 py-2 text-xs font-semibold transition-all',
-                                    getSubjectClass(item.color, subject === item.id)
-                                )}
-                            >
-                                {item.icon}
-                                {item.name}
-                            </button>
-                        ))}
-                    </div>
-
                     <form onSubmit={handleSubmit} className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_260px]">
                         <div className="space-y-3">
                             <div className="relative">
                                 <textarea
                                     value={query}
                                     onChange={(event) => setQuery(event.target.value)}
-                                    placeholder="Ask an academic doubt, platform question, or scan a handwritten page."
+                                    placeholder="Ask any question or scan a handwritten page with the back camera."
                                     className="h-32 w-full resize-none rounded-2xl border border-white/10 bg-white/5 py-4 pl-4 pr-14 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary-500/40"
                                     disabled={isLoading}
                                     maxLength={800}
@@ -685,7 +654,7 @@ export function AIQuerySystem() {
                                     <div className="mb-4 flex items-center justify-between">
                                         <div>
                                             <p className="text-sm font-semibold text-white">{reply.mode === 'scan' ? 'Scanned question flow' : 'Concept explanation flow'}</p>
-                                            <p className="text-xs text-slate-400">{subjectName} visual solution board</p>
+                                            <p className="text-xs text-slate-400">Visual solution board</p>
                                         </div>
                                         <Sparkles className="h-5 w-5 text-sky-300" />
                                     </div>
@@ -740,31 +709,6 @@ export function AIQuerySystem() {
                         </div>
                     ) : null}
                 </div>
-            </div>
-
-            <div className="mt-4 flex flex-wrap justify-center gap-3">
-                <button
-                    type="button"
-                    onClick={() => {
-                        setQuery('Explain photoelectric effect simply for JEE.');
-                        setSubject('physics');
-                    }}
-                    className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-400 transition-colors hover:text-white"
-                >
-                    <Sparkles className="h-3 w-3" />
-                    Explain photoelectric effect
-                </button>
-                <button
-                    type="button"
-                    onClick={() => {
-                        setQuery('How should I use the dashboard for mock tests and lectures?');
-                        setSubject('general');
-                    }}
-                    className="inline-flex min-h-[40px] items-center gap-1.5 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-slate-400 transition-colors hover:text-white"
-                >
-                    <Sparkles className="h-3 w-3" />
-                    How do I use mock tests?
-                </button>
             </div>
         </div>
     );

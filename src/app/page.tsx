@@ -1,6 +1,6 @@
 import { Hero } from '@/components/hero';
 import { LeadForm } from '@/components/lead-form';
-import { Features } from '@/components/features';
+import { Features, AIFeatures, CoursePreview, QuickLinks } from '@/components/features';
 import { FacultySection } from '@/components/faculty-section';
 import { Stats } from '@/components/stats';
 import { Testimonials } from '@/components/testimonials';
@@ -11,6 +11,8 @@ export default function HomePage() {
         <div className="min-h-screen page-bg-education">
             <Hero />
             <Stats />
+            <CoursePreview />
+            <AIFeatures />
             <Features />
             <FacultySection />
             <DailyChallengePreview />
@@ -48,6 +50,7 @@ export default function HomePage() {
                     </div>
                 </div>
             </section>
+            <QuickLinks />
         </div>
     );
 }

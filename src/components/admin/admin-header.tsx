@@ -2,6 +2,7 @@
 
 import { Bell, Search, User, Menu, X } from 'lucide-react';
 import { useSidebar } from './sidebar-context';
+import { BrandLogo } from '@/components/brand-logo';
 
 interface AdminHeaderProps {
     role?: string;
@@ -56,11 +57,14 @@ export function AdminHeader({ role }: AdminHeaderProps) {
 
                 {/* User */}
                 <div className="flex items-center gap-2 lg:gap-3 pl-2 lg:pl-4 border-l border-slate-200">
-                    <div className="text-right hidden sm:block">
-                        <p className="text-sm font-semibold text-slate-900">Control Center</p>
+                    <div className="hidden lg:block">
+                        <BrandLogo size="xs" showTagline={false} />
+                    </div>
+                    <div className="text-right">
+                        <p className="text-sm font-semibold text-slate-900">SaviEduTech</p>
                         <p className="text-xs text-slate-500">{formatRole(role)}</p>
                     </div>
-                    <div className="w-9 h-9 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center shadow-sm">
+                    <div className="w-9 h-9 bg-gradient-to-br from-amber-500 to-orange-600 rounded-full flex items-center justify-center shadow-sm">
                         <User className="w-4 h-4 text-white" />
                     </div>
                 </div>

@@ -392,8 +392,8 @@ export default function PlatformHealthMonitor() {
                                     <CheckCircle2 className="h-4 w-4 text-slate-500" />
                                 </div>
                                 <div className="mt-3 space-y-2">
-                                    {data.performanceRecommendations.length > 0 ? data.performanceRecommendations.map((recommendation) => (
-                                        <div key={recommendation} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
+                                    {data.performanceRecommendations.length > 0 ? data.performanceRecommendations.map((recommendation, idx) => (
+                                        <div key={`${recommendation}-${idx}`} className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
                                             {recommendation}
                                         </div>
                                     )) : (

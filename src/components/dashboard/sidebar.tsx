@@ -131,7 +131,12 @@ export function Sidebar({ mode = 'desktop' }: SidebarProps) {
             )}
 
             <div className={`flex h-16 items-center gap-2 border-b border-slate-100 px-4 ${collapsed ? 'justify-center' : ''}`}>
-                <AnimatedLogo size="sm" showText={!collapsed} />
+                {!collapsed && (
+                    <span className="font-black text-lg tracking-tight">
+                        <span className="text-amber-500">Savi</span>
+                        <span className="text-sky-500">EduTech</span>
+                    </span>
+                )}
             </div>
 
             <nav className="h-[calc(100vh-11rem)] overflow-y-auto p-4 space-y-1">

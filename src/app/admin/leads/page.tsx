@@ -8,8 +8,8 @@ import {
     Mail,
     MapPin,
     Filter,
-    Download,
 } from 'lucide-react';
+import { AdminReportDropdown, LEADS_REPORTS } from '@/components/admin/AdminExportDropdown';
 
 interface Lead {
     id: string;
@@ -81,10 +81,7 @@ export default function LeadsPage() {
                     <h1 className="text-2xl font-bold text-slate-900">Lead Management</h1>
                     <p className="text-slate-600 mt-1">Track and manage student inquiries</p>
                 </div>
-                <button className="inline-flex items-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
-                    <Download className="w-5 h-5" />
-                    Export CSV
-                </button>
+                <AdminReportDropdown reports={LEADS_REPORTS} label="Export Leads" />
             </div>
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

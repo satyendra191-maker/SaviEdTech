@@ -108,14 +108,14 @@ export function Timer({
 
     return (
         <div
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 font-mono text-lg font-semibold transition-all duration-300 ${getTimerStyles()} ${className}`}
+            className={`flex items-center gap-2 px-4 py-2.5 rounded-xl border-2 font-mono text-lg font-bold transition-all duration-300 min-w-[110px] justify-center ${getTimerStyles()} ${className}`}
         >
             {isCritical ? (
-                <AlertCircle className={`w-5 h-5 ${getIconColor()}`} />
+                <AlertCircle className={`w-5 h-5 ${getIconColor()} animate-pulse`} />
             ) : (
                 <Clock className={`w-5 h-5 ${getIconColor()}`} />
             )}
-            <span>{formatTime(currentTimeRemaining)}</span>
+            <span className="tabular-nums">{formatTime(currentTimeRemaining)}</span>
             {(isWarning || isCritical) && (
                 <span className="text-xs font-medium ml-1 hidden sm:inline">
                     remaining

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { DataTable, StatusBadge, ActionButton } from '@/components/admin/DataTable';
 import { createBrowserSupabaseClient } from '@/lib/supabase';
+import { AdminReportDropdown, STUDENT_REPORTS } from '@/components/admin/AdminExportDropdown';
 import {
     Users,
     GraduationCap,
@@ -231,6 +232,7 @@ export default function StudentsPage() {
                     <h1 className="text-2xl font-bold text-slate-900">Student Management</h1>
                     <p className="text-slate-500">View and manage student accounts and progress</p>
                 </div>
+                <AdminReportDropdown reports={STUDENT_REPORTS} label="Export Students" />
             </div>
 
             {/* Stats */}

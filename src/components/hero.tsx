@@ -3,7 +3,6 @@
 import Link from 'next/link';
 import { ArrowRight, Play, Sparkles } from 'lucide-react';
 import { AnimatedLogo } from '@/components/animated-logo';
-import { AIAssistantWidget } from '@/components/ai-assistant-widget';
 import { AtomGraphic } from '@/components/atom-graphic';
 
 export function Hero() {
@@ -19,35 +18,25 @@ export function Hero() {
             </div>
 
             <div className="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28">
-                <div className="grid items-center gap-14 lg:grid-cols-[1.1fr_0.9fr_0.6fr]">
+                <div className="grid items-center gap-12 lg:grid-cols-2">
                     <div className="text-center lg:text-left">
                         <div className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-4 py-2 text-sm font-medium text-white/90 backdrop-blur-sm">
                             <Sparkles className="h-4 w-4 text-amber-300" />
-                            SaviEduTech + SaviTech AI - National AI EdTech Platform
+                            National AI EdTech Platform
                         </div>
 
-                        <div className="mt-8 flex flex-col items-center gap-8 lg:flex-row lg:items-start">
-                            <div className="shrink-0 order-2 lg:order-1">
-                                <AnimatedLogo size="lg" showText={false} className="drop-shadow-[0_15px_45px_rgba(14,165,233,0.28)]" />
-                                <div className="mt-2 text-center lg:text-left">
-                                    <span className="text-sm font-bold text-sky-300">SaviEduTech + SaviTech AI</span>
-                                </div>
-                            </div>
-                            <div className="order-1 lg:order-2">
-                                <h1 className="text-5xl font-black leading-tight text-white sm:text-6xl lg:text-7xl">
-                                    Learn JEE, NEET,
-                                    <br />
-                                    and Board Concepts
-                                    <span className="block bg-gradient-to-r from-amber-300 via-orange-400 to-sky-300 bg-clip-text text-transparent">
-                                        with clarity and speed
-                                    </span>
-                                </h1>
+                        <h1 className="mt-8 text-5xl font-black leading-tight text-white sm:text-6xl lg:text-7xl">
+                            Learn JEE, NEET,
+                            <br />
+                            and Board Concepts
+                            <span className="block bg-gradient-to-r from-amber-300 via-orange-400 to-sky-300 bg-clip-text text-transparent">
+                                with clarity and speed
+                            </span>
+                        </h1>
 
-                                <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-300 lg:mx-0 lg:text-xl">
-                                    Explore guided video lectures, chapter practice, AI-powered doubt support, mock tests, and structured learning paths built for serious exam preparation.
-                                </p>
-                            </div>
-                        </div>
+                        <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-slate-300 lg:mx-0 lg:text-xl">
+                            Explore guided video lectures, chapter practice, AI-powered doubt support, mock tests, and structured learning paths built for serious exam preparation.
+                        </p>
 
                         <div className="mt-10 flex flex-col gap-4 sm:flex-row sm:justify-center lg:justify-start">
                             <Link
@@ -71,7 +60,7 @@ export function Hero() {
                         <div className="absolute inset-0 scale-90 rounded-full bg-sky-400/15 blur-3xl" />
                         <div className="relative rounded-[2rem] border border-white/10 bg-white/10 p-6 shadow-2xl backdrop-blur-md">
                             <div className="rounded-[1.75rem] border border-white/10 bg-slate-950/60 p-6">
-                                <div className="flex items-center justify-between">
+                                <div className="flex items-center justify-between mb-6">
                                     <div>
                                         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-300">Platform Focus</p>
                                         <h2 className="mt-2 text-2xl font-bold text-white">Everything You Need to Succeed</h2>
@@ -79,7 +68,7 @@ export function Hero() {
                                     <AnimatedLogo size="md" showText={false} />
                                 </div>
 
-                                <div className="mt-6 grid gap-3 sm:grid-cols-2">
+                                <div className="grid gap-3">
                                     {[
                                         'Live and recorded lectures',
                                         'Daily practice problems',
@@ -97,10 +86,6 @@ export function Hero() {
                                             {item}
                                         </div>
                                     ))}
-                                </div>
-
-                                <div className="mt-6 flex justify-center">
-                                    <AIAssistantWidget variant="hero" />
                                 </div>
                             </div>
                         </div>

@@ -31,7 +31,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 async function setupAdmin() {
     console.log('Setting up admin user...');
 
-    const adminEmail = 'admin@saviedutech.com';
+    const adminEmail = 'savita20111991@gmail.com';
 
     // Check if admin user exists
     const { data: existingUser } = await supabase

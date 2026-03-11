@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { ChevronDown, LayoutDashboard, LogOut, Menu, X } from 'lucide-react';
+import { ChevronDown, LayoutDashboard, LogOut, Menu, X, Sparkles } from 'lucide-react';
 import { BrandLogo } from '@/components/brand-logo';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -19,6 +19,7 @@ const primaryLinks = [
     { name: 'Faculty', href: '/faculty' },
     { name: 'Career', href: '/careers' },
     { name: 'Blog', href: '/blog' },
+    { name: 'SaviTech AI', href: '/savitech-ai', icon: Sparkles },
     { name: 'Donate', href: '/donate' },
 ];
 
