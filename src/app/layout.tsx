@@ -6,7 +6,6 @@ import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
 import { NoticeBar } from '@/components/notice-bar';
 import { NotificationBar } from '@/components/notification-bar';
-import { ScreenshotProtection } from '@/components/screenshot-protection';
 import { MobileBottomNav, MobileHeader, MobileAIFloatingButton } from '@/components/mobile-nav';
 
 export const metadata: Metadata = {
@@ -38,22 +37,20 @@ export default function RootLayout({
     return (
         <html lang="en">
             <body className="min-h-screen bg-background font-sans antialiased text-slate-900">
-                <ScreenshotProtection enabled={false}>
-                    <Providers>
-                        <div className="flex flex-col min-h-screen">
-                            <MobileHeader />
-                            <Navbar />
-                            <NotificationBar />
-                            <NoticeBar />
-                            <main className="flex-1 flex flex-col">
-                                {children}
-                            </main>
-                            <Footer />
-                            <MobileBottomNav />
-                            <MobileAIFloatingButton />
-                        </div>
-                    </Providers>
-                </ScreenshotProtection>
+                <Providers>
+                    <div className="flex flex-col min-h-screen">
+                        <MobileHeader />
+                        <Navbar />
+                        <NotificationBar />
+                        <NoticeBar />
+                        <main className="flex-1 flex flex-col">
+                            {children}
+                        </main>
+                        <Footer />
+                        <MobileBottomNav />
+                        <MobileAIFloatingButton />
+                    </div>
+                </Providers>
             </body>
         </html>
     );
