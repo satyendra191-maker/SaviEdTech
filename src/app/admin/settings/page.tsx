@@ -51,12 +51,12 @@ export default function SettingsPage() {
                             <h2 className="text-lg font-semibold text-slate-900">General Settings</h2>
                             <div className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Platform Name</label>
-                                    <input type="text" defaultValue="SaviEduTech" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+                                    <label htmlFor="platformName" className="block text-sm font-medium text-slate-700 mb-1">Platform Name</label>
+                                    <input id="platformName" name="platformName" type="text" defaultValue="SaviEduTech" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Contact Email</label>
-                                    <input type="email" defaultValue="support@saviedutech.com" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+                                    <label htmlFor="contactEmail" className="block text-sm font-medium text-slate-700 mb-1">Contact Email</label>
+                                    <input id="contactEmail" name="contactEmail" type="email" defaultValue="support@saviedutech.com" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
                                 </div>
                             </div>
                         </div>
@@ -71,7 +71,7 @@ export default function SettingsPage() {
                                         <p className="font-medium text-slate-900">Email Notifications</p>
                                         <p className="text-sm text-slate-500">Send email notifications for important events</p>
                                     </div>
-                                    <input type="checkbox" defaultChecked className="w-5 h-5 text-primary-600" />
+                                    <input id="emailNotifications" name="emailNotifications" type="checkbox" defaultChecked className="w-5 h-5 text-primary-600" />
                                 </div>
                             </div>
                         </div>
@@ -86,7 +86,7 @@ export default function SettingsPage() {
                                         <p className="font-medium text-slate-900">Two-Factor Authentication</p>
                                         <p className="text-sm text-slate-500">Require 2FA for admin accounts</p>
                                     </div>
-                                    <input type="checkbox" className="w-5 h-5 text-primary-600" />
+                                    <input id="twoFactorAuth" name="twoFactorAuth" type="checkbox" className="w-5 h-5 text-primary-600" />
                                 </div>
                             </div>
                         </div>
@@ -97,8 +97,8 @@ export default function SettingsPage() {
                             <h2 className="text-lg font-semibold text-slate-900">Payment Settings</h2>
                             <div className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">Currency</label>
-                                    <select className="w-full px-3 py-2 border border-slate-300 rounded-lg">
+                                    <label htmlFor="currency" className="block text-sm font-medium text-slate-700 mb-1">Currency</label>
+                                    <select id="currency" name="currency" className="w-full px-3 py-2 border border-slate-300 rounded-lg">
                                         <option value="INR">Indian Rupee</option>
                                         <option value="USD">US Dollar</option>
                                     </select>
@@ -112,8 +112,8 @@ export default function SettingsPage() {
                             <h2 className="text-lg font-semibold text-slate-900">Email Configuration</h2>
                             <div className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-slate-700 mb-1">SMTP Host</label>
-                                    <input type="text" placeholder="smtp.example.com" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
+                                    <label htmlFor="smtpHost" className="block text-sm font-medium text-slate-700 mb-1">SMTP Host</label>
+                                    <input id="smtpHost" name="smtpHost" type="text" placeholder="smtp.example.com" className="w-full px-3 py-2 border border-slate-300 rounded-lg" />
                                 </div>
                             </div>
                         </div>
