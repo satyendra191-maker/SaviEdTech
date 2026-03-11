@@ -199,12 +199,9 @@ export async function middleware(request: NextRequest) {
 
         const role = (profile as { role?: string } | null)?.role || 'student';
         let dest = '/dashboard';
-        if (role === 'admin' || role === 'super_admin') dest = '/super-admin';
-        else if (role === 'finance_manager') dest = '/admin/finance';
-        else if (role === 'content_manager') dest = '/faculty-dashboard';
-        else if (role === 'faculty') dest = '/faculty-dashboard';
-        else if (role === 'hr') dest = '/admin/careers';
-        else if (role === 'parent') dest = '/dashboard/parent';
+        if (role === 'admin' || role === 'super_admin' || role === 'finance_manager' || role === 'content_manager' || role === 'faculty' || role === 'hr') {
+            dest = '/admin';
+        } else if (role === 'parent') dest = '/dashboard/parent';
 
         return addSecurityHeaders(NextResponse.redirect(new URL(dest, request.url)));
     }
@@ -220,15 +217,15 @@ export async function middleware(request: NextRequest) {
 
             const role = (profile as { role?: string } | null)?.role || 'student';
 
-            // Admin Routes Check
-            if (isAdminRoute) {
-                const allowedRoles = getAdminRolesForPath(pathname);
-                if (!allowedRoles.includes(role)) {
-                    const redirectUrl = new URL('/login', request.url);
-                    redirectUrl.searchParams.set('redirect', pathname);
-                    return addSecurityHeaders(NextResponse.redirect(redirectUrl));
-                }
-            }
+    // Admin Routes Check
+    if (isAdminRoute) {
+        const allowedRoles = ['admin', 'super_admin', 'finance_manager', 'content_manager', 'faculty', 'hr'];
+        if (!allowedRoles.includes(role)) {
+            const redirectUrl = new URL('/login', request.url);
+            redirectUrl.searchParams.set('redirect', pathname);
+            return addSecurityHeaders(NextResponse.redirect(redirectUrl));
+        }
+    }
 
             // Parent Routes Check
             if ((pathname.startsWith('/dashboard/parent') || pathname.startsWith('/parent')) &&

@@ -9,7 +9,7 @@ interface AdminLayoutProps {
     children: ReactNode;
 }
 
-const ADMIN_APP_ROLES: readonly string[] = ['admin', 'super_admin', 'content_manager', 'hr', 'finance_manager'];
+const ADMIN_APP_ROLES: readonly string[] = ['admin', 'super_admin', 'content_manager', 'hr', 'finance_manager', 'faculty'];
 
 function createSupabaseServerClient(cookieStore: Awaited<ReturnType<typeof cookies>>) {
     return createServerClient<Database>(
