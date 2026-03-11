@@ -115,15 +115,15 @@ export default function DashboardPage() {
         }
     }, [redirectPath, router]);
 
-    // Prevent infinite loading - timeout after 10 seconds
+    // Prevent infinite loading - timeout after 5 seconds
     const [loadingTimeout, setLoadingTimeout] = useState(false);
     useEffect(() => {
-        const timer = setTimeout(() => {
-            if (authLoading) {
+        if (authLoading) {
+            const timer = setTimeout(() => {
                 setLoadingTimeout(true);
-            }
-        }, 10000);
-        return () => clearTimeout(timer);
+            }, 5000);
+            return () => clearTimeout(timer);
+        }
     }, [authLoading]);
 
     if (authLoading && !loadingTimeout) {
@@ -176,7 +176,7 @@ function StudentDashboard({ user }: { user: any }) {
             if (loading) {
                 setLoadingTimeout(true);
             }
-        }, 15000);
+        }, 10000);
         return () => clearTimeout(timer);
     }, [loading]);
 
