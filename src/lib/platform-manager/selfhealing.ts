@@ -911,7 +911,8 @@ export async function restoreCronJobs(): Promise<RecoveryAction> {
         for (const job of failedJobs) {
             try {
                 // Attempt to trigger the cron job manually
-                const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+                const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+                    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
                 const cronPath = job.job_name.replace('cron_', '/api/cron/').replace(/_/g, '-');
 
                 const response = await fetch(`${baseUrl}${cronPath}`, {

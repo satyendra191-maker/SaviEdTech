@@ -74,7 +74,8 @@ export async function checkAPIHealth(
     expectedStatus: number = 200
 ): Promise<HealthCheckResult> {
     const startTime = Date.now();
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
 
     try {
         const response = await fetch(`${baseUrl}${endpoint}`, {
@@ -326,7 +327,8 @@ export async function checkCronHealth(): Promise<HealthCheckResult[]> {
         return results;
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
+        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
 
     for (const endpoint of API_ENDPOINTS.cron) {
         const startTime = Date.now();
