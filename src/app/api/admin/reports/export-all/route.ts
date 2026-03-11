@@ -292,11 +292,12 @@ export async function GET(request: NextRequest): Promise<Response> {
 
                 // Analytics Reports
                 case 'platform-analytics':
-                    const { data: profiles } = await supabase.from('profiles').select('role, created_at');
+                    const { data: profiles } = await supabase.from('profiles').select('role, created_at') as { data: Array<{ role?: string }> | null };
                     const { data: sp } = await supabase.from('student_profiles').select('*');
                     
-                    const roleCounts = (profiles || []).reduce((acc, p) => {
-                        acc[p.role || 'unknown'] = (acc[p.role || 'unknown'] || 0) + 1;
+                    const roleCounts = ((profiles) || []).reduce((acc, p) => {
+                        const role = p?.role || 'unknown';
+                        acc[role] = (acc[role] || 0) + 1;
                         return acc;
                     }, {} as Record<string, number>);
                     
