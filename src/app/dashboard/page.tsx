@@ -542,36 +542,40 @@ function StudentDashboard({ user }: { user: any }) {
                 </div>
             </div>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard
-                    icon={Target}
-                    label="Predicted Rank"
-                    value={data?.stats.predictedRank || 'N/A'}
-                    trend="Top 0.1%"
-                    color="blue"
-                />
-                <StatCard
-                    icon={TrendingUp}
-                    label="Accuracy"
-                    value={data?.stats.accuracy || '0%'}
-                    trend="+2.3%"
-                    color="green"
-                />
-                <StatCard
-                    icon={Clock}
-                    label="Study Time"
-                    value={data?.stats.studyTime || '0m'}
-                    trend="Today"
-                    color="purple"
-                />
-                <StatCard
-                    icon={Trophy}
-                    label="Tests Taken"
-                    value={data?.stats.testsTaken.toString() || '0'}
-                    trend="This month"
-                    color="amber"
-                />
+            {/* Stats Grid - Mobile Responsive */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
+                <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl sm:rounded-2xl p-3 sm:p-5 text-white shadow-lg">
+                    <div className="flex items-center gap-2 mb-1">
+                        <Target className="w-4 h-4 sm:w-5 sm:h-5 opacity-80" />
+                        <span className="text-xs sm:text-sm opacity-80">Rank</span>
+                    </div>
+                    <p className="text-lg sm:text-2xl font-bold">{data?.stats.predictedRank || 'N/A'}</p>
+                    <p className="text-xs opacity-70">Predicted</p>
+                </div>
+                <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl sm:rounded-2xl p-3 sm:p-5 text-white shadow-lg">
+                    <div className="flex items-center gap-2 mb-1">
+                        <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 opacity-80" />
+                        <span className="text-xs sm:text-sm opacity-80">Accuracy</span>
+                    </div>
+                    <p className="text-lg sm:text-2xl font-bold">{data?.stats.accuracy || '0%'}</p>
+                    <p className="text-xs opacity-70">+2.3% this week</p>
+                </div>
+                <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl sm:rounded-2xl p-3 sm:p-5 text-white shadow-lg">
+                    <div className="flex items-center gap-2 mb-1">
+                        <Clock className="w-4 h-4 sm:w-5 sm:h-5 opacity-80" />
+                        <span className="text-xs sm:text-sm opacity-80">Study</span>
+                    </div>
+                    <p className="text-lg sm:text-2xl font-bold">{data?.stats.studyTime || '0m'}</p>
+                    <p className="text-xs opacity-70">Today</p>
+                </div>
+                <div className="bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl sm:rounded-2xl p-3 sm:p-5 text-white shadow-lg">
+                    <div className="flex items-center gap-2 mb-1">
+                        <Trophy className="w-4 h-4 sm:w-5 sm:h-5 opacity-80" />
+                        <span className="text-xs sm:text-sm opacity-80">Tests</span>
+                    </div>
+                    <p className="text-lg sm:text-2xl font-bold">{data?.stats.testsTaken || 0}</p>
+                    <p className="text-xs opacity-70">Completed</p>
+                </div>
             </div>
 
             <RankPredictionWidget compact />

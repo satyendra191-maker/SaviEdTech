@@ -201,7 +201,8 @@ export async function middleware(request: NextRequest) {
         let dest = '/dashboard';
         if (role === 'admin' || role === 'super_admin') dest = '/super-admin';
         else if (role === 'finance_manager') dest = '/admin/finance';
-        else if (role === 'content_manager') dest = '/admin/courses';
+        else if (role === 'content_manager') dest = '/faculty-dashboard';
+        else if (role === 'faculty') dest = '/faculty-dashboard';
         else if (role === 'hr') dest = '/admin/careers';
         else if (role === 'parent') dest = '/dashboard/parent';
 
