@@ -4,6 +4,7 @@ import type { ReactNode } from 'react';
 import { usePathname } from 'next/navigation';
 import { Sidebar } from '@/components/dashboard/sidebar';
 import { MobileNav } from '@/components/dashboard/mobile-nav';
+import { MobileMenuWidget } from '@/components/mobile-menu-widget';
 import { Header } from '@/components/dashboard/header';
 import { DashboardErrorBoundary } from '@/components/dashboard/error-boundary';
 import { DashboardSidebarProvider, useDashboardSidebar } from '@/components/dashboard/sidebar-context';
@@ -40,6 +41,8 @@ function DashboardShellContent({ children }: { children: ReactNode }) {
                     </DashboardErrorBoundary>
                 </main>
             </div>
+
+            <MobileMenuWidget role={isParentRoute ? 'parent' : 'student'} />
         </div>
     );
 }
