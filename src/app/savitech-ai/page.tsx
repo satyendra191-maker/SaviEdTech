@@ -2,11 +2,9 @@
 
 import Link from 'next/link';
 import { 
-    Bot, 
     MessageSquare, 
     Brain, 
     Sparkles, 
-    ArrowRight, 
     TrendingUp,
     Clock,
     FileText,
@@ -28,7 +26,7 @@ import {
 
 const stats = [
     { label: 'Total Queries', value: '12,450', change: '+12%', icon: MessageSquare, color: 'from-blue-500 to-cyan-500' },
-    { label: 'AI Responses', value: '98.5%', change: '+2%', icon: Bot, color: 'from-purple-500 to-indigo-500' },
+    { label: 'AI Responses', value: '98.5%', change: '+2%', icon: Brain, color: 'from-purple-500 to-indigo-500' },
     { label: 'Time Saved', value: '480h', change: '+25%', icon: Clock, color: 'from-amber-500 to-orange-500' },
     { label: 'Active Users', value: '2,340', change: '+18%', icon: Users, color: 'from-green-500 to-emerald-500' },
 ];
