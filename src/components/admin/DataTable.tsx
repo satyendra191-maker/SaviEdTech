@@ -318,8 +318,8 @@ export function DataTable<T extends object>({
             </div>
 
             {/* Table */}
-            <div className="overflow-x-auto">
-                <table className="w-full">
+            <div className="overflow-x-auto scrollbar-thin">
+                <table className="w-full min-w-[600px]">
                     <thead className="bg-slate-50 border-b border-slate-200">
                         <tr>
                             {selectable && (
@@ -448,12 +448,12 @@ export function DataTable<T extends object>({
 
             {/* Pagination */}
             {pagination && totalPages > 1 && (
-                <div className="px-4 py-4 border-t border-slate-200 flex items-center justify-between">
-                    <p className="text-sm text-slate-600">
+                <div className="px-2 sm:px-4 py-4 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                    <p className="text-xs sm:text-sm text-slate-600 text-center sm:text-left">
                         Showing {(currentPage - 1) * pageSize + 1} to{' '}
-                        {Math.min(currentPage * pageSize, processedData.length)} of {processedData.length} entries
+                        {Math.min(currentPage * pageSize, processedData.length)} of {processedData.length}
                     </p>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-center gap-1 sm:gap-2">
                         <button
                             onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                             disabled={currentPage === 1}

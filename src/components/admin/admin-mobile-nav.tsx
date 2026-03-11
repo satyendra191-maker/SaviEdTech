@@ -16,6 +16,7 @@ import {
     Sparkles,
     HelpCircle,
     Trophy,
+    MoreHorizontal,
 } from 'lucide-react';
 
 interface AdminMobileNavProps {
@@ -23,29 +24,36 @@ interface AdminMobileNavProps {
 }
 
 const getNavItems = (role?: string) => {
-    const baseItems = [
+    const allItems = [
         { name: 'Home', href: '/admin', icon: LayoutDashboard },
         { name: 'Students', href: '/admin/students', icon: Users },
         { name: 'Courses', href: '/admin/courses', icon: BookOpen },
-    ];
-
-    const adminItems = [
+        { name: 'Lectures', href: '/admin/lectures', icon: PlayCircle },
         { name: 'Tests', href: '/admin/tests', icon: GraduationCap },
         { name: 'Finance', href: '/admin/finance', icon: Landmark },
-        { name: 'More', href: '/admin/analytics', icon: BarChart3 },
-    ];
-
-    const financeItems = [
         { name: 'Payments', href: '/admin/payments', icon: CreditCard },
-        { name: 'Finance', href: '/admin/finance', icon: Landmark },
-        { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
+        { name: 'Leads', href: '/admin/leads', icon: FileText },
+        { name: 'More', href: '/admin/analytics', icon: MoreHorizontal },
     ];
 
+    // Return key items based on role - showing max 5 items
     if (role === 'finance_manager') {
-        return [...baseItems.slice(0, 2), ...financeItems];
+        return [
+            allItems[0], // Home
+            allItems[5], // Finance
+            allItems[6], // Payments
+            allItems[8], // More
+        ];
     }
 
-    return [...baseItems, ...adminItems.slice(0, 3)];
+    // Default: show most important items
+    return [
+        allItems[0], // Home
+        allItems[1], // Students
+        allItems[2], // Courses
+        allItems[4], // Tests
+        allItems[8], // More
+    ];
 };
 
 export function AdminMobileNav({ role }: AdminMobileNavProps) {

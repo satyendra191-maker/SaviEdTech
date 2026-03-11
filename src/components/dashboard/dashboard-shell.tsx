@@ -1,6 +1,7 @@
 'use client';
 
 import type { ReactNode } from 'react';
+import { usePathname } from 'next/navigation';
 import { Sidebar } from '@/components/dashboard/sidebar';
 import { MobileNav } from '@/components/dashboard/mobile-nav';
 import { Header } from '@/components/dashboard/header';
@@ -8,7 +9,9 @@ import { DashboardErrorBoundary } from '@/components/dashboard/error-boundary';
 import { DashboardSidebarProvider, useDashboardSidebar } from '@/components/dashboard/sidebar-context';
 
 function DashboardShellContent({ children }: { children: ReactNode }) {
+    const pathname = usePathname();
     const { isCollapsed, isMobileOpen, closeMobile } = useDashboardSidebar();
+    const isParentRoute = pathname.startsWith('/dashboard/parent');
 
     return (
         <div className="min-h-screen overflow-x-hidden bg-slate-50">
@@ -26,7 +29,7 @@ function DashboardShellContent({ children }: { children: ReactNode }) {
             </div>
 
             <div className="lg:hidden">
-                <MobileNav />
+                <MobileNav role={isParentRoute ? 'parent' : 'student'} />
             </div>
 
             <div className={`min-w-0 transition-[margin] duration-300 ${isCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
