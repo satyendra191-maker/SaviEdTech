@@ -162,7 +162,7 @@ async function exportDatabase(backupType: string): Promise<any> {
 
     for (const table of tables) {
         try {
-            const { data, count, error } = await supabase
+            const { data, count, error } = await getSupabaseClient()
                 .from(table)
                 .select('*', { count: 'exact' });
 
@@ -180,7 +180,7 @@ async function exportDatabase(backupType: string): Promise<any> {
 }
 
 export async function getBackups(limit = 20): Promise<BackupRecord[]> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
         .from('backups')
         .select('*')
         .order('created_at', { ascending: false })
@@ -194,7 +194,7 @@ export async function getBackups(limit = 20): Promise<BackupRecord[]> {
 }
 
 export async function getBackupById(id: string): Promise<BackupRecord | null> {
-    const { data, error } = await supabase
+    const { data, error } = await getSupabaseClient()
         .from('backups')
         .select('*')
         .eq('id', id)
@@ -216,7 +216,7 @@ export async function deleteBackup(id: string): Promise<void> {
 
     // Delete from storage
     if (backup.file_path) {
-        const { error: storageError } = await supabase.storage
+        const { error: storageError } = await getSupabaseClient().storage
             .from('backups')
             .remove([backup.file_path]);
 
@@ -226,7 +226,7 @@ export async function deleteBackup(id: string): Promise<void> {
     }
 
     // Delete record
-    const { error } = await supabase
+    const { error } = await getSupabaseClient()
         .from('backups')
         .delete()
         .eq('id', id);
