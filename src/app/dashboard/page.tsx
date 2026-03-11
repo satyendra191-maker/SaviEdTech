@@ -115,8 +115,35 @@ export default function DashboardPage() {
         }
     }, [redirectPath, router]);
 
-    if (authLoading) {
+    // Prevent infinite loading - timeout after 10 seconds
+    const [loadingTimeout, setLoadingTimeout] = useState(false);
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (authLoading) {
+                setLoadingTimeout(true);
+            }
+        }, 10000);
+        return () => clearTimeout(timer);
+    }, [authLoading]);
+
+    if (authLoading && !loadingTimeout) {
         return <DashboardSkeleton />;
+    }
+
+    if (loadingTimeout) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+                <AlertCircle className="w-16 h-16 text-amber-500" />
+                <h2 className="text-xl font-semibold text-slate-900">Loading taking too long</h2>
+                <p className="text-slate-500">Please refresh the page or check your connection</p>
+                <button
+                    onClick={() => window.location.reload()}
+                    className="px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors"
+                >
+                    Refresh Page
+                </button>
+            </div>
+        );
     }
 
     if (!user) {
@@ -141,6 +168,17 @@ function StudentDashboard({ user }: { user: any }) {
     const [data, setData] = useState<DashboardData | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [loadingTimeout, setLoadingTimeout] = useState(false);
+
+    // Prevent infinite loading
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            if (loading) {
+                setLoadingTimeout(true);
+            }
+        }, 15000);
+        return () => clearTimeout(timer);
+    }, [loading]);
 
     const fetchDashboardData = useCallback(async () => {
         if (!supabase) {
@@ -450,8 +488,24 @@ function StudentDashboard({ user }: { user: any }) {
         };
     }, [fetchDashboardData, supabase, user.id]);
 
-    if (loading) {
+    if (loading && !loadingTimeout) {
         return <DashboardSkeleton />;
+    }
+
+    if (loadingTimeout) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
+                <AlertCircle className="w-16 h-16 text-amber-500" />
+                <h2 className="text-xl font-semibold text-slate-900">Loading taking too long</h2>
+                <p className="text-slate-500">Please refresh the page</p>
+                <button
+                    onClick={() => window.location.reload()}
+                    className="px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors"
+                >
+                    Refresh Page
+                </button>
+            </div>
+        );
     }
 
     if (error) {
