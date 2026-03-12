@@ -1,11 +1,10 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import { AdminSidebar } from '@/components/admin/admin-sidebar';
 import { AdminHeader } from '@/components/admin/admin-header';
 import { AdminMobileNav } from '@/components/admin/admin-mobile-nav';
 import { MobileMenuWidget } from '@/components/mobile-menu-widget';
-import { SidebarProvider, useSidebar } from '@/components/admin/sidebar-context';
+import { SidebarProvider } from '@/components/admin/sidebar-context';
 import { GlobalErrorBoundary } from '@/components/error-boundary';
 
 interface AdminLayoutShellProps {
@@ -14,14 +13,12 @@ interface AdminLayoutShellProps {
 }
 
 function AdminLayoutShellContent({ children, role }: AdminLayoutShellProps) {
-    const { isCollapsed } = useSidebar();
-
     return (
         <div className="min-h-screen bg-slate-100">
-            <AdminSidebar />
-            <div className={`transition-all duration-300 ${isCollapsed ? 'lg:ml-20' : 'lg:ml-64'}`}>
+            {/* No sidebar — full width layout */}
+            <div className="min-w-0">
                 <AdminHeader role={role} />
-                <main className="p-4 lg:p-6 pb-24 lg:pb-6">
+                <main className="p-4 lg:p-6 pb-24 lg:pb-6 max-w-6xl mx-auto">
                     <GlobalErrorBoundary>{children}</GlobalErrorBoundary>
                 </main>
             </div>
