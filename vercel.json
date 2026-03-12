@@ -59,184 +59,20 @@
             "schedule": "0 0 * * *"
         },
         {
-            "path": "/api/cron/lecture-publisher",
-            "schedule": "0 2 * * *"
-        },
-        {
-            "path": "/api/cron/dpp-generator",
-            "schedule": "30 2 * * *"
-        },
-        {
-            "path": "/api/cron/revision-updater",
-            "schedule": "0 3 * * *"
-        },
-        {
-            "path": "/api/cron/system-maintenance",
-            "schedule": "30 3 * * *"
-        },
-        {
-            "path": "/api/cron/rank-prediction",
-            "schedule": "0 4 * * *"
-        },
-        {
-            "path": "/api/cron/seo-automation",
-            "schedule": "30 4 * * *"
-        },
-        {
-            "path": "/api/cron/test-runner",
-            "schedule": "0 5 * * *"
-        },
-        {
-            "path": "/api/cron/course-expiry",
-            "schedule": "30 5 * * *"
-        },
-        {
             "path": "/api/cron/health-monitor",
             "schedule": "0 6 * * *"
-        },
-        {
-            "path": "/api/cron/ai-learning-path",
-            "schedule": "30 6 * * *"
-        },
-        {
-            "path": "/api/cron/platform-auditor",
-            "schedule": "0 7 * * *"
-        },
-        {
-            "path": "/api/cron/performance-alerts",
-            "schedule": "30 7 * * *"
         },
         {
             "path": "/api/cron/email-notifications",
             "schedule": "0 8 * * *"
         },
         {
-            "path": "/api/cron/whatsapp-sms-automation",
-            "schedule": "30 8 * * *"
-        },
-        {
-            "path": "/api/cron/database-backup",
-            "schedule": "0 9 * * *"
-        },
-        {
-            "path": "/api/cron/content-translation",
-            "schedule": "30 9 * * *"
-        },
-        {
-            "path": "/api/cron/biweekly-test-scheduler",
-            "schedule": "0 10 * * 0"
-        },
-        {
-            "path": "/api/cron/certificate-generator",
-            "schedule": "30 10 * * 0"
-        },
-        {
-            "path": "/api/cron/scholarship-management",
-            "schedule": "0 10 * * *"
-        },
-        {
-            "path": "/api/cron/social-media-automation",
-            "schedule": "0 11 * * *"
-        },
-        {
-            "path": "/api/cron/attendance-tracking",
-            "schedule": "30 11 * * *"
-        },
-        {
-            "path": "/api/cron/video-generation",
-            "schedule": "0 12 * * *"
-        },
-        {
-            "path": "/api/cron/quiz-analytics",
-            "schedule": "30 12 * * *"
-        },
-        {
-            "path": "/api/cron/notes-generator",
-            "schedule": "0 13 * * *"
-        },
-        {
-            "path": "/api/cron/content-moderation",
-            "schedule": "30 13 * * *"
-        },
-        {
-            "path": "/api/cron/gst-accounts",
-            "schedule": "0 14 * * *"
-        },
-        {
-            "path": "/api/cron/pricing-automation",
-            "schedule": "30 14 * * *"
-        },
-        {
-            "path": "/api/cron/pyq-updater",
-            "schedule": "0 15 * * *"
-        },
-        {
-            "path": "/api/cron/course-bundling",
-            "schedule": "30 15 * * *"
-        },
-        {
-            "path": "/api/cron/lead-management",
-            "schedule": "0 16 * * *"
-        },
-        {
-            "path": "/api/cron/review-automation",
-            "schedule": "30 16 * * *"
-        },
-        {
             "path": "/api/cron/gamification",
             "schedule": "0 17 * * *"
         },
         {
-            "path": "/api/cron/system-health",
-            "schedule": "30 17 * * *"
-        },
-        {
-            "path": "/api/cron/webinar-scheduler",
-            "schedule": "0 18 * * *"
-        },
-        {
-            "path": "/api/cron/database-optimization",
-            "schedule": "30 18 * * *"
-        },
-        {
-            "path": "/api/cron/referral-processing",
-            "schedule": "0 19 * * *"
-        },
-        {
-            "path": "/api/cron/webinar-automation",
-            "schedule": "30 19 * * *"
-        },
-        {
-            "path": "/api/cron/refund-processing",
-            "schedule": "0 20 * * *"
-        },
-        {
-            "path": "/api/cron/student-analytics",
-            "schedule": "0 21 * * *"
-        },
-        {
-            "path": "/api/cron/assignment-automation",
-            "schedule": "0 22 * * *"
-        },
-        {
-            "path": "/api/cron/doubt-clearing",
-            "schedule": "0 23 * * *"
-        },
-        {
-            "path": "/api/cron/inactive-users",
-            "schedule": "0 1 * * *"
-        },
-        {
-            "path": "/api/cron/seo-automation",
-            "schedule": "0 4 * * *"
-        },
-        {
-            "path": "/api/cron/push-notifications",
-            "schedule": "0 */2 * * *"
-        },
-        {
             "path": "/api/cron/gov-notifications",
-            "schedule": "0 */2 * * *"
+            "schedule": "0 2 * * *"
         }
     ]
 }

@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const supabase = createServerSupabaseClient();
+    const supabase = createServerSupabaseClient() as any;
     const results = {
         scholarships: { created: 0, updated: 0 },
         applications: { reviewed: 0, approved: 0, rejected: 0 },

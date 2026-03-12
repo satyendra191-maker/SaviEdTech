@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const supabase = createServerSupabaseClient();
+    const supabase = createServerSupabaseClient() as any;
     const results = {
         sessions: { created: 0, reminders: 0 },
         reminders: { sent: 0 },

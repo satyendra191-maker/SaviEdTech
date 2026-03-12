@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const supabase = createServerSupabaseClient();
+    const supabase = createServerSupabaseClient() as any;
     const results = {
         whatsapp: { sent: 0, failed: 0 },
         sms: { sent: 0, failed: 0 },

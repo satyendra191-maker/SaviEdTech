@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
         // STEP 2: Authentication Check
         // Verify user is logged in
         // ============================================================================
-        const supabase = createServerSupabaseClient();
+        const supabase = createServerSupabaseClient() as any;
 
         const { data: { user }, error: authError } = await supabase.auth.getUser();
 
@@ -313,7 +313,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Authentication check
-        const supabase = createServerSupabaseClient();
+        const supabase = createServerSupabaseClient() as any;
         const { data: { user } } = await supabase.auth.getUser();
 
         if (!user) {

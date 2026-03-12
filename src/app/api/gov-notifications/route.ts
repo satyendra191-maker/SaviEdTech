@@ -12,7 +12,7 @@ export async function GET(request: NextRequest) {
         const limit = parseInt(searchParams.get('limit') || '50');
         const unreadOnly = searchParams.get('unreadOnly') === 'true';
 
-        const supabase = createServerSupabaseClient();
+        const supabase = createServerSupabaseClient() as any;
 
         let query = supabase
             .from('gov_notifications')
@@ -91,7 +91,7 @@ export async function PATCH(request: NextRequest) {
             );
         }
 
-        const supabase = createServerSupabaseClient();
+        const supabase = createServerSupabaseClient() as any;
 
         let updateData: Record<string, unknown> = {};
 

@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const supabase = createServerSupabaseClient();
+    const supabase = createServerSupabaseClient() as any;
     const results = {
         translated: 0,
         languages: ['en', 'hi', 'gu', 'mr', 'ta', 'te', 'kn', 'ml', 'bn', 'pa'] as string[],

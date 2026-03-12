@@ -218,7 +218,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        const supabase = createServerSupabaseClient();
+        const supabase = createServerSupabaseClient() as any;
         
         const authHeader = request.headers.get('authorization');
         const cronSecretEnv = process.env.CRON_SECRET;
@@ -428,7 +428,7 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
         }
 
-        const supabase = createServerSupabaseClient();
+        const supabase = createServerSupabaseClient() as any;
         const { data: { user } } = await supabase.auth.getUser();
 
         if (!user) {
