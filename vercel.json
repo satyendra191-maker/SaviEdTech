@@ -52,39 +52,5 @@
                 }
             ]
         }
-    ],
-    "crons": [
-        {
-            "path": "/api/cron/daily-challenge",
-            "schedule": "0 0 * * *"
-        },
-        {
-            "path": "/api/cron/health-monitor",
-            "schedule": "0 6 * * *"
-        },
-        {
-            "path": "/api/cron/email-notifications",
-            "schedule": "0 8 * * *"
-        },
-        {
-            "path": "/api/cron/gamification",
-            "schedule": "0 17 * * *"
-        },
-        {
-            "path": "/api/cron/gov-notifications",
-            "schedule": "0 2 * * *"
-        },
-        {
-            "path": "/api/cron/subscription-expiry",
-            "schedule": "0 0 * * *"
-        },
-        {
-            "path": "/api/cron/growth-analytics",
-            "schedule": "0 */6 * * *"
-        },
-        {
-            "path": "/api/cron/lead-management",
-            "schedule": "0 1 * * *"
-        }
     ]
 }
