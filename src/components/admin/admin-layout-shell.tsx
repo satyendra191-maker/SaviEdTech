@@ -3,7 +3,6 @@
 import type { ReactNode } from 'react';
 import { AdminHeader } from '@/components/admin/admin-header';
 import { AdminMobileNav } from '@/components/admin/admin-mobile-nav';
-import { MobileMenuWidget } from '@/components/mobile-menu-widget';
 import { SidebarProvider } from '@/components/admin/sidebar-context';
 import { GlobalErrorBoundary } from '@/components/error-boundary';
 
@@ -23,7 +22,6 @@ function AdminLayoutShellContent({ children, role }: AdminLayoutShellProps) {
                 </main>
             </div>
             <AdminMobileNav role={role} />
-            <MobileMenuWidget role="admin" />
         </div>
     );
 }
