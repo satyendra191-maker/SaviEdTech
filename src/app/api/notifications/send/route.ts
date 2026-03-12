@@ -1,7 +1,7 @@
 /**
  * Notifications Send API
  * Endpoint for sending transactional emails
- * Protected by admin/super-admin authorization
+ * Protected by admin authorization
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -239,7 +239,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
 /**
  * Check if the request is authorized
- * Requires admin or super-admin role
+ * Requires admin role
  */
 async function checkAuthorization(request: NextRequest): Promise<{
     authorized: boolean;
@@ -267,7 +267,7 @@ async function checkAuthorization(request: NextRequest): Promise<{
         // Check user role from metadata or profiles table
         const userRole = user.user_metadata?.role || user.user_metadata?.user_role;
 
-        if (userRole === 'super-admin' || userRole === 'admin') {
+        if (userRole === 'admin') {
             return { authorized: true };
         }
 
@@ -283,7 +283,7 @@ async function checkAuthorization(request: NextRequest): Promise<{
         }
 
         const role = (profile as { role?: string }).role;
-        if (role === 'super-admin' || role === 'admin') {
+        if (role === 'admin') {
             return { authorized: true };
         }
 

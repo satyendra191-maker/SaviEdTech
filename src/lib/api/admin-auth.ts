@@ -2,8 +2,8 @@ import { createServerClient } from '@supabase/ssr';
 import type { NextRequest } from 'next/server';
 import type { Database } from '@/types/supabase';
 
-const DEFAULT_ADMIN_ROLES = ['admin', 'super_admin'] as const;
-const FINANCE_ADMIN_ROLES = ['admin', 'super_admin', 'finance_manager'] as const;
+const DEFAULT_ADMIN_ROLES = ['admin'] as const;
+const FINANCE_ADMIN_ROLES = ['admin', 'finance_manager'] as const;
 
 export interface AdminRequestContext {
     userId: string;

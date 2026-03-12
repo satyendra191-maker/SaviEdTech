@@ -357,6 +357,166 @@
     perspective: 1000px;
 }
 
+/* ========== Dashboard Design System ========== */
+
+/* Glassmorphism Cards */
+.glass-card {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.04);
+}
+
+.glass-card-dark {
+    background: rgba(15, 23, 42, 0.72);
+    backdrop-filter: blur(16px) saturate(180%);
+    -webkit-backdrop-filter: blur(16px) saturate(180%);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+}
+
+/* Card Entrance Animations */
+@keyframes card-slide-up {
+    0% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes card-fade-in {
+    0% { opacity: 0; }
+    100% { opacity: 1; }
+}
+
+@keyframes card-scale-in {
+    0% {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.animate-card-slide-up {
+    animation: card-slide-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.animate-card-fade-in {
+    animation: card-fade-in 0.4s ease-out both;
+}
+
+.animate-card-scale-in {
+    animation: card-scale-in 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Stagger delays for card grids */
+.stagger-1 { animation-delay: 0.05s; }
+.stagger-2 { animation-delay: 0.1s; }
+.stagger-3 { animation-delay: 0.15s; }
+.stagger-4 { animation-delay: 0.2s; }
+.stagger-5 { animation-delay: 0.25s; }
+.stagger-6 { animation-delay: 0.3s; }
+
+/* Gradient Shimmer for Premium Stat Cards */
+@keyframes gradient-shimmer {
+    0% { background-position: -200% center; }
+    100% { background-position: 200% center; }
+}
+
+.shimmer-gradient {
+    background-size: 200% auto;
+    animation: gradient-shimmer 3s linear infinite;
+}
+
+/* Counter animation for numbers */
+@keyframes count-up {
+    0% {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.animate-count-up {
+    animation: count-up 0.6s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Stat card hover lift */
+.stat-card-hover {
+    transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.25s ease;
+}
+
+.stat-card-hover:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+}
+
+/* Dashboard horizontal scroll strip */
+.scroll-strip {
+    display: flex;
+    gap: 0.75rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 0.5rem;
+}
+
+.scroll-strip::-webkit-scrollbar {
+    display: none;
+}
+
+.scroll-strip > * {
+    scroll-snap-align: start;
+    flex-shrink: 0;
+}
+
+/* Active tab pill indicator */
+@keyframes tab-indicator {
+    0% { transform: scaleX(0); }
+    100% { transform: scaleX(1); }
+}
+
+.tab-active-pill {
+    position: relative;
+}
+
+.tab-active-pill::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 25%;
+    right: 25%;
+    height: 3px;
+    border-radius: 9999px;
+    background: currentColor;
+    animation: tab-indicator 0.25s ease-out;
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+    .glass-card {
+        background: rgba(255, 255, 255, 0.95);
+        border: 2px solid rgba(0, 0, 0, 0.3);
+    }
+
+    .glass-card-dark {
+        background: rgba(15, 23, 42, 0.95);
+        border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+}
+
+/* ========== End Dashboard Design System ========== */
+
 .duration-slow {
     animation-duration: 8s;
 }

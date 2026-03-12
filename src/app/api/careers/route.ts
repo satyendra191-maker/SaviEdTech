@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
                 .eq('id', user.id)
                 .single();
 
-            if (!profile || !['admin', 'super_admin', 'content_manager', 'hr'].includes(profile.role as string)) {
+            if (!profile || !['admin', 'content_manager', 'hr'].includes(profile.role as string)) {
                 return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
             }
 
@@ -170,7 +170,7 @@ export async function POST(request: NextRequest) {
                 .eq('id', user.id)
                 .single();
 
-            if (!profile || !['admin', 'super_admin', 'content_manager', 'hr'].includes(profile.role as string)) {
+            if (!profile || !['admin', 'content_manager', 'hr'].includes(profile.role as string)) {
                 return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
             }
 
@@ -360,7 +360,7 @@ export async function PATCH(request: NextRequest) {
             .eq('id', user.id)
             .single();
 
-        if (!profile || !['admin', 'super_admin', 'content_manager', 'hr'].includes(profile.role)) {
+        if (!profile || !['admin', 'content_manager', 'hr'].includes(profile.role)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
@@ -456,7 +456,7 @@ export async function DELETE(request: NextRequest) {
             .eq('id', user.id)
             .single();
 
-        if (!profile || !['admin', 'super_admin', 'content_manager', 'hr'].includes(profile.role)) {
+        if (!profile || !['admin', 'content_manager', 'hr'].includes(profile.role)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 

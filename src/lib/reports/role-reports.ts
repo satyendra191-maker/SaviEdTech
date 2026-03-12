@@ -209,7 +209,7 @@ export async function buildRoleReportDataset(userId: string, role: string): Prom
         });
     }
 
-    if (role === 'content_manager' || role === 'faculty' || role === 'admin' || role === 'super_admin') {
+    if (role === 'content_manager' || role === 'faculty' || role === 'admin') {
         sections.push({
             title: 'Content Operations',
             rows: [

@@ -22,10 +22,10 @@ import {
 } from '@/lib/security';
 
 // Routes that require authentication
-const protectedRoutes = ['/dashboard', '/admin', '/super-admin', '/parent'];
+const protectedRoutes = ['/dashboard', '/admin', '/parent'];
 
 // Routes that require specific admin-level roles
-const adminRoutes = ['/admin', '/super-admin'];
+const adminRoutes = ['/admin'];
 
 // Public routes that authenticated users shouldn't access
 const authRoutes = ['/login', '/register', '/signup', '/reset-password'];
@@ -37,20 +37,16 @@ const rateLimitedApiRoutes = ['/api/'];
 const authApiRoutes = ['/api/auth/'];
 
 function getAdminRolesForPath(pathname: string): string[] {
-    if (pathname.startsWith('/super-admin')) {
-        return ['admin', 'super_admin'];
-    }
-
     if (pathname === '/admin/finance' || pathname.startsWith('/admin/finance/')) {
-        return ['admin', 'super_admin', 'finance_manager'];
+        return ['admin', 'finance_manager'];
     }
 
     if (pathname === '/admin/payments' || pathname.startsWith('/admin/payments/')) {
-        return ['admin', 'super_admin', 'finance_manager'];
+        return ['admin', 'finance_manager'];
     }
 
     if (pathname.startsWith('/admin/careers')) {
-        return ['admin', 'super_admin', 'hr'];
+        return ['admin', 'hr'];
     }
 
     if (
@@ -59,10 +55,10 @@ function getAdminRolesForPath(pathname: string): string[] {
         pathname.startsWith('/admin/questions') ||
         pathname.startsWith('/admin/tests')
     ) {
-        return ['admin', 'super_admin', 'content_manager'];
+        return ['admin', 'content_manager'];
     }
 
-    return ['admin', 'super_admin'];
+    return ['admin'];
 }
 
 /**
@@ -199,7 +195,7 @@ export async function middleware(request: NextRequest) {
 
         const role = (profile as { role?: string } | null)?.role || 'student';
         let dest = '/dashboard';
-        if (role === 'admin' || role === 'super_admin' || role === 'finance_manager' || role === 'content_manager' || role === 'faculty' || role === 'hr') {
+        if (role === 'admin' || role === 'finance_manager' || role === 'content_manager' || role === 'faculty' || role === 'hr') {
             dest = '/admin';
         } else if (role === 'parent') dest = '/dashboard/parent';
 
@@ -219,7 +215,7 @@ export async function middleware(request: NextRequest) {
 
     // Admin Routes Check
     if (isAdminRoute) {
-        const allowedRoles = ['admin', 'super_admin', 'finance_manager', 'content_manager', 'faculty', 'hr'];
+        const allowedRoles = ['admin', 'finance_manager', 'content_manager', 'faculty', 'hr'];
         if (!allowedRoles.includes(role)) {
             const redirectUrl = new URL('/login', request.url);
             redirectUrl.searchParams.set('redirect', pathname);
@@ -229,7 +225,7 @@ export async function middleware(request: NextRequest) {
 
             // Parent Routes Check
             if ((pathname.startsWith('/dashboard/parent') || pathname.startsWith('/parent')) &&
-                role !== 'parent' && role !== 'admin' && role !== 'super_admin') {
+                role !== 'parent' && role !== 'admin') {
                 return addSecurityHeaders(NextResponse.redirect(new URL('/dashboard', request.url)));
             }
 
@@ -241,7 +237,7 @@ export async function middleware(request: NextRequest) {
                     pathname.startsWith('/admin/questions') ||
                     pathname.startsWith('/admin/tests')
                 ) &&
-                role !== 'content_manager' && role !== 'admin' && role !== 'super_admin'
+                role !== 'content_manager' && role !== 'admin'
             ) {
                 const redirectUrl = new URL('/login', request.url);
                 redirectUrl.searchParams.set('redirect', pathname);
@@ -250,7 +246,7 @@ export async function middleware(request: NextRequest) {
 
             if (
                 pathname.startsWith('/admin/careers') &&
-                role !== 'hr' && role !== 'admin' && role !== 'super_admin'
+                role !== 'hr' && role !== 'admin'
             ) {
                 const redirectUrl = new URL('/login', request.url);
                 redirectUrl.searchParams.set('redirect', pathname);
@@ -274,7 +270,6 @@ export const config = {
     matcher: [
         '/dashboard/:path*',
         '/admin/:path*',
-        '/super-admin/:path*',
         '/parent/:path*',
         '/login',
         '/register',

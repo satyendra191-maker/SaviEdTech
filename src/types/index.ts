@@ -1,5 +1,5 @@
 // User Types
-export type UserRole = 'student' | 'admin' | 'super_admin' | 'content_manager' | 'parent' | 'hr' | 'faculty' | 'finance_manager';
+export type UserRole = 'student' | 'admin' | 'content_manager' | 'parent' | 'hr' | 'faculty' | 'finance_manager';
 
 // Exam target types
 export type ExamTarget = 'JEE' | 'NEET' | 'Both' | 'JEE Mains' | 'JEE Advanced' | 'CBSE Board' | 'Foundation';
@@ -989,3 +989,9 @@ export interface TransactionStats {
         successRate: number;
     }>;
 }
+
+// ============================================
+// BUSINESS & GROWTH TYPES
+// ============================================
+
+export * from './business';

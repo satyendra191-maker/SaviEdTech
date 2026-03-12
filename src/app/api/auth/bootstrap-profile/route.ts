@@ -10,7 +10,6 @@ const ALLOWED_ROLES: ProfileRole[] = [
     'student',
     'admin',
     'content_manager',
-    'super_admin',
     'parent',
     'hr',
     'finance_manager',

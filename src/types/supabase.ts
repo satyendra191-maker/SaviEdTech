@@ -16,7 +16,7 @@ export interface Database {
                     full_name: string | null;
                     phone: string | null;
                     avatar_url: string | null;
-                    role: 'student' | 'admin' | 'content_manager' | 'super_admin' | 'parent' | 'hr' | 'finance_manager';
+                    role: 'student' | 'admin' | 'content_manager' | 'parent' | 'hr' | 'finance_manager';
                     exam_target: 'JEE' | 'NEET' | 'Both' | 'JEE Mains' | 'JEE Advanced' | 'CBSE Board' | 'Foundation' | null;
                     class_level: '11' | '12' | 'Dropper' | 'Class 9' | 'Class 10' | 'Class 11' | 'Class 12' | null;
                     city: string | null;
@@ -36,7 +36,7 @@ export interface Database {
                     full_name?: string | null;
                     phone?: string | null;
                     avatar_url?: string | null;
-                    role?: 'student' | 'admin' | 'content_manager' | 'super_admin' | 'parent' | 'hr' | 'finance_manager';
+                    role?: 'student' | 'admin' | 'content_manager' | 'parent' | 'hr' | 'finance_manager';
                     exam_target?: 'JEE' | 'NEET' | 'Both' | 'JEE Mains' | 'JEE Advanced' | 'CBSE Board' | 'Foundation' | null;
                     class_level?: '11' | '12' | 'Dropper' | 'Class 9' | 'Class 10' | 'Class 11' | 'Class 12' | null;
                     city?: string | null;
@@ -56,7 +56,7 @@ export interface Database {
                     full_name?: string | null;
                     phone?: string | null;
                     avatar_url?: string | null;
-                    role?: 'student' | 'admin' | 'content_manager' | 'super_admin' | 'parent' | 'hr' | 'finance_manager';
+                    role?: 'student' | 'admin' | 'content_manager' | 'parent' | 'hr' | 'finance_manager';
                     exam_target?: 'JEE' | 'NEET' | 'Both' | 'JEE Mains' | 'JEE Advanced' | 'CBSE Board' | 'Foundation' | null;
                     class_level?: '11' | '12' | 'Dropper' | 'Class 9' | 'Class 10' | 'Class 11' | 'Class 12' | null;
                     city?: string | null;

@@ -48,7 +48,7 @@ export async function listThreadsForUser(userId: string, role: string): Promise<
         .eq('is_active', true)
         .order('latest_message_at', { ascending: false });
 
-    if (role !== 'admin' && role !== 'super_admin') {
+    if (role !== 'admin') {
         query = query.eq('internal_chat_participants.user_id', userId);
     }
 

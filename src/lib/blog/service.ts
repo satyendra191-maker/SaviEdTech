@@ -68,7 +68,7 @@ export async function upsertBlogPost(input: BlogPostRecord) {
         tags: input.tags || [],
         categories: input.categories || [],
         status: input.status || 'draft',
-        editor_roles: input.editor_roles || ['admin', 'super_admin', 'content_manager'],
+        editor_roles: input.editor_roles || ['admin', 'content_manager'],
         author_id: input.author_id || null,
         published_at: input.published_at || (input.status === 'published' ? new Date().toISOString() : null),
         scheduled_at: input.scheduled_at || null,

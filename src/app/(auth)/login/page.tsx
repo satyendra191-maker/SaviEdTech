@@ -150,9 +150,6 @@ function LoginForm() {
 
       // Role-based redirection
       switch (role) {
-        case 'super_admin':
-          router.replace('/super-admin');
-          break;
         case 'admin':
           router.replace('/admin');
           break;

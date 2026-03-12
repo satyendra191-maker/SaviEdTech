@@ -133,7 +133,7 @@ export async function GET(request: NextRequest) {
 
         const typedProfile = profile as { role?: string } | null;
 
-        if (profileError || !typedProfile || !['admin', 'super_admin', 'content_manager', 'hr'].includes(typedProfile.role || '')) {
+        if (profileError || !typedProfile || !['admin', 'content_manager', 'hr'].includes(typedProfile.role || '')) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 

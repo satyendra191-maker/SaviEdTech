@@ -2,7 +2,7 @@
  * Security Audit API Endpoint
  *
  * Returns comprehensive security audit reports for the SaviEdTech platform.
- * Requires super-admin authentication.
+ * Requires admin authentication.
  *
  * Endpoints:
  * - GET /api/security-audit - Full security audit report
@@ -38,9 +38,9 @@ import {
 const CACHE_DURATION = 300; // 5 minutes
 
 /**
- * Check if user has super-admin access
+ * Check if user has admin access
  */
-async function checkSuperAdminAccess(request: NextRequest): Promise<boolean> {
+async function checkAdminAccess(request: NextRequest): Promise<boolean> {
     const supabase = createServerClient<Database>(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -72,7 +72,7 @@ async function checkSuperAdminAccess(request: NextRequest): Promise<boolean> {
         return false;
     }
 
-    return profile.role === 'admin' || profile.role === 'super_admin';
+    return profile.role === 'admin';
 }
 
 /**
@@ -81,7 +81,7 @@ async function checkSuperAdminAccess(request: NextRequest): Promise<boolean> {
 export async function GET(request: NextRequest): Promise<NextResponse> {
     try {
         // Check authentication and authorization
-        const isAuthorized = await checkSuperAdminAccess(request);
+        const isAuthorized = await checkAdminAccess(request);
 
         if (!isAuthorized) {
             return NextResponse.json(
@@ -420,7 +420,7 @@ async function getRecommendations(timeWindowHours: number, headers: Headers): Pr
 export async function POST(request: NextRequest): Promise<NextResponse> {
     try {
         // Check authentication and authorization
-        const isAuthorized = await checkSuperAdminAccess(request);
+        const isAuthorized = await checkAdminAccess(request);
 
         if (!isAuthorized) {
             return NextResponse.json(

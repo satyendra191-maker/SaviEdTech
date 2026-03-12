@@ -37,8 +37,14 @@ function getBaseUrl(): string {
     if (typeof window !== 'undefined') {
         return window.location.origin;
     }
-    // Fallback for server-side - use environment variable or default
-    return process.env.NEXT_PUBLIC_APP_URL || 'https://saviedutech.com';
+    // Use environment variable, fallback to localhost for development
+    const envUrl = process.env.NEXT_PUBLIC_APP_URL;
+    if (envUrl) return envUrl;
+    // Detect if running in development
+    if (process.env.NODE_ENV === 'development') {
+        return 'http://localhost:3000';
+    }
+    return 'https://saviedutech.vercel.app';
 }
 
 async function withTimeout<T>(
@@ -221,42 +227,22 @@ export function useAuth(): UseAuthReturn {
         }
         try {
             const baseUrl = getBaseUrl();
-            const primaryRedirect = `${baseUrl}/auth/callback`;
-            const fallbackRedirect = `${baseUrl}/api/auth/callback`;
+            // Use the API route directly for callback
+            const redirectUrl = `${baseUrl}/api/auth/callback`;
 
             let { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: primaryRedirect,
-                    queryParams: { prompt: 'select_account' },
+                    redirectTo: redirectUrl,
+                    queryParams: { prompt: 'consent' },
                 },
             });
 
-            // Compatibility fallback: some Supabase projects only allow /api/auth/callback.
-            if (
-                error &&
-                /redirect|callback|uri|allow|mismatch/i.test(error.message)
-            ) {
-                const fallbackResult = await supabase.auth.signInWithOAuth({
-                    provider: 'google',
-                    options: {
-                        redirectTo: fallbackRedirect,
-                        queryParams: { prompt: 'select_account' },
-                    },
-                });
-                error = fallbackResult.error;
-            }
-
             if (error) {
-                const message = error.message.toLowerCase();
-                if (message.includes('provider') && message.includes('disabled')) {
-                    return { error: 'Google login is not enabled in Supabase Auth settings.' };
-                }
-                if (message.includes('redirect') || message.includes('callback') || message.includes('uri')) {
-                    return { error: 'Google login redirect URL is not configured in Supabase. Add both /auth/callback and /api/auth/callback.' };
-                }
+                console.error('Google OAuth error:', error.message);
                 return { error: error.message };
             }
+
             return { error: null };
         } catch (err) {
             return { error: err instanceof Error ? err.message : 'Google sign in failed' };

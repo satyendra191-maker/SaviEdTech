@@ -53,7 +53,7 @@ export async function GET(request: NextRequest): Promise<Response> {
             .maybeSingle();
 
         const role = (profile as { role?: string } | null)?.role || null;
-        const isFinanceUser = role === 'admin' || role === 'super_admin' || role === 'finance_manager';
+        const isFinanceUser = role === 'admin' || role === 'finance_manager';
 
         let invoice = await getCourseInvoiceByReference({
             invoiceNumber,

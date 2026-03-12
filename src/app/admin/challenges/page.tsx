@@ -7,7 +7,6 @@ import {
     Trophy,
     Calendar,
     Clock,
-    Users,
     CheckCircle,
 } from 'lucide-react';
 
@@ -48,7 +47,8 @@ export default function ChallengesPage() {
 
     useEffect(() => {
         fetchChallenges();
-    }, [fetchChallenges]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
 
     const getDifficultyColor = (level: string) => {
         switch (level) {

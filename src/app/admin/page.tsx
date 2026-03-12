@@ -19,6 +19,9 @@ import {
     Target,
     TrendingUp,
     Users,
+    Activity,
+    ChevronRight,
+    ArrowUpRight,
 } from 'lucide-react';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
 import type { Database } from '@/types/supabase';
@@ -147,7 +150,7 @@ function getStatusLabel(status: HealthStatus): string {
         case 'degraded':
             return 'Partially Degraded';
         default:
-            return 'All Systems Operational';
+            return 'All Systems Go';
     }
 }
 
@@ -159,6 +162,17 @@ function getStatusBadgeClasses(status: HealthStatus): string {
             return 'bg-amber-100 text-amber-700';
         default:
             return 'bg-emerald-100 text-emerald-700';
+    }
+}
+
+function getStatusDotColor(status: HealthStatus): string {
+    switch (status) {
+        case 'critical':
+            return 'bg-red-500';
+        case 'degraded':
+            return 'bg-amber-500';
+        default:
+            return 'bg-emerald-500';
     }
 }
 
@@ -368,7 +382,7 @@ export default function AdminDashboardPage() {
             <div className="flex min-h-[60vh] items-center justify-center">
                 <div className="text-center">
                     <div className="mx-auto mb-3 h-10 w-10 animate-spin rounded-full border-4 border-indigo-100 border-t-indigo-600"></div>
-                    <p className="font-medium text-slate-600">Loading control center...</p>
+                    <p className="font-medium text-slate-600 text-sm">Loading control center...</p>
                 </div>
             </div>
         );
@@ -377,26 +391,29 @@ export default function AdminDashboardPage() {
     const overallHealth = getOverallHealthStatus(healthChecks);
 
     return (
-        <div className="space-y-6 text-slate-900">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900">Admin Control Center</h1>
-                    <p className="text-sm text-slate-500">Live overview of students, payments, support funnels, and platform operations.</p>
+        <div className="space-y-5 text-slate-900">
+            {/* ────── Header ────── */}
+            <section className="animate-card-slide-up">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                        <h1 className="text-xl sm:text-2xl font-bold text-slate-900">Admin Control Center</h1>
+                        <p className="text-xs text-slate-500 mt-0.5">Live overview of students, payments, and platform operations.</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <span className="hidden text-[11px] text-slate-400 sm:inline">
+                            {lastUpdatedAt ? `Updated ${new Date(lastUpdatedAt).toLocaleTimeString()}` : 'Not synced'}
+                        </span>
+                        <button
+                            type="button"
+                            onClick={() => void fetchDashboardData()}
+                            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50 active:scale-95"
+                        >
+                            <RefreshCw className={`h-3.5 w-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+                            Refresh
+                        </button>
+                    </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <span className="hidden text-sm text-slate-500 sm:inline">
-                        Last updated: {lastUpdatedAt ? new Date(lastUpdatedAt).toLocaleTimeString() : 'Not synced yet'}
-                    </span>
-                    <button
-                        type="button"
-                        onClick={() => void fetchDashboardData()}
-                        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-slate-50"
-                    >
-                        <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
-                        Refresh
-                    </button>
-                </div>
-            </div>
+            </section>
 
             {error ? (
                 <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -404,226 +421,244 @@ export default function AdminDashboardPage() {
                 </div>
             ) : null}
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <AdminStatCard icon={Users} label="Total Students" value={stats.totalStudents.toLocaleString()} change={`Today +${activity.newRegistrations}`} color="indigo" />
-                <AdminStatCard icon={TrendingUp} label="Active Users" value={stats.activeUsers.toLocaleString()} change={`${activity.lectureViews} lecture views today`} color="green" />
-                <AdminStatCard icon={HeartHandshake} label="Donation Volume" value={formatCurrency(stats.totalDonationsAmount)} change={`${stats.completedDonations} successful donations`} color="rose" />
-                <AdminStatCard icon={CreditCard} label="Course Purchases" value={stats.coursePurchases.toLocaleString()} change={`${stats.premiumSubscriptions} premium activations`} color="cyan" />
-            </div>
+            {/* ────── Top Metrics Row ────── */}
+            <section className="animate-card-slide-up stagger-1">
+                <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+                    <AdminMetricCard
+                        icon={Users}
+                        label="Total Students"
+                        value={stats.totalStudents.toLocaleString()}
+                        badge={`+${activity.newRegistrations} today`}
+                        gradient="from-indigo-500 to-indigo-600"
+                    />
+                    <AdminMetricCard
+                        icon={TrendingUp}
+                        label="Active Users"
+                        value={stats.activeUsers.toLocaleString()}
+                        badge={`${activity.lectureViews} views`}
+                        gradient="from-emerald-500 to-emerald-600"
+                    />
+                    <AdminMetricCard
+                        icon={HeartHandshake}
+                        label="Donations"
+                        value={formatCurrency(stats.totalDonationsAmount)}
+                        badge={`${stats.completedDonations} total`}
+                        gradient="from-rose-500 to-pink-500"
+                    />
+                    <AdminMetricCard
+                        icon={CreditCard}
+                        label="Course Sales"
+                        value={stats.coursePurchases.toLocaleString()}
+                        badge={`${stats.premiumSubscriptions} premium`}
+                        gradient="from-cyan-500 to-sky-500"
+                    />
+                </div>
+            </section>
 
-            <div className="grid gap-4 xl:grid-cols-3">
-                <div className="xl:col-span-2 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <div className="mb-4 flex items-center justify-between">
-                        <div>
-                            <h2 className="text-base font-semibold text-slate-900">Platform Modules</h2>
-                            <p className="text-sm text-slate-500">Direct access to the systems admins manage daily.</p>
+            {/* ────── Revenue + Platform Usage ────── */}
+            <section className="animate-card-slide-up stagger-2">
+                <div className="grid gap-4 lg:grid-cols-3">
+                    {/* Revenue Card */}
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 p-5 text-white shadow-lg">
+                        <div className="absolute -right-6 -top-6 w-24 h-24 bg-white/5 rounded-full blur-2xl" />
+                        <div className="relative z-10">
+                            <div className="flex items-center gap-2 mb-3">
+                                <CreditCard className="h-5 w-5 text-white/70" />
+                                <h2 className="text-sm font-semibold text-white/70">Total Revenue</h2>
+                            </div>
+                            <p className="text-3xl font-bold animate-count-up">{formatCurrency(stats.totalRevenue)}</p>
+                            <p className="text-xs text-white/50 mt-1">Donations + courses + subscriptions</p>
+                            <div className="flex gap-3 mt-4 text-[11px]">
+                                <div className="px-2.5 py-1 bg-white/10 rounded-lg">
+                                    <span className="text-white/60">Courses:</span> <span className="font-semibold">{stats.coursePurchases}</span>
+                                </div>
+                                <div className="px-2.5 py-1 bg-white/10 rounded-lg">
+                                    <span className="text-white/60">Premium:</span> <span className="font-semibold">{stats.premiumSubscriptions}</span>
+                                </div>
+                            </div>
                         </div>
-                        <ShieldCheck className="h-5 w-5 text-emerald-600" />
                     </div>
-                    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+
+                    {/* Platform Usage */}
+                    <div className="glass-card rounded-2xl p-5 shadow-sm">
+                        <div className="flex items-center gap-2 mb-4">
+                            <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
+                                <Activity className="w-4 h-4 text-indigo-600" />
+                            </div>
+                            <h2 className="text-sm font-semibold text-slate-900">Platform Usage Today</h2>
+                        </div>
+                        <div className="space-y-0">
+                            <ActivityRow icon={Users} label="New Registrations" value={activity.newRegistrations.toString()} color="indigo" />
+                            <ActivityRow icon={PlayCircle} label="Lecture Progress" value={activity.lectureViews.toLocaleString()} color="sky" />
+                            <ActivityRow icon={BookOpen} label="Practice Attempts" value={activity.practiceAttempts.toLocaleString()} color="emerald" />
+                            <ActivityRow icon={FileText} label="DPP Attempts" value={activity.dppAttempts.toLocaleString()} color="orange" />
+                            <ActivityRow icon={GraduationCap} label="Tests Completed" value={activity.testsCompleted.toLocaleString()} color="purple" />
+                            <ActivityRow icon={Target} label="Challenge Users" value={activity.challengeParticipants.toLocaleString()} color="amber" />
+                        </div>
+                    </div>
+
+                    {/* Support Funnel */}
+                    <div className="glass-card rounded-2xl p-5 shadow-sm">
+                        <h2 className="text-sm font-semibold text-slate-900 mb-4">Support Funnel</h2>
+                        <div className="space-y-3">
+                            <FunnelItem label="Career Applications" value={stats.careerApplications.toLocaleString()} />
+                            <FunnelItem label="Completed Donations" value={stats.completedDonations.toLocaleString()} />
+                            <FunnelItem label="Course Purchases" value={stats.coursePurchases.toLocaleString()} />
+                            <FunnelItem label="Premium Subscriptions" value={stats.premiumSubscriptions.toLocaleString()} />
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            {/* ────── Platform Modules ────── */}
+            <section className="animate-card-slide-up stagger-3">
+                <div className="glass-card rounded-2xl p-5 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                        <div>
+                            <h2 className="text-sm font-semibold text-slate-900">Platform Modules</h2>
+                            <p className="text-[11px] text-slate-400 mt-0.5">Quick access to admin tools</p>
+                        </div>
+                        <ShieldCheck className="h-5 w-5 text-emerald-500" />
+                    </div>
+                    <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 xl:grid-cols-3">
                         {CONTROL_MODULES.map((module) => (
                             <Link
                                 key={module.href}
                                 href={module.href}
-                                className="group rounded-2xl border border-slate-200 bg-slate-50 p-4 transition-all hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white hover:shadow-md"
+                                className="group flex items-start gap-3 rounded-xl border border-slate-100 bg-slate-50/50 p-3.5 transition-all hover:-translate-y-0.5 hover:border-slate-200 hover:bg-white hover:shadow-md"
                             >
-                                <div className={`mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${module.accent} text-white`}>
-                                    <module.icon className="h-5 w-5" />
+                                <div className={`flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-gradient-to-br ${module.accent} text-white shadow-sm`}>
+                                    <module.icon className="h-4.5 w-4.5" />
                                 </div>
-                                <h3 className="mb-1 text-sm font-semibold text-slate-900">{module.label}</h3>
-                                <p className="text-sm text-slate-500">{module.description}</p>
+                                <div className="min-w-0 flex-1">
+                                    <h3 className="text-xs font-semibold text-slate-900 mb-0.5">{module.label}</h3>
+                                    <p className="text-[11px] text-slate-400 leading-relaxed">{module.description}</p>
+                                </div>
+                                <ArrowUpRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500 transition-colors flex-shrink-0 mt-0.5" />
                             </Link>
                         ))}
                     </div>
                 </div>
+            </section>
 
-                <div className="space-y-4">
-                    <div className="rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-700 p-5 text-white shadow-lg">
-                        <div className="mb-3 flex items-center gap-2">
-                            <CreditCard className="h-5 w-5" />
-                            <h2 className="text-base font-semibold">Revenue Snapshot</h2>
-                        </div>
-                        <p className="mb-1 text-4xl font-bold">{formatCurrency(stats.totalRevenue)}</p>
-                        <p className="text-sm text-white/75">
-                            Includes donations, course purchases, and premium subscriptions.
-                        </p>
-                    </div>
-
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                        <h2 className="mb-4 text-base font-semibold text-slate-900">Platform Usage Today</h2>
-                        <div className="space-y-1">
-                            <ActivityItem icon={Users} label="New Registrations" value={activity.newRegistrations.toString()} color="indigo" />
-                            <ActivityItem icon={PlayCircle} label="Lecture Progress Events" value={activity.lectureViews.toLocaleString()} color="sky" />
-                            <ActivityItem icon={BookOpen} label="Practice Attempts" value={activity.practiceAttempts.toLocaleString()} color="emerald" />
-                            <ActivityItem icon={FileText} label="DPP Attempts" value={activity.dppAttempts.toLocaleString()} color="orange" />
-                            <ActivityItem icon={GraduationCap} label="Tests Completed" value={activity.testsCompleted.toLocaleString()} color="purple" />
-                            <ActivityItem icon={Target} label="Challenge Participants" value={activity.challengeParticipants.toLocaleString()} color="amber" />
-                        </div>
-                    </div>
-
-                    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                        <h2 className="mb-3 text-base font-semibold text-slate-900">Support Funnel</h2>
-                        <div className="space-y-3 text-sm text-slate-600">
-                            <div className="flex items-center justify-between">
-                                <span>Career applications</span>
-                                <span className="font-semibold text-slate-900">{stats.careerApplications.toLocaleString()}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span>Completed donations</span>
-                                <span className="font-semibold text-slate-900">{stats.completedDonations.toLocaleString()}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span>Course purchases</span>
-                                <span className="font-semibold text-slate-900">{stats.coursePurchases.toLocaleString()}</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span>Premium subscriptions</span>
-                                <span className="font-semibold text-slate-900">{stats.premiumSubscriptions.toLocaleString()}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div className="grid gap-4 lg:grid-cols-3">
-                <div className="lg:col-span-2 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <div className="mb-4 flex items-center justify-between">
-                        <h2 className="text-base font-semibold text-slate-900">System Health</h2>
-                        <span className={`rounded-full px-3 py-1 text-xs font-semibold ${getStatusBadgeClasses(overallHealth)}`}>
-                            {getStatusLabel(overallHealth)}
-                        </span>
-                    </div>
-
-                    {healthChecks.length > 0 ? (
-                        <div className="space-y-0">
-                            {healthChecks.map((check) => (
-                                <HealthStatusItem
-                                    key={check.check_name}
-                                    name={formatCheckName(check.check_name)}
-                                    status={check.status}
-                                    latency={check.response_time_ms}
-                                    checkedAt={check.checked_at}
-                                />
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
-                            No system health records available yet.
-                        </div>
-                    )}
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-                    <div className="mb-4 flex items-center justify-between">
-                        <h2 className="text-base font-semibold text-slate-900">Recent Leads</h2>
-                        <Link href="/admin/leads" className="text-sm font-semibold text-indigo-600 hover:text-indigo-700">
-                            View all
-                        </Link>
-                    </div>
-
-                    {recentLeads.length > 0 ? (
-                        <div className="space-y-3">
-                            {recentLeads.map((lead) => (
-                                <div key={lead.id} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
-                                    <div className="flex items-center justify-between gap-3">
-                                        <div>
-                                            <p className="font-medium text-slate-900">{lead.name}</p>
-                                            <p className="text-sm text-slate-500">{lead.phone}</p>
-                                        </div>
-                                        <span className={`rounded-full px-2 py-1 text-xs font-semibold ${getLeadStatusClasses(lead.status)}`}>
-                                            {lead.status}
-                                        </span>
-                                    </div>
-                                    <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
-                                        <span>{lead.exam_target || 'No exam selected'}</span>
-                                        <span>{new Date(lead.created_at).toLocaleDateString('en-IN')}</span>
-                                    </div>
+            {/* ────── System Health + Leads ────── */}
+            <section className="animate-card-slide-up stagger-4">
+                <div className="grid gap-4 lg:grid-cols-3">
+                    {/* System Health */}
+                    <div className="lg:col-span-2 glass-card rounded-2xl p-5 shadow-sm">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
+                                    <Activity className="w-4 h-4 text-emerald-600" />
                                 </div>
-                            ))}
+                                <h2 className="text-sm font-semibold text-slate-900">System Health</h2>
+                            </div>
+                            <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${getStatusBadgeClasses(overallHealth)}`}>
+                                {getStatusLabel(overallHealth)}
+                            </span>
                         </div>
-                    ) : (
-                        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-500">
-                            No recent leads found.
-                        </div>
-                    )}
-                </div>
-            </div>
 
-            <PlatformHealthMonitor />
+                        {healthChecks.length > 0 ? (
+                            <div className="space-y-0">
+                                {healthChecks.map((check) => (
+                                    <div key={check.check_name} className="flex items-center justify-between border-b border-slate-50 py-2.5 last:border-0">
+                                        <div className="flex items-center gap-2.5">
+                                            <div className={`h-2 w-2 rounded-full ${getStatusDotColor(check.status)}`} />
+                                            <span className="text-xs font-medium text-slate-700">{formatCheckName(check.check_name)}</span>
+                                        </div>
+                                        <div className="flex items-center gap-4 text-[11px]">
+                                            <span className="text-slate-400">
+                                                <span className="font-semibold text-slate-600">{check.response_time_ms !== null ? `${Math.round(check.response_time_ms)}ms` : 'N/A'}</span>
+                                            </span>
+                                            <span className="text-slate-400 hidden sm:inline">
+                                                {new Date(check.checked_at).toLocaleTimeString()}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center text-xs text-slate-400">
+                                No system health records available yet.
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Recent Leads */}
+                    <div className="glass-card rounded-2xl p-5 shadow-sm">
+                        <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-sm font-semibold text-slate-900">Recent Leads</h2>
+                            <Link href="/admin/leads" className="text-[11px] font-bold text-indigo-600 hover:text-indigo-700 flex items-center gap-0.5">
+                                View all <ChevronRight className="w-3 h-3" />
+                            </Link>
+                        </div>
+
+                        {recentLeads.length > 0 ? (
+                            <div className="space-y-2.5">
+                                {recentLeads.map((lead) => (
+                                    <div key={lead.id} className="rounded-xl border border-slate-100 bg-slate-50/50 p-3">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div className="min-w-0">
+                                                <p className="text-xs font-semibold text-slate-900 truncate">{lead.name}</p>
+                                                <p className="text-[11px] text-slate-400">{lead.phone}</p>
+                                            </div>
+                                            <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider flex-shrink-0 ${getLeadStatusClasses(lead.status)}`}>
+                                                {lead.status}
+                                            </span>
+                                        </div>
+                                        <div className="mt-1.5 flex items-center justify-between text-[10px] text-slate-400">
+                                            <span>{lead.exam_target || 'No exam'}</span>
+                                            <span>{new Date(lead.created_at).toLocaleDateString('en-IN')}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-6 text-center text-xs text-slate-400">
+                                No recent leads found.
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </section>
+
+            {/* ────── Platform Health Monitor ────── */}
+            <section className="animate-card-slide-up stagger-5">
+                <PlatformHealthMonitor />
+            </section>
         </div>
     );
 }
 
-function AdminStatCard({
+/* ─── Sub-components ─── */
+function AdminMetricCard({
     icon: Icon,
     label,
     value,
-    change,
-    color,
+    badge,
+    gradient,
 }: {
     icon: ElementType;
     label: string;
     value: string;
-    change: string;
-    color: 'indigo' | 'green' | 'rose' | 'cyan';
+    badge: string;
+    gradient: string;
 }) {
-    const gradientColors = {
-        indigo: 'from-indigo-500 to-indigo-600',
-        green: 'from-emerald-500 to-emerald-600',
-        rose: 'from-rose-500 to-pink-500',
-        cyan: 'from-cyan-500 to-sky-500',
-    };
-
     return (
-        <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition-shadow hover:shadow-md">
-            <div className="mb-3 flex items-start justify-between">
-                <div className={`flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br ${gradientColors[color]} text-white`}>
-                    <Icon className="h-5 w-5" />
+        <div className="glass-card rounded-2xl p-4 shadow-sm stat-card-hover">
+            <div className="flex items-start justify-between mb-3">
+                <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${gradient} text-white shadow-sm`}>
+                    <Icon className="h-4.5 w-4.5" />
                 </div>
-                <span className="rounded-full bg-slate-100 px-2 py-1 text-xs font-semibold text-slate-600">{change}</span>
+                <span className="rounded-full bg-slate-100 px-2 py-0.5 text-[10px] font-bold text-slate-500">{badge}</span>
             </div>
-            <p className="text-sm font-medium text-slate-500">{label}</p>
-            <p className="mt-1 text-2xl font-bold text-slate-900">{value}</p>
+            <p className="text-[11px] font-medium text-slate-500">{label}</p>
+            <p className="text-xl font-bold text-slate-900 mt-0.5 animate-count-up">{value}</p>
         </div>
     );
 }
 
-function HealthStatusItem({
-    name,
-    status,
-    latency,
-    checkedAt,
-}: {
-    name: string;
-    status: HealthStatus;
-    latency: number | null;
-    checkedAt: string;
-}) {
-    const statusDotColors = {
-        healthy: 'bg-emerald-500',
-        degraded: 'bg-amber-500',
-        critical: 'bg-red-500',
-    };
-
-    return (
-        <div className="flex items-center justify-between border-b border-slate-100 py-3 last:border-0">
-            <div className="flex items-center gap-3">
-                <div className={`h-2.5 w-2.5 rounded-full ${statusDotColors[status]}`} />
-                <span className="font-medium text-slate-800">{name}</span>
-            </div>
-            <div className="flex items-center gap-5 text-sm">
-                <span className="text-slate-500">
-                    Latency: <span className="font-medium text-slate-700">{latency !== null ? `${Math.round(latency)}ms` : 'N/A'}</span>
-                </span>
-                <span className="text-slate-500">
-                    Checked: <span className="font-medium text-slate-700">{new Date(checkedAt).toLocaleTimeString()}</span>
-                </span>
-            </div>
-        </div>
-    );
-}
-
-function ActivityItem({
+function ActivityRow({
     icon: Icon,
     label,
     value,
@@ -644,14 +679,23 @@ function ActivityItem({
     };
 
     return (
-        <div className="flex items-center justify-between py-2.5">
-            <div className="flex items-center gap-3">
-                <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${colorClasses[color]}`}>
-                    <Icon className="h-4 w-4" />
+        <div className="flex items-center justify-between py-2">
+            <div className="flex items-center gap-2.5">
+                <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${colorClasses[color]}`}>
+                    <Icon className="h-3.5 w-3.5" />
                 </div>
-                <span className="text-sm font-medium text-slate-700">{label}</span>
+                <span className="text-xs font-medium text-slate-600">{label}</span>
             </div>
-            <span className="font-bold text-slate-900">{value}</span>
+            <span className="text-xs font-bold text-slate-900">{value}</span>
+        </div>
+    );
+}
+
+function FunnelItem({ label, value }: { label: string; value: string }) {
+    return (
+        <div className="flex items-center justify-between">
+            <span className="text-xs text-slate-500">{label}</span>
+            <span className="text-xs font-bold text-slate-900">{value}</span>
         </div>
     );
 }

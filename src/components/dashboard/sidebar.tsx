@@ -90,7 +90,7 @@ export function Sidebar({ mode = 'desktop' }: SidebarProps) {
 
     const getNavItems = () => {
         if (!mounted || !role) return studentNavItems;
-        if (role === 'admin' || role === 'super_admin' || role === 'content_manager') return adminNavItems;
+        if (role === 'admin' || role === 'content_manager') return adminNavItems;
         if (role === 'faculty') return facultyNavItems;
         if (role === 'parent') return parentNavItems;
         return studentNavItems;

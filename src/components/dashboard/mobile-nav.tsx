@@ -4,14 +4,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
     LayoutDashboard,
-    PlayCircle,
     BookOpen,
-    ClipboardList,
-    Trophy,
-    User,
-    Shield,
     Brain,
-    Sparkles,
+    User,
+    GraduationCap,
+    Trophy,
+    ClipboardList,
+    Crosshair,
 } from 'lucide-react';
 
 interface MobileNavProps {
@@ -20,60 +19,70 @@ interface MobileNavProps {
 
 const getStudentNavItems = () => [
     { name: 'Home', href: '/dashboard', icon: LayoutDashboard },
-    { name: 'Learn', href: '/dashboard/lectures', icon: PlayCircle },
-    { name: 'Practice', href: '/dashboard/practice', icon: BookOpen },
-    { name: 'Tests', href: '/dashboard/tests', icon: ClipboardList },
+    { name: 'Courses', href: '/dashboard/lectures', icon: GraduationCap },
+    { name: 'Practice', href: '/dashboard/practice', icon: Crosshair },
+    { name: 'AI Tutor', href: '/ai-tutor', icon: Brain },
     { name: 'Profile', href: '/dashboard/settings', icon: User },
 ];
 
 const getParentNavItems = () => [
     { name: 'Home', href: '/dashboard/parent', icon: LayoutDashboard },
     { name: 'Progress', href: '/dashboard/parent', icon: Trophy },
-    { name: 'Child', href: '/dashboard/parent', icon: User },
     { name: 'Tests', href: '/dashboard/tests', icon: ClipboardList },
+    { name: 'Reports', href: '/dashboard/analytics', icon: BookOpen },
     { name: 'Settings', href: '/dashboard/settings', icon: User },
 ];
 
 export function MobileNav({ role }: MobileNavProps) {
     const pathname = usePathname();
     const navItems = role === 'parent' ? getParentNavItems() : getStudentNavItems();
-    const isParent = role === 'parent';
 
     return (
-        <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-t border-slate-200 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] safe-area-bottom">
-            <div className="flex items-center justify-around h-16 px-1">
+        <nav
+            className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-200/60 bg-white/90 backdrop-blur-xl shadow-[0_-2px_24px_rgba(0,0,0,0.06)] safe-area-bottom"
+            role="navigation"
+            aria-label="Main navigation"
+        >
+            <div className="flex items-center justify-around h-[4.25rem] px-1 max-w-lg mx-auto">
                 {navItems.map((item) => {
                     const Icon = item.icon;
-                    const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+                    const isActive =
+                        item.href === '/dashboard'
+                            ? pathname === '/dashboard'
+                            : pathname === item.href || pathname.startsWith(`${item.href}/`);
 
                     return (
                         <Link
                             key={item.name}
                             href={item.href}
-                            className={`flex flex-col items-center justify-center flex-1 py-2 rounded-xl transition-all duration-200 touch-manipulation min-w-[64px]
-                                ${isActive ? 'text-primary-600' : 'text-slate-500 hover:text-slate-700'}`}
+                            aria-current={isActive ? 'page' : undefined}
+                            className={`flex flex-col items-center justify-center flex-1 py-1.5 rounded-2xl transition-all duration-200 touch-manipulation min-w-[56px] group
+                                ${isActive ? 'text-primary-600' : 'text-slate-400 hover:text-slate-600 active:scale-95'}`}
                         >
-                            <div className={`p-1.5 rounded-lg transition-colors ${isActive ? 'bg-primary-100' : ''}`}>
-                                <Icon className={`w-6 h-6 ${isActive ? 'text-primary-600' : 'text-slate-500'}`} strokeWidth={isActive ? 2.5 : 2} />
+                            <div
+                                className={`flex items-center justify-center w-10 h-10 rounded-2xl transition-all duration-200
+                                    ${isActive
+                                        ? 'bg-primary-100 shadow-sm shadow-primary-200/50 scale-105'
+                                        : 'group-hover:bg-slate-100'
+                                    }`}
+                            >
+                                <Icon
+                                    className={`w-[22px] h-[22px] transition-colors ${isActive ? 'text-primary-600' : 'text-slate-400 group-hover:text-slate-600'}`}
+                                    strokeWidth={isActive ? 2.4 : 1.8}
+                                />
                             </div>
-                            <span className="text-[11px] font-medium mt-1">{item.name}</span>
+                            <span
+                                className={`text-[10px] font-semibold mt-0.5 tracking-wide transition-colors
+                                    ${isActive ? 'text-primary-600' : 'text-slate-400 group-hover:text-slate-600'}`}
+                            >
+                                {item.name}
+                            </span>
+                            {isActive && (
+                                <div className="absolute bottom-1 w-1 h-1 rounded-full bg-primary-500" />
+                            )}
                         </Link>
                     );
                 })}
-                
-                {!isParent && (
-                    <Link
-                        href="/ai-tutor"
-                        className={`flex flex-col items-center justify-center flex-1 py-2 rounded-xl transition-all duration-200 touch-manipulation min-w-[64px] ${
-                            pathname.startsWith('/ai') ? 'text-purple-600' : 'text-slate-500 hover:text-purple-600'
-                        }`}
-                    >
-                        <div className={`p-1.5 rounded-lg transition-colors ${pathname.startsWith('/ai') ? 'bg-purple-100' : ''}`}>
-                            <Brain className={`w-6 h-6 ${pathname.startsWith('/ai') ? 'text-purple-600' : 'text-slate-500'}`} strokeWidth={pathname.startsWith('/ai') ? 2.5 : 2} />
-                        </div>
-                        <span className="text-[11px] font-medium mt-1">AI</span>
-                    </Link>
-                )}
             </div>
         </nav>
     );

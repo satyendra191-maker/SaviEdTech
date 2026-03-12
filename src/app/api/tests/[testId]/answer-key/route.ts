@@ -124,7 +124,7 @@ export async function GET(
                 .select('role')
                 .eq('id', user.id)
                 .maybeSingle();
-            const isAdmin = profile?.role === 'admin' || profile?.role === 'super_admin';
+            const isAdmin = profile?.role === 'admin';
             if (!isAdmin) {
                 return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
             }

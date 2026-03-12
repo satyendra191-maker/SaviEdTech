@@ -52,9 +52,8 @@ export function Navbar() {
 
     const getDashboardLink = () => {
         switch (role) {
-            case 'super_admin':
             case 'admin':
-                return '/super-admin';
+                return '/admin';
             case 'content_manager':
                 return '/admin/courses';
             case 'finance_manager':

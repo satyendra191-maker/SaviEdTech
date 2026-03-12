@@ -96,7 +96,7 @@ async function checkAdminAccess(request: NextRequest): Promise<boolean> {
         return false;
     }
 
-    return profile.role === 'admin' || profile.role === 'super_admin';
+    return profile.role === 'admin';
 }
 
 /**

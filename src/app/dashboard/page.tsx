@@ -17,6 +17,11 @@ import {
     Users,
     PlayCircle,
     HelpCircle,
+    Brain,
+    Zap,
+    Sparkles,
+    BarChart3,
+    Video,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -27,6 +32,7 @@ import { StreakDisplay, AchievementBadge, UserPointsDisplay } from '@/components
 import { CompactLeaderboard } from '@/components/gamification/Leaderboard';
 import { formatTimeAgo, formatUpcomingDate } from '@/lib/utils';
 
+/* ─── Types ─── */
 interface DashboardData {
     profile: {
         full_name: string;
@@ -96,18 +102,17 @@ interface DashboardData {
     }>;
 }
 
+/* ─── Main Page Component ─── */
 export default function DashboardPage() {
     const { user, role, isLoading: authLoading } = useAuth();
     const router = useRouter();
-    const redirectPath = role === 'super_admin'
-        ? '/super-admin'
-        : role === 'admin' || role === 'content_manager'
-            ? '/admin'
-            : role === 'finance_manager'
-                ? '/admin/finance'
-            : role === 'parent'
-                ? '/dashboard/parent'
-                : null;
+    const redirectPath = role === 'admin' || role === 'content_manager'
+        ? '/admin'
+        : role === 'finance_manager'
+            ? '/admin/finance'
+        : role === 'parent'
+            ? '/dashboard/parent'
+            : null;
 
     useEffect(() => {
         if (redirectPath) {
@@ -115,13 +120,12 @@ export default function DashboardPage() {
         }
     }, [redirectPath, router]);
 
-    // Prevent infinite loading - timeout after 5 seconds
     const [loadingTimeout, setLoadingTimeout] = useState(false);
     useEffect(() => {
         if (authLoading) {
             const timer = setTimeout(() => {
                 setLoadingTimeout(true);
-            }, 5000);
+            }, 3000);
             return () => clearTimeout(timer);
         }
     }, [authLoading]);
@@ -130,24 +134,8 @@ export default function DashboardPage() {
         return <DashboardSkeleton />;
     }
 
-    if (loadingTimeout) {
-        return (
-            <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-4">
-                <AlertCircle className="w-16 h-16 text-amber-500" />
-                <h2 className="text-xl font-semibold text-slate-900">Loading taking too long</h2>
-                <p className="text-slate-500">Please refresh the page or check your connection</p>
-                <button
-                    onClick={() => window.location.reload()}
-                    className="px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors"
-                >
-                    Refresh Page
-                </button>
-            </div>
-        );
-    }
-
-    if (!user) {
-        return null;
+    if (!user && !loadingTimeout) {
+        return <DashboardSkeleton />;
     }
 
     if (redirectPath) {
@@ -161,6 +149,7 @@ export default function DashboardPage() {
     return <StudentDashboard user={user} />;
 }
 
+/* ─── Student Dashboard ─── */
 function StudentDashboard({ user }: { user: any }) {
     const supabase = useMemo(() => getSupabaseBrowserClient(), []);
     const initialLoadRef = useRef(true);
@@ -170,7 +159,6 @@ function StudentDashboard({ user }: { user: any }) {
     const [error, setError] = useState<string | null>(null);
     const [loadingTimeout, setLoadingTimeout] = useState(false);
 
-    // Prevent infinite loading
     useEffect(() => {
         const timer = setTimeout(() => {
             if (loading) {
@@ -527,470 +515,414 @@ function StudentDashboard({ user }: { user: any }) {
     const displayName = data?.profile?.full_name?.split(' ')[0] || 'Student';
     const streakDays = data?.studentProfile?.study_streak || 0;
     const featuredLecture = data?.recentLectures?.[0] || null;
+    const examTarget = data?.profile?.exam_target || '';
 
     return (
-        <div className="space-y-6">
-            {/* Welcome Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900">Welcome back, {displayName}!</h1>
-                    <p className="text-slate-500">Here's your learning progress today</p>
-                </div>
-                <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl">
-                    <Flame className="w-5 h-5" />
-                    <span className="font-semibold">{streakDays} Day Streak</span>
-                </div>
-            </div>
-
-            {/* Stats Grid - Mobile Responsive */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4">
-                <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-xl sm:rounded-2xl p-3 sm:p-5 text-white shadow-lg">
-                    <div className="flex items-center gap-2 mb-1">
-                        <Target className="w-4 h-4 sm:w-5 sm:h-5 opacity-80" />
-                        <span className="text-xs sm:text-sm opacity-80">Rank</span>
-                    </div>
-                    <p className="text-lg sm:text-2xl font-bold">{data?.stats.predictedRank || 'N/A'}</p>
-                    <p className="text-xs opacity-70">Predicted</p>
-                </div>
-                <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-xl sm:rounded-2xl p-3 sm:p-5 text-white shadow-lg">
-                    <div className="flex items-center gap-2 mb-1">
-                        <TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 opacity-80" />
-                        <span className="text-xs sm:text-sm opacity-80">Accuracy</span>
-                    </div>
-                    <p className="text-lg sm:text-2xl font-bold">{data?.stats.accuracy || '0%'}</p>
-                    <p className="text-xs opacity-70">+2.3% this week</p>
-                </div>
-                <div className="bg-gradient-to-br from-purple-500 to-purple-600 rounded-xl sm:rounded-2xl p-3 sm:p-5 text-white shadow-lg">
-                    <div className="flex items-center gap-2 mb-1">
-                        <Clock className="w-4 h-4 sm:w-5 sm:h-5 opacity-80" />
-                        <span className="text-xs sm:text-sm opacity-80">Study</span>
-                    </div>
-                    <p className="text-lg sm:text-2xl font-bold">{data?.stats.studyTime || '0m'}</p>
-                    <p className="text-xs opacity-70">Today</p>
-                </div>
-                <div className="bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl sm:rounded-2xl p-3 sm:p-5 text-white shadow-lg">
-                    <div className="flex items-center gap-2 mb-1">
-                        <Trophy className="w-4 h-4 sm:w-5 sm:h-5 opacity-80" />
-                        <span className="text-xs sm:text-sm opacity-80">Tests</span>
-                    </div>
-                    <p className="text-lg sm:text-2xl font-bold">{data?.stats.testsTaken || 0}</p>
-                    <p className="text-xs opacity-70">Completed</p>
-                </div>
-            </div>
-
-            <RankPredictionWidget compact />
-
-            <div className="grid gap-6 xl:grid-cols-[1.6fr_1fr]">
-                <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-                    <div className="mb-4 flex items-center justify-between">
-                        <div>
-                            <h2 className="text-lg font-semibold text-slate-900">Lecture Player</h2>
-                            <p className="text-sm text-slate-500">Resume your latest class directly from the dashboard</p>
+        <div className="space-y-5 max-w-5xl mx-auto">
+            {/* ────── 1. Hero Section ────── */}
+            <section className="animate-card-slide-up">
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary-600 via-primary-700 to-indigo-800 p-5 sm:p-6 text-white shadow-lg">
+                    <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/5 rounded-full blur-2xl" />
+                    <div className="absolute -left-4 -bottom-4 w-24 h-24 bg-white/5 rounded-full blur-xl" />
+                    <div className="relative z-10">
+                        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                            <div>
+                                <h1 className="text-xl sm:text-2xl font-bold">Welcome back, {displayName}! 🎯</h1>
+                                <p className="text-white/70 text-sm mt-1">
+                                    {examTarget ? `Preparing for ${examTarget}` : "Let's continue your learning journey"}
+                                </p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-2 px-4 py-2 bg-white/15 backdrop-blur-sm rounded-xl">
+                                    <Flame className="w-5 h-5 text-amber-300 streak-fire" />
+                                    <div>
+                                        <span className="font-bold text-lg leading-none">{streakDays}</span>
+                                        <span className="text-white/70 text-xs ml-1">day streak</span>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <Link
-                            href="/dashboard/lectures"
-                            className="text-sm font-medium text-primary-600 hover:text-primary-700"
-                        >
-                            Open Library
+                    </div>
+                </div>
+            </section>
+
+            {/* ────── 2. Scrollable Stat Pills ────── */}
+            <section className="animate-card-slide-up stagger-1">
+                <div className="scroll-strip -mx-4 px-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-4 sm:gap-3">
+                    <StatPill icon={Target} label="Predicted Rank" value={data?.stats.predictedRank || 'N/A'} gradient="from-blue-500 to-cyan-500" />
+                    <StatPill icon={TrendingUp} label="Accuracy" value={data?.stats.accuracy || '0%'} gradient="from-emerald-500 to-teal-500" />
+                    <StatPill icon={Clock} label="Study Time" value={data?.stats.studyTime || '0m'} gradient="from-violet-500 to-purple-500" />
+                    <StatPill icon={Trophy} label="Tests Done" value={String(data?.stats.testsTaken || 0)} gradient="from-amber-500 to-orange-500" />
+                </div>
+            </section>
+
+            {/* ────── 3. Rank Prediction ────── */}
+            <section className="animate-card-slide-up stagger-2">
+                <RankPredictionWidget compact />
+            </section>
+
+            {/* ────── 4. Continue Learning ────── */}
+            <section className="animate-card-slide-up stagger-2">
+                <div className="glass-card rounded-2xl p-5 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-lg bg-primary-100 flex items-center justify-center">
+                                <PlayCircle className="w-4 h-4 text-primary-600" />
+                            </div>
+                            <h2 className="text-base font-semibold text-slate-900">Continue Learning</h2>
+                        </div>
+                        <Link href="/dashboard/lectures" className="text-xs font-semibold text-primary-600 hover:text-primary-700 flex items-center gap-0.5">
+                            View All <ChevronRight className="w-3.5 h-3.5" />
                         </Link>
                     </div>
 
                     {featuredLecture ? (
-                        <div className="space-y-4">
-                            <div className="overflow-hidden rounded-2xl bg-slate-950">
-                                {featuredLecture.video_url ? (
-                                    <video
-                                        controls
-                                        preload="metadata"
-                                        poster={featuredLecture.thumbnail_url || undefined}
-                                        className="aspect-video w-full bg-black"
-                                    >
-                                        <source src={featuredLecture.video_url} />
-                                    </video>
-                                ) : (
-                                    <div className="flex aspect-video items-center justify-center bg-gradient-to-br from-slate-900 to-slate-700 text-white">
-                                        <div className="text-center">
-                                            <PlayCircle className="mx-auto h-12 w-12 text-white/80" />
-                                            <p className="mt-3 text-sm text-white/80">Lecture preview unavailable</p>
+                        <div className="space-y-3">
+                            {/* Featured Lecture */}
+                            <Link href={`/dashboard/lectures/${featuredLecture.id}`} className="block group">
+                                <div className="overflow-hidden rounded-xl bg-slate-900 relative">
+                                    {featuredLecture.video_url ? (
+                                        <video
+                                            controls
+                                            preload="metadata"
+                                            poster={featuredLecture.thumbnail_url || undefined}
+                                            className="aspect-video w-full bg-black"
+                                        >
+                                            <source src={featuredLecture.video_url} />
+                                        </video>
+                                    ) : (
+                                        <div className="flex aspect-video items-center justify-center bg-gradient-to-br from-slate-800 to-slate-700 text-white">
+                                            <div className="text-center">
+                                                <PlayCircle className="mx-auto h-10 w-10 text-white/60 group-hover:text-white/80 transition-colors" />
+                                                <p className="mt-2 text-xs text-white/50">Preview unavailable</p>
+                                            </div>
                                         </div>
-                                    </div>
-                                )}
-                            </div>
-
-                            <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                                <div>
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <span className="rounded-full bg-primary-50 px-3 py-1 text-xs font-medium text-primary-700">
-                                            {featuredLecture.subject}
-                                        </span>
-                                        <span className="text-xs text-slate-500">{formatTimeAgo(featuredLecture.last_watched_at)}</span>
-                                    </div>
-                                    <h3 className="mt-2 text-lg font-semibold text-slate-900">{featuredLecture.title}</h3>
-                                    <p className="text-sm text-slate-500">{featuredLecture.faculty}</p>
+                                    )}
                                 </div>
-                                <Link
-                                    href={`/dashboard/lectures/${featuredLecture.id}`}
-                                    className="inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-5 py-3 font-medium text-white hover:bg-primary-700"
-                                >
-                                    Resume Lecture
-                                    <ChevronRight className="h-4 w-4" />
-                                </Link>
-                            </div>
+                                <div className="mt-3 flex items-start justify-between gap-3">
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex items-center gap-2 mb-1">
+                                            <span className="rounded-full bg-primary-50 px-2.5 py-0.5 text-[11px] font-semibold text-primary-700">
+                                                {featuredLecture.subject}
+                                            </span>
+                                            <span className="text-[11px] text-slate-400">{formatTimeAgo(featuredLecture.last_watched_at)}</span>
+                                        </div>
+                                        <h3 className="font-semibold text-slate-900 text-sm truncate">{featuredLecture.title}</h3>
+                                        <p className="text-xs text-slate-500 mt-0.5">{featuredLecture.faculty}</p>
+                                    </div>
+                                    <span className="inline-flex items-center gap-1.5 rounded-xl bg-primary-600 px-4 py-2 text-xs font-semibold text-white hover:bg-primary-700 transition-colors flex-shrink-0">
+                                        Resume <ChevronRight className="h-3 w-3" />
+                                    </span>
+                                </div>
+                            </Link>
+
+                            {/* Other recent lectures */}
+                            {data?.recentLectures && data.recentLectures.length > 1 && (
+                                <div className="space-y-2 pt-2 border-t border-slate-100">
+                                    {data.recentLectures.slice(1).map((lecture) => (
+                                        <ContinueLearningCard
+                                            key={lecture.id}
+                                            href={`/dashboard/lectures/${lecture.id}`}
+                                            title={lecture.title}
+                                            subject={lecture.subject}
+                                            faculty={lecture.faculty}
+                                            progress={lecture.progress}
+                                            thumbnail={lecture.thumbnail_url || ''}
+                                            lastWatched={formatTimeAgo(lecture.last_watched_at)}
+                                        />
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     ) : (
-                        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-8 text-center text-slate-500">
-                            <PlayCircle className="mx-auto mb-3 h-12 w-12 text-slate-300" />
-                            <p>No lecture in progress yet. Start a class to unlock the player preview here.</p>
+                        <div className="rounded-xl border-2 border-dashed border-slate-200 bg-slate-50 p-8 text-center text-slate-500">
+                            <PlayCircle className="mx-auto mb-3 h-10 w-10 text-slate-300" />
+                            <p className="text-sm">No lectures in progress. Start learning!</p>
+                            <Link
+                                href="/dashboard/lectures"
+                                className="inline-block mt-3 px-5 py-2 bg-primary-600 text-white text-sm font-medium rounded-lg hover:bg-primary-700 transition-colors"
+                            >
+                                Browse Lectures
+                            </Link>
                         </div>
                     )}
-                </section>
+                </div>
+            </section>
 
-                <div className="grid gap-6">
-                    <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-                        <div className="flex items-center gap-2">
-                            <BookOpen className="h-5 w-5 text-primary-600" />
-                            <h2 className="text-lg font-semibold text-slate-900">Practice Questions</h2>
+            {/* ────── 5. Daily Study Plan (DPP + Challenge) ────── */}
+            <section className="animate-card-slide-up stagger-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Today's DPP */}
+                    <div className="glass-card rounded-2xl p-5 shadow-sm">
+                        <div className="flex items-center gap-2 mb-3">
+                            <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center">
+                                <Calendar className="w-4 h-4 text-indigo-600" />
+                            </div>
+                            <h3 className="text-sm font-semibold text-slate-900">Today's DPP</h3>
+                            <span className="ml-auto px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[10px] font-bold rounded-full uppercase tracking-wider">Live</span>
                         </div>
-                        <p className="mt-3 text-sm text-slate-500">
-                            Today's work: {data?.dailyProgress.questionsAttempted || 0} questions solved with {data?.dailyProgress.accuracyPercent.toFixed(0) || 0}% accuracy.
-                        </p>
-                        <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
-                            <div
-                                className="h-full rounded-full bg-primary-600"
-                                style={{ width: `${Math.max(0, Math.min(data?.dailyProgress.accuracyPercent || 0, 100))}%` }}
-                            />
+                        {data?.todayDPP ? (
+                            <div>
+                                <h4 className="font-semibold text-slate-900 text-sm">{data.todayDPP.title}</h4>
+                                <p className="text-xs text-slate-500 mt-1">{data.todayDPP.total_questions} Qs · {data.todayDPP.time_limit_minutes} min</p>
+                                <Link
+                                    href={`/dashboard/dpp/${data.todayDPP.id}`}
+                                    className="mt-3 w-full inline-flex items-center justify-center gap-1.5 rounded-xl bg-indigo-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-indigo-700 transition-colors"
+                                >
+                                    <Zap className="w-3.5 h-3.5" /> Start DPP
+                                </Link>
+                            </div>
+                        ) : (
+                            <p className="text-xs text-slate-400 py-4 text-center">No DPP today. Check back tomorrow!</p>
+                        )}
+                    </div>
+
+                    {/* Daily Challenge */}
+                    <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 p-5 text-white shadow-sm">
+                        <div className="absolute -right-3 -bottom-3 w-20 h-20 bg-white/10 rounded-full blur-xl" />
+                        <div className="relative z-10">
+                            <div className="flex items-center gap-2 mb-3">
+                                <Trophy className="w-5 h-5" />
+                                <h3 className="text-sm font-semibold">Daily Challenge</h3>
+                            </div>
+                            <p className="text-white/80 text-xs mb-3">
+                                Compete with students nationwide!
+                            </p>
+                            <div className="flex items-center justify-between mb-3">
+                                <span className="text-xs text-white/70">
+                                    {data?.dailyChallenge?.total_participants.toLocaleString() || '0'} attempted
+                                </span>
+                            </div>
+                            <Link
+                                href="/dashboard/challenge"
+                                className="block w-full py-2.5 bg-white text-orange-600 font-semibold rounded-xl text-center text-xs hover:bg-white/90 transition-colors"
+                            >
+                                Attempt Now
+                            </Link>
                         </div>
-                        <div className="mt-5 flex flex-wrap gap-3 text-sm text-slate-600">
-                            <span className="rounded-xl bg-slate-50 px-3 py-2">{data?.stats.accuracy || '0%'} overall accuracy</span>
-                            <span className="rounded-xl bg-slate-50 px-3 py-2">{data?.stats.studyTime || '0m'} study time</span>
+                    </div>
+                </div>
+            </section>
+
+            {/* ────── 6. Practice & Tests Row ────── */}
+            <section className="animate-card-slide-up stagger-3">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {/* Practice Questions */}
+                    <div className="glass-card rounded-2xl p-5 shadow-sm">
+                        <div className="flex items-center gap-2 mb-3">
+                            <div className="w-8 h-8 rounded-lg bg-emerald-100 flex items-center justify-center">
+                                <BookOpen className="w-4 h-4 text-emerald-600" />
+                            </div>
+                            <h3 className="text-sm font-semibold text-slate-900">Practice Questions</h3>
+                        </div>
+                        <div className="flex items-center gap-4 mb-3">
+                            <div className="flex-1">
+                                <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+                                    <span>Today's accuracy</span>
+                                    <span className="font-semibold text-slate-700">{data?.dailyProgress.accuracyPercent.toFixed(0) || 0}%</span>
+                                </div>
+                                <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
+                                    <div
+                                        className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full transition-all"
+                                        style={{ width: `${Math.max(0, Math.min(data?.dailyProgress.accuracyPercent || 0, 100))}%` }}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                        <div className="flex gap-2 mb-3 text-xs">
+                            <span className="rounded-lg bg-slate-50 px-2.5 py-1.5 text-slate-600 font-medium">{data?.dailyProgress.questionsAttempted || 0} solved</span>
+                            <span className="rounded-lg bg-slate-50 px-2.5 py-1.5 text-slate-600 font-medium">{data?.stats.accuracy || '0%'} overall</span>
                         </div>
                         <Link
                             href="/dashboard/practice/session"
-                            className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl bg-primary-600 px-5 py-3 font-medium text-white hover:bg-primary-700"
+                            className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-emerald-700 transition-colors"
                         >
-                            Start Quick Practice
-                            <ChevronRight className="h-4 w-4" />
+                            <Sparkles className="w-3.5 h-3.5" /> Quick Practice
                         </Link>
-                    </section>
+                    </div>
 
-                    <section className="rounded-2xl border border-slate-100 bg-white p-6 shadow-sm">
-                        <div className="flex items-center gap-2">
-                            <Trophy className="h-5 w-5 text-primary-600" />
-                            <h2 className="text-lg font-semibold text-slate-900">Mock Tests And Daily Progress</h2>
+                    {/* Mock Tests & Progress */}
+                    <div className="glass-card rounded-2xl p-5 shadow-sm">
+                        <div className="flex items-center gap-2 mb-3">
+                            <div className="w-8 h-8 rounded-lg bg-violet-100 flex items-center justify-center">
+                                <BarChart3 className="w-4 h-4 text-violet-600" />
+                            </div>
+                            <h3 className="text-sm font-semibold text-slate-900">Tests & Progress</h3>
                         </div>
-
-                        <div className="mt-4 grid grid-cols-3 gap-3">
-                            <div className="rounded-xl bg-slate-50 p-3">
-                                <p className="text-xs uppercase tracking-wide text-slate-400">Study</p>
-                                <p className="mt-2 text-lg font-semibold text-slate-900">{data?.dailyProgress.studyMinutes || 0} min</p>
+                        <div className="grid grid-cols-3 gap-2 mb-3">
+                            <div className="rounded-xl bg-slate-50 p-2.5 text-center">
+                                <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Study</p>
+                                <p className="text-sm font-bold text-slate-900 mt-0.5">{data?.dailyProgress.studyMinutes || 0}m</p>
                             </div>
-                            <div className="rounded-xl bg-slate-50 p-3">
-                                <p className="text-xs uppercase tracking-wide text-slate-400">Tests</p>
-                                <p className="mt-2 text-lg font-semibold text-slate-900">{data?.dailyProgress.testsCompleted || 0}</p>
+                            <div className="rounded-xl bg-slate-50 p-2.5 text-center">
+                                <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Tests</p>
+                                <p className="text-sm font-bold text-slate-900 mt-0.5">{data?.dailyProgress.testsCompleted || 0}</p>
                             </div>
-                            <div className="rounded-xl bg-slate-50 p-3">
-                                <p className="text-xs uppercase tracking-wide text-slate-400">Rank</p>
-                                <p className="mt-2 text-lg font-semibold text-slate-900">{data?.stats.predictedRank || 'N/A'}</p>
+                            <div className="rounded-xl bg-slate-50 p-2.5 text-center">
+                                <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Rank</p>
+                                <p className="text-sm font-bold text-slate-900 mt-0.5">{data?.stats.predictedRank || 'N/A'}</p>
                             </div>
                         </div>
 
                         {data?.recentMockResult ? (
-                            <div className="mt-5 rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                                <p className="text-xs uppercase tracking-wide text-slate-400">Latest Mock Test</p>
-                                <h3 className="mt-2 font-semibold text-slate-900">{data.recentMockResult.title}</h3>
-                                <p className="mt-1 text-sm text-slate-500">
+                            <div className="rounded-xl bg-violet-50 border border-violet-100 p-3 mb-3">
+                                <p className="text-[10px] uppercase tracking-wider text-violet-400 font-semibold">Latest Mock</p>
+                                <h4 className="font-semibold text-slate-900 text-sm mt-0.5">{data.recentMockResult.title}</h4>
+                                <p className="text-xs text-slate-500 mt-0.5">
                                     {data.recentMockResult.score}/{data.recentMockResult.maxScore}
-                                    {typeof data.recentMockResult.percentile === 'number' ? ` · ${data.recentMockResult.percentile.toFixed(1)} percentile` : ''}
+                                    {typeof data.recentMockResult.percentile === 'number' ? ` · ${data.recentMockResult.percentile.toFixed(1)}%ile` : ''}
                                 </p>
-                                <div className="mt-4 flex flex-wrap gap-3">
+                                <div className="flex gap-2 mt-2">
                                     <Link
                                         href={`/dashboard/tests/results/${data.recentMockResult.attemptId}`}
-                                        className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                                        className="text-xs font-medium text-violet-600 hover:text-violet-700"
                                     >
-                                        View Result
-                                    </Link>
-                                    <Link
-                                        href="/dashboard/tests"
-                                        className="inline-flex items-center gap-2 rounded-xl bg-primary-600 px-4 py-2 text-sm font-medium text-white hover:bg-primary-700"
-                                    >
-                                        Open Mock Tests
+                                        View Result →
                                     </Link>
                                 </div>
                             </div>
                         ) : (
-                            <div className="mt-5 rounded-2xl border border-dashed border-slate-200 bg-slate-50 p-4 text-sm text-slate-500">
-                                No mock test attempted yet. Start one from the test centre to unlock score analysis and rank updates.
+                            <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 p-3 text-xs text-slate-400 text-center mb-3">
+                                No mock test yet. Start one from the test centre.
                             </div>
                         )}
-                    </section>
-                </div>
-            </div>
-
-            <div className="grid lg:grid-cols-3 gap-6">
-                {/* Continue Learning */}
-                <div className="lg:col-span-2 space-y-6">
-                    <section className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-lg font-semibold text-slate-900">Continue Learning</h2>
-                            <Link href="/dashboard/lectures" className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1">
-                                View All <ChevronRight className="w-4 h-4" />
-                            </Link>
-                        </div>
-
-                        <div className="space-y-4">
-                            {data?.recentLectures && data.recentLectures.length > 0 ? (
-                                data.recentLectures.map((lecture) => (
-                                    <ContinueLearningCard
-                                        key={lecture.id}
-                                        href={`/dashboard/lectures/${lecture.id}`}
-                                        title={lecture.title}
-                                        subject={lecture.subject}
-                                        faculty={lecture.faculty}
-                                        progress={lecture.progress}
-                                        thumbnail={lecture.thumbnail_url || ''}
-                                        lastWatched={formatTimeAgo(lecture.last_watched_at)}
-                                    />
-                                ))
-                            ) : (
-                                <div className="text-center py-8 text-slate-500">
-                                    <BookOpen className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-                                    <p>No lectures watched yet. Start learning today!</p>
-                                    <Link
-                                        href="/dashboard/lectures"
-                                        className="inline-block mt-4 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
-                                    >
-                                        Browse Lectures
-                                    </Link>
-                                </div>
-                            )}
-                        </div>
-                    </section>
-
-                    {/* Today's DPP */}
-                    <section className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-2">
-                                <Calendar className="w-5 h-5 text-primary-600" />
-                                <h2 className="text-lg font-semibold text-slate-900">Today's DPP</h2>
-                            </div>
-                            <span className="px-3 py-1 bg-green-100 text-green-700 text-sm font-medium rounded-full">
-                                Available Now
-                            </span>
-                        </div>
-
-                        {data?.todayDPP ? (
-                            <div className="flex items-center justify-between p-4 bg-slate-50 rounded-xl">
-                                <div>
-                                    <h3 className="font-semibold text-slate-900">{data.todayDPP.title}</h3>
-                                    <p className="text-sm text-slate-500">{data.todayDPP.total_questions} Questions - {data.todayDPP.time_limit_minutes} Minutes</p>
-                                </div>
-                                <Link
-                                    href={`/dashboard/dpp/${data.todayDPP.id}`}
-                                    className="px-6 py-3 bg-primary-600 text-white font-medium rounded-xl hover:bg-primary-700 transition-colors"
-                                >
-                                    Start Now
-                                </Link>
-                            </div>
-                        ) : (
-                            <div className="text-center py-6 text-slate-500">
-                                <p>No DPP available for today. Check back tomorrow!</p>
-                            </div>
-                        )}
-                    </section>
-                </div>
-
-                {/* Right Column */}
-                <div className="space-y-6">
-                    {/* Daily Challenge */}
-                    <section className="bg-gradient-to-br from-amber-500 to-orange-500 rounded-2xl p-6 text-white">
-                        <div className="flex items-center gap-2 mb-4">
-                            <Trophy className="w-5 h-5" />
-                            <h2 className="text-lg font-semibold">Daily Challenge</h2>
-                        </div>
-                        <p className="text-white/90 mb-4">
-                            Test your skills with today's question and compete with students nationwide!
-                        </p>
-                        <div className="flex items-center justify-between mb-4">
-                            <span className="text-sm text-white/80">
-                                {data?.dailyChallenge?.total_participants.toLocaleString() || '0'} students attempted
-                            </span>
-                        </div>
                         <Link
-                            href="/dashboard/challenge"
-                            className="block w-full py-3 bg-white text-orange-600 font-semibold rounded-xl text-center hover:bg-white/90 transition-colors"
+                            href="/dashboard/tests"
+                            className="w-full inline-flex items-center justify-center gap-1.5 rounded-xl bg-violet-600 px-4 py-2.5 text-xs font-semibold text-white hover:bg-violet-700 transition-colors"
                         >
-                            Attempt Now
+                            Open Mock Tests
                         </Link>
-                    </section>
+                    </div>
+                </div>
+            </section>
 
-                    {/* Upcoming Tests */}
-                    <section className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                        <div className="flex items-center gap-2 mb-4">
-                            <BookOpen className="w-5 h-5 text-primary-600" />
-                            <h2 className="text-lg font-semibold text-slate-900">Upcoming Tests</h2>
+            {/* ────── 7. AI Tutor & Live Classes Row ────── */}
+            <section className="animate-card-slide-up stagger-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* AI Tutor CTA */}
+                    <Link href="/ai-tutor" className="block group">
+                        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-purple-600 to-fuchsia-600 p-5 text-white shadow-sm stat-card-hover">
+                            <div className="absolute right-0 top-0 w-24 h-24 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-xl" />
+                            <div className="relative z-10">
+                                <div className="flex items-center gap-2 mb-2">
+                                    <Brain className="w-5 h-5" />
+                                    <h3 className="text-sm font-semibold">AI Tutor</h3>
+                                </div>
+                                <p className="text-white/70 text-xs mb-3">Get instant help with any concept, upload photos of problems, or ask via voice.</p>
+                                <span className="inline-flex items-center gap-1.5 px-4 py-2 bg-white/20 backdrop-blur-sm rounded-xl text-xs font-semibold group-hover:bg-white/30 transition-colors">
+                                    Ask AI Tutor <ChevronRight className="w-3.5 h-3.5" />
+                                </span>
+                            </div>
                         </div>
+                    </Link>
 
-                        <div className="space-y-3">
+                    {/* Upcoming Tests / Live Classes */}
+                    <div className="glass-card rounded-2xl p-5 shadow-sm">
+                        <div className="flex items-center gap-2 mb-3">
+                            <div className="w-8 h-8 rounded-lg bg-sky-100 flex items-center justify-center">
+                                <Video className="w-4 h-4 text-sky-600" />
+                            </div>
+                            <h3 className="text-sm font-semibold text-slate-900">Upcoming Tests</h3>
+                        </div>
+                        <div className="space-y-2">
                             {data?.upcomingTests && data.upcomingTests.length > 0 ? (
                                 data.upcomingTests.map((test) => (
                                     <UpcomingTestCard
                                         key={test.id}
                                         title={test.title}
                                         date={formatUpcomingDate(test.scheduled_at)}
-                                        duration={`${test.duration_minutes} Minutes`}
+                                        duration={`${test.duration_minutes} min`}
                                         questions={test.question_count.toString()}
                                     />
                                 ))
                             ) : (
-                                <div className="text-center py-4 text-slate-500">
-                                    <p className="text-sm">No upcoming tests scheduled</p>
-                                </div>
+                                <p className="text-xs text-slate-400 py-4 text-center">No upcoming tests scheduled</p>
                             )}
                         </div>
-                    </section>
+                    </div>
+                </div>
+            </section>
 
-                    {/* Gamification Stats */}
-                    {user && (
-                        <section className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+            {/* ────── 8. Gamification & Leaderboard ────── */}
+            {user && (
+                <section className="animate-card-slide-up stagger-5">
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                        {/* Gamification Stats */}
+                        <div className="glass-card rounded-2xl p-5 shadow-sm">
                             <div className="flex items-center justify-between mb-4">
                                 <div className="flex items-center gap-2">
-                                    <Trophy className="w-5 h-5 text-primary-600" />
-                                    <h2 className="text-lg font-semibold text-slate-900">Your Progress</h2>
+                                    <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center">
+                                        <Award className="w-4 h-4 text-amber-600" />
+                                    </div>
+                                    <h3 className="text-sm font-semibold text-slate-900">Your Progress</h3>
                                 </div>
                                 <Link
                                     href="/dashboard/analytics"
-                                    className="text-sm text-primary-600 hover:text-primary-700 font-medium"
+                                    className="text-xs font-semibold text-primary-600 hover:text-primary-700"
                                 >
                                     View All
                                 </Link>
                             </div>
 
-                            {/* Streak & Points Row */}
-                            <div className="grid grid-cols-2 gap-3 mb-4">
-                                <div className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200 rounded-xl p-3">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <Flame className="w-4 h-4 text-orange-600" />
-                                        <span className="text-xs font-medium text-orange-700">Streak</span>
+                            <div className="grid grid-cols-2 gap-2 mb-4">
+                                <div className="bg-gradient-to-br from-orange-50 to-amber-50 border border-orange-200/50 rounded-xl p-3">
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                        <Flame className="w-3.5 h-3.5 text-orange-600" />
+                                        <span className="text-[10px] font-semibold text-orange-700 uppercase tracking-wider">Streak</span>
                                     </div>
                                     <StreakDisplay userId={user.id} variant="minimal" />
                                 </div>
-                                <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200 rounded-xl p-3">
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <Star className="w-4 h-4 text-purple-600" />
-                                        <span className="text-xs font-medium text-purple-700">Points</span>
+                                <div className="bg-gradient-to-br from-purple-50 to-indigo-50 border border-purple-200/50 rounded-xl p-3">
+                                    <div className="flex items-center gap-1.5 mb-1">
+                                        <Star className="w-3.5 h-3.5 text-purple-600" />
+                                        <span className="text-[10px] font-semibold text-purple-700 uppercase tracking-wider">Points</span>
                                     </div>
                                     <UserPointsDisplay userId={user.id} />
                                 </div>
                             </div>
 
-                            {/* Achievements */}
-                            <div className="mb-4">
-                                <h3 className="text-sm font-medium text-slate-700 mb-2">Achievements</h3>
+                            <div>
+                                <h4 className="text-xs font-semibold text-slate-600 mb-2">Achievements</h4>
                                 <AchievementBadge userId={user.id} variant="compact" />
                             </div>
-                        </section>
-                    )}
+                        </div>
 
-                    {/* Mini Leaderboard */}
-                    {user && (
-                        <section className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                            <div className="flex items-center justify-between mb-4">
-                                <div className="flex items-center gap-2">
-                                    <Award className="w-5 h-5 text-primary-600" />
-                                    <h2 className="text-lg font-semibold text-slate-900">Leaderboard</h2>
+                        {/* Leaderboard */}
+                        <div className="glass-card rounded-2xl p-5 shadow-sm">
+                            <div className="flex items-center gap-2 mb-4">
+                                <div className="w-8 h-8 rounded-lg bg-yellow-100 flex items-center justify-center">
+                                    <Trophy className="w-4 h-4 text-yellow-600" />
                                 </div>
+                                <h3 className="text-sm font-semibold text-slate-900">Leaderboard</h3>
                             </div>
                             <CompactLeaderboard userId={user.id} limit={5} />
-                        </section>
-                    )}
-                </div>
-            </div>
+                        </div>
+                    </div>
+                </section>
+            )}
         </div>
     );
 }
 
-function DashboardSkeleton() {
-    return (
-        <div className="space-y-6 animate-pulse">
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <div className="h-8 bg-slate-200 rounded w-64 mb-2"></div>
-                    <div className="h-4 bg-slate-200 rounded w-48"></div>
-                </div>
-                <div className="h-10 bg-slate-200 rounded w-32"></div>
-            </div>
-
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                {[...Array(4)].map((_, i) => (
-                    <div key={i} className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
-                        <div className="w-10 h-10 bg-slate-200 rounded-xl mb-3"></div>
-                        <div className="h-8 bg-slate-200 rounded w-24 mb-1"></div>
-                        <div className="h-4 bg-slate-200 rounded w-20"></div>
-                    </div>
-                ))}
-            </div>
-
-            <div className="grid lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2 space-y-6">
-                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                        <div className="h-6 bg-slate-200 rounded w-32 mb-4"></div>
-                        <div className="space-y-4">
-                            {[...Array(2)].map((_, i) => (
-                                <div key={i} className="flex gap-4 p-4 bg-slate-50 rounded-xl">
-                                    <div className="w-24 h-16 bg-slate-200 rounded-lg"></div>
-                                    <div className="flex-1 space-y-2">
-                                        <div className="h-4 bg-slate-200 rounded w-32"></div>
-                                        <div className="h-3 bg-slate-200 rounded w-48"></div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-                <div className="space-y-6">
-                    <div className="bg-slate-200 rounded-2xl p-6 h-48"></div>
-                    <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                        <div className="h-6 bg-slate-200 rounded w-32 mb-4"></div>
-                        <div className="space-y-3">
-                            {[...Array(2)].map((_, i) => (
-                                <div key={i} className="h-16 bg-slate-200 rounded-xl"></div>
-                            ))}
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function StatCard({
+/* ─── Sub-components ─── */
+function StatPill({
     icon: Icon,
     label,
     value,
-    trend,
-    color
+    gradient,
 }: {
-    icon: typeof Flame;
+    icon: typeof Target;
     label: string;
     value: string;
-    trend: string;
-    color: 'blue' | 'green' | 'purple' | 'amber';
+    gradient: string;
 }) {
-    const colorClasses = {
-        blue: 'bg-blue-50 text-blue-600',
-        green: 'bg-green-50 text-green-600',
-        purple: 'bg-purple-50 text-purple-600',
-        amber: 'bg-amber-50 text-amber-600',
-    };
-
     return (
-        <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100">
-            <div className={`w-10 h-10 rounded-xl ${colorClasses[color]} flex items-center justify-center mb-3`}>
-                <Icon className="w-5 h-5" />
+        <div className={`bg-gradient-to-br ${gradient} rounded-2xl p-4 text-white shadow-md stat-card-hover min-w-[140px] sm:min-w-0`}>
+            <div className="flex items-center gap-1.5 mb-1">
+                <Icon className="w-4 h-4 opacity-80" />
+                <span className="text-[11px] opacity-80 font-medium">{label}</span>
             </div>
-            <div className="text-2xl font-bold text-slate-900">{value}</div>
-            <div className="text-sm text-slate-500">{label}</div>
-            <div className="text-xs text-green-600 font-medium mt-1">{trend}</div>
+            <p className="text-xl font-bold animate-count-up">{value}</p>
         </div>
     );
 }
@@ -1020,27 +952,26 @@ function ContinueLearningCard({
     };
 
     return (
-        <Link href={href} className="flex gap-4 p-4 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer group">
-            <div className="w-24 h-16 bg-slate-200 rounded-lg flex items-center justify-center flex-shrink-0">
-                <Play className="w-8 h-8 text-slate-400 group-hover:text-primary-600 transition-colors" />
+        <Link href={href} className="flex gap-3 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer group">
+            <div className="w-16 h-12 bg-slate-200 rounded-lg flex items-center justify-center flex-shrink-0">
+                <Play className="w-5 h-5 text-slate-400 group-hover:text-primary-600 transition-colors" />
             </div>
             <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1">
-                    <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${subjectColors[subject] || 'bg-gray-100 text-gray-700'}`}>
+                <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className={`px-2 py-0.5 text-[10px] font-semibold rounded-full ${subjectColors[subject] || 'bg-gray-100 text-gray-700'}`}>
                         {subject}
                     </span>
-                    <span className="text-xs text-slate-500">{lastWatched}</span>
+                    <span className="text-[10px] text-slate-400">{lastWatched}</span>
                 </div>
-                <h3 className="font-medium text-slate-900 truncate">{title}</h3>
-                <p className="text-sm text-slate-500">{faculty}</p>
-                <div className="mt-2 flex items-center gap-2">
-                    <div className="flex-1 h-1.5 bg-slate-200 rounded-full overflow-hidden">
+                <h4 className="font-medium text-slate-900 text-xs truncate">{title}</h4>
+                <div className="mt-1.5 flex items-center gap-2">
+                    <div className="flex-1 h-1 bg-slate-200 rounded-full overflow-hidden">
                         <div
-                            className="h-full bg-primary-600 rounded-full transition-all"
+                            className="h-full bg-primary-500 rounded-full transition-all"
                             style={{ width: `${progress}%` }}
                         />
                     </div>
-                    <span className="text-xs text-slate-500">{progress}%</span>
+                    <span className="text-[10px] text-slate-400 font-medium">{progress}%</span>
                 </div>
             </div>
         </Link>
@@ -1059,116 +990,154 @@ function UpcomingTestCard({
     questions: string;
 }) {
     return (
-        <div className="p-3 border border-slate-100 rounded-xl hover:border-primary-200 transition-colors">
-            <h3 className="font-medium text-slate-900 text-sm">{title}</h3>
-            <p className="text-xs text-slate-500 mt-1">{date}</p>
-            <div className="flex items-center gap-3 mt-2 text-xs text-slate-400">
-                <span>{duration}</span>
-                <span>-</span>
-                <span>{questions} Questions</span>
+        <div className="p-3 border border-slate-100 rounded-xl hover:border-primary-200 transition-colors bg-white">
+            <h4 className="font-medium text-slate-900 text-xs">{title}</h4>
+            <p className="text-[11px] text-slate-400 mt-0.5">{date}</p>
+            <div className="flex items-center gap-2 mt-1.5 text-[10px] text-slate-400">
+                <span className="px-2 py-0.5 bg-slate-50 rounded-md">{duration}</span>
+                <span className="px-2 py-0.5 bg-slate-50 rounded-md">{questions} Qs</span>
             </div>
         </div>
     );
 }
 
+function StatCard({
+    icon: Icon,
+    label,
+    value,
+    trend,
+    color
+}: {
+    icon: typeof Flame;
+    label: string;
+    value: string;
+    trend: string;
+    color: 'blue' | 'green' | 'purple' | 'amber';
+}) {
+    const colorClasses = {
+        blue: 'bg-blue-50 text-blue-600',
+        green: 'bg-green-50 text-green-600',
+        purple: 'bg-purple-50 text-purple-600',
+        amber: 'bg-amber-50 text-amber-600',
+    };
+
+    return (
+        <div className="bg-white rounded-2xl p-4 shadow-sm border border-slate-100 stat-card-hover">
+            <div className={`w-10 h-10 rounded-xl ${colorClasses[color]} flex items-center justify-center mb-3`}>
+                <Icon className="w-5 h-5" />
+            </div>
+            <div className="text-2xl font-bold text-slate-900">{value}</div>
+            <div className="text-sm text-slate-500">{label}</div>
+            <div className="text-xs text-green-600 font-medium mt-1">{trend}</div>
+        </div>
+    );
+}
+
+/* ─── Skeleton ─── */
+function DashboardSkeleton() {
+    return (
+        <div className="space-y-5 max-w-5xl mx-auto animate-pulse">
+            {/* Hero skeleton */}
+            <div className="rounded-2xl bg-gradient-to-br from-slate-200 to-slate-300 h-28 sm:h-24" />
+
+            {/* Stat pills skeleton */}
+            <div className="flex gap-3 overflow-hidden">
+                {[...Array(4)].map((_, i) => (
+                    <div key={i} className="rounded-2xl bg-slate-200 h-20 min-w-[140px] flex-1" />
+                ))}
+            </div>
+
+            {/* Main content skeleton */}
+            <div className="grid lg:grid-cols-2 gap-4">
+                <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                    <div className="h-5 bg-slate-200 rounded w-32 mb-4" />
+                    <div className="aspect-video bg-slate-200 rounded-xl mb-3" />
+                    <div className="h-4 bg-slate-200 rounded w-48" />
+                </div>
+                <div className="space-y-4">
+                    <div className="bg-white rounded-2xl p-5 shadow-sm border border-slate-100">
+                        <div className="h-5 bg-slate-200 rounded w-24 mb-3" />
+                        <div className="h-16 bg-slate-200 rounded-xl" />
+                    </div>
+                    <div className="bg-slate-200 rounded-2xl h-36" />
+                </div>
+            </div>
+        </div>
+    );
+}
+
+/* ─── Faculty Dashboard ─── */
 function FacultyDashboard({ user }: { user: any }) {
     const displayName = user?.full_name?.split(' ')[0] || 'Faculty';
-    
+
     return (
-        <div className="space-y-6">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-slate-900">Welcome back, {displayName}!</h1>
-                    <p className="text-slate-500">Here's an overview of your teaching sessions</p>
-                </div>
-                <div className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-primary-600 to-primary-500 text-white rounded-xl shadow-sm">
-                    <Users className="w-5 h-5" />
-                    <span className="font-semibold">Professional Faculty</span>
+        <div className="space-y-6 max-w-5xl mx-auto">
+            <div className="animate-card-slide-up">
+                <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800 to-slate-900 p-5 sm:p-6 text-white shadow-lg">
+                    <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/5 rounded-full blur-2xl" />
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div>
+                            <h1 className="text-xl sm:text-2xl font-bold">Welcome back, {displayName}!</h1>
+                            <p className="text-white/60 text-sm mt-1">Here's an overview of your teaching sessions</p>
+                        </div>
+                        <div className="flex items-center gap-2 px-4 py-2 bg-white/10 backdrop-blur-sm rounded-xl">
+                            <Users className="w-5 h-5" />
+                            <span className="font-semibold text-sm">Professional Faculty</span>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {/* Stats Grid */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-                <StatCard
-                    icon={PlayCircle}
-                    label="My Lectures"
-                    value="12"
-                    trend="+2 this week"
-                    color="blue"
-                />
-                <StatCard
-                    icon={HelpCircle}
-                    label="Student Doubts"
-                    value="8"
-                    trend="Requires attention"
-                    color="amber"
-                />
-                <StatCard
-                    icon={TrendingUp}
-                    label="Student Mastery"
-                    value="72%"
-                    trend="+4.2%"
-                    color="green"
-                />
-                <StatCard
-                    icon={Clock}
-                    label="Class Hours"
-                    value="124h"
-                    trend="This year"
-                    color="purple"
-                />
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 animate-card-slide-up stagger-1">
+                <StatCard icon={PlayCircle} label="My Lectures" value="12" trend="+2 this week" color="blue" />
+                <StatCard icon={HelpCircle} label="Student Doubts" value="8" trend="Requires attention" color="amber" />
+                <StatCard icon={TrendingUp} label="Student Mastery" value="72%" trend="+4.2%" color="green" />
+                <StatCard icon={Clock} label="Class Hours" value="124h" trend="This year" color="purple" />
             </div>
 
-            <div className="grid lg:grid-cols-3 gap-6">
-                {/* Schedule */}
-                <div className="lg:col-span-2 bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                    <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-lg font-semibold text-slate-900">Teaching Schedule</h2>
-                        <button className="text-sm text-primary-600 hover:text-primary-700 font-medium">
+            <div className="grid lg:grid-cols-3 gap-4 animate-card-slide-up stagger-2">
+                <div className="lg:col-span-2 glass-card rounded-2xl p-5 shadow-sm">
+                    <div className="flex items-center justify-between mb-5">
+                        <h2 className="text-base font-semibold text-slate-900">Teaching Schedule</h2>
+                        <button className="text-xs text-primary-600 hover:text-primary-700 font-semibold">
                             Manage Calendar
                         </button>
                     </div>
 
-                    <div className="text-center py-12 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
-                        <Calendar className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-                        <h3 className="text-slate-900 font-medium">No classes today</h3>
-                        <p className="text-slate-500 text-sm mt-1">Enjoy your free time or prepare for upcoming sessions!</p>
-                        <button className="mt-4 px-6 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors">
+                    <div className="text-center py-10 bg-slate-50 rounded-2xl border-2 border-dashed border-slate-200">
+                        <Calendar className="w-10 h-10 mx-auto mb-3 text-slate-300" />
+                        <h3 className="text-slate-900 font-medium text-sm">No classes today</h3>
+                        <p className="text-slate-500 text-xs mt-1">Enjoy your free time or prepare for upcoming sessions!</p>
+                        <button className="mt-4 px-5 py-2 bg-primary-600 text-white text-sm rounded-lg hover:bg-primary-700 transition-colors">
                             Schedule Session
                         </button>
                     </div>
                 </div>
 
-                {/* Right sidebar for faculty */}
-                <div className="space-y-6">
-                    <section className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
-                        <h2 className="text-lg font-semibold text-slate-900 mb-4">Quick Actions</h2>
-                        <div className="space-y-2">
-                            <button className="w-full flex items-center gap-3 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors text-left group">
-                                <div className="p-2 bg-blue-100 rounded-lg text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                                    <PlayCircle className="w-4 h-4" />
-                                </div>
-                                <span className="text-sm font-medium text-slate-700">Upload Lecture</span>
-                            </button>
-                            <button className="w-full flex items-center gap-3 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors text-left group">
-                                <div className="p-2 bg-amber-100 rounded-lg text-amber-600 group-hover:bg-amber-600 group-hover:text-white transition-colors">
-                                    <HelpCircle className="w-4 h-4" />
-                                </div>
-                                <span className="text-sm font-medium text-slate-700">Solve Doubts</span>
-                            </button>
-                            <button className="w-full flex items-center gap-3 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors text-left group">
-                                <div className="p-2 bg-green-100 rounded-lg text-green-600 group-hover:bg-green-600 group-hover:text-white transition-colors">
-                                    <Users className="w-4 h-4" />
-                                </div>
-                                <span className="text-sm font-medium text-slate-700">Batch Performance</span>
-                            </button>
-                        </div>
-                    </section>
+                <div className="glass-card rounded-2xl p-5 shadow-sm">
+                    <h2 className="text-base font-semibold text-slate-900 mb-4">Quick Actions</h2>
+                    <div className="space-y-2">
+                        <button className="w-full flex items-center gap-3 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors text-left group">
+                            <div className="p-2 bg-blue-100 rounded-lg text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                                <PlayCircle className="w-4 h-4" />
+                            </div>
+                            <span className="text-sm font-medium text-slate-700">Upload Lecture</span>
+                        </button>
+                        <button className="w-full flex items-center gap-3 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors text-left group">
+                            <div className="p-2 bg-amber-100 rounded-lg text-amber-600 group-hover:bg-amber-600 group-hover:text-white transition-colors">
+                                <HelpCircle className="w-4 h-4" />
+                            </div>
+                            <span className="text-sm font-medium text-slate-700">Solve Doubts</span>
+                        </button>
+                        <button className="w-full flex items-center gap-3 p-3 bg-slate-50 rounded-xl hover:bg-slate-100 transition-colors text-left group">
+                            <div className="p-2 bg-green-100 rounded-lg text-green-600 group-hover:bg-green-600 group-hover:text-white transition-colors">
+                                <Users className="w-4 h-4" />
+                            </div>
+                            <span className="text-sm font-medium text-slate-700">Batch Performance</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
     );
 }
-
-
