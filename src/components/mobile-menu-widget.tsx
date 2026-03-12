@@ -28,6 +28,12 @@ import {
     ChevronRight,
     Send,
     Menu,
+    Bot,
+    Briefcase,
+    FileCode,
+    Database,
+    Image,
+    ShieldCheck,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -60,17 +66,23 @@ const parentMenuItems = [
 
 const adminMenuItems = [
     { name: 'Dashboard', href: '/admin', icon: Home },
+    { name: 'AI Assistant', href: '/admin/ai-assistant', icon: Bot },
+    { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
     { name: 'Students', href: '/admin/students', icon: Users },
     { name: 'Courses', href: '/admin/courses', icon: BookOpen },
     { name: 'Lectures', href: '/admin/lectures', icon: PlayCircle },
     { name: 'Questions', href: '/admin/questions', icon: HelpCircle },
     { name: 'Tests', href: '/admin/tests', icon: GraduationCap },
-    { name: 'Online Exams', href: '/admin/online-exams', icon: ClipboardList },
-    { name: 'Finance', href: '/admin/finance', icon: Landmark },
-    { name: 'Payments', href: '/admin/payments', icon: CreditCard },
+    { name: 'Online Exams', href: '/admin/online-exams', icon: ShieldCheck },
+    { name: 'Careers', href: '/admin/careers', icon: Briefcase },
     { name: 'Leads', href: '/admin/leads', icon: FileText },
+    { name: 'CMS', href: '/admin/cms', icon: FileCode },
     { name: 'AI Content', href: '/admin/ai-content', icon: Sparkles },
-    { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
+    { name: 'Payments', href: '/admin/payments', icon: CreditCard },
+    { name: 'Finance', href: '/admin/finance', icon: Landmark },
+    { name: 'Daily Challenge', href: '/admin/challenges', icon: Trophy },
+    { name: 'Popup Ads', href: '/admin/ads', icon: Image },
+    { name: 'Backups', href: '/admin/backups', icon: Database },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
 ];
 
