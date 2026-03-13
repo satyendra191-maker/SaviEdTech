@@ -71,7 +71,7 @@
         },
         {
             "path": "/api/cron/health-monitor",
-            "schedule": "0 * * * *"
+            "schedule": "0 4 * * *"
         },
         {
             "path": "/api/cron/rank-prediction",
