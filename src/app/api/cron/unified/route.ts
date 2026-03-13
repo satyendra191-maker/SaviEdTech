@@ -10,252 +10,500 @@ async function verifyCronSecret(request: NextRequest): Promise<boolean> {
     return token === process.env.CRON_SECRET;
 }
 
-interface CronTask {
+interface CronResult {
     id: string;
     name: string;
-    execute: () => Promise<{ success: boolean; message: string; duration: number }>;
+    success: boolean;
+    message: string;
+    details?: Record<string, unknown>;
+    duration: number;
 }
 
-async function runAIContentGeneration(): Promise<{ success: boolean; message: string; duration: number }> {
-    const start = Date.now();
-    try {
-        const supabase = createAdminSupabaseClient();
-        const { data: topics } = await supabase
-            .from('topics')
-            .select('id, name')
-            .limit(5);
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://saviedutech.vercel.app';
 
-        return { success: true, message: `Generated content for ${topics?.length || 0} topics`, duration: Date.now() - start };
-    } catch (error) {
-        return { success: false, message: String(error), duration: Date.now() - start };
-    }
-}
-
-async function runExamEngine(): Promise<{ success: boolean; message: string; duration: number }> {
-    const start = Date.now();
+async function triggerCronEndpoint(endpoint: string): Promise<{ success: boolean; data?: unknown; error?: string }> {
     try {
-        const supabase = createAdminSupabaseClient();
-        const { data: questions } = await supabase
-            .from('questions')
-            .select('id')
-            .limit(10);
+        const response = await fetch(`${APP_URL}${endpoint}`, {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${process.env.CRON_SECRET}`,
+                'Content-Type': 'application/json',
+            },
+        });
         
-        return { success: true, message: `Processed ${questions?.length || 0} questions`, duration: Date.now() - start };
+        if (response.ok) {
+            let data: unknown;
+            try { data = await response.json(); } catch { data = null; }
+            return { success: true, data };
+        } else {
+            const error = await response.text();
+            return { success: false, error: `HTTP ${response.status}: ${error}` };
+        }
     } catch (error) {
-        return { success: false, message: String(error), duration: Date.now() - start };
+        return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
 }
 
-async function runStudentAnalytics(): Promise<{ success: boolean; message: string; duration: number }> {
+async function sendStudyReminders(): Promise<CronResult> {
     const start = Date.now();
     try {
         const supabase = createAdminSupabaseClient();
-        const { count } = await supabase
-            .from('profiles')
-            .select('*', { count: 'exact', head: true })
-            .eq('role', 'student');
+        const cutoff48h = new Date(Date.now() - 48 * 60 * 60 * 1000).toISOString();
 
-        return { success: true, message: `Analyzed ${count || 0} student profiles`, duration: Date.now() - start };
-    } catch (error) {
-        return { success: false, message: String(error), duration: Date.now() - start };
-    }
-}
-
-async function runEngagement(): Promise<{ success: boolean; message: string; duration: number }> {
-    const start = Date.now();
-    try {
-        const supabase = createAdminSupabaseClient();
-        const { data: users } = await supabase
+        const { data: inactiveStudents } = await (supabase as any)
             .from('profiles')
-            .select('id, phone')
+            .select('id, full_name, email')
             .eq('role', 'student')
-            .limit(50);
+            .eq('is_active', true)
+            .lt('last_active_at', cutoff48h)
+            .limit(500);
 
-        return { success: true, message: `Sent engagement notifications to ${users?.length || 0} users`, duration: Date.now() - start };
+        let notificationsSent = 0;
+        if (inactiveStudents) {
+            for (const student of inactiveStudents) {
+                await (supabase as any).from('notifications').insert({
+                    user_id: student.id,
+                    title: '📚 Time to Study!',
+                    message: `Hey ${student.full_name?.split(' ')[0] ?? 'there'}! You haven't studied in a while. Keep your streak alive!`,
+                    type: 'study_reminder',
+                    is_read: false,
+                });
+                notificationsSent++;
+            }
+        }
+
+        return { 
+            id: 'study-reminders', 
+            name: 'Study Reminders', 
+            success: true, 
+            message: `Sent ${notificationsSent} study reminders to inactive students`,
+            details: { notificationsSent },
+            duration: Date.now() - start 
+        };
     } catch (error) {
-        return { success: false, message: String(error), duration: Date.now() - start };
+        return { 
+            id: 'study-reminders', 
+            name: 'Study Reminders', 
+            success: false, 
+            message: String(error),
+            duration: Date.now() - start 
+        };
     }
 }
 
-async function runMarketingAutomation(): Promise<{ success: boolean; message: string; duration: number }> {
+async function notifyNewLectures(): Promise<CronResult> {
     const start = Date.now();
     try {
         const supabase = createAdminSupabaseClient();
-        const { count } = await supabase
-            .from('leads')
-            .select('*', { count: 'exact', head: true })
-            .eq('status', 'new');
+        const cutoff24h = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
 
-        return { success: true, message: `Processed ${count || 0} marketing leads`, duration: Date.now() - start };
-    } catch (error) {
-        return { success: false, message: String(error), duration: Date.now() - start };
-    }
-}
-
-async function runFinancialAutomation(): Promise<{ success: boolean; message: string; duration: number }> {
-    const start = Date.now();
-    try {
-        const supabase = createAdminSupabaseClient();
-        const { data: payments } = await supabase
-            .from('payments')
-            .select('id, status')
-            .eq('status', 'completed')
+        const { data: newLectures } = await (supabase as any)
+            .from('lectures')
+            .select('id, title, subject')
+            .gte('created_at', cutoff24h)
+            .eq('is_published', true)
             .limit(20);
 
-        return { success: true, message: `Verified ${payments?.length || 0} payments`, duration: Date.now() - start };
+        let notificationsSent = 0;
+        if (newLectures && newLectures.length > 0) {
+            const { data: allStudents } = await (supabase as any)
+                .from('profiles')
+                .select('id, full_name')
+                .eq('role', 'student')
+                .eq('is_active', true)
+                .limit(500);
+
+            if (allStudents) {
+                for (const student of allStudents) {
+                    for (const lecture of newLectures) {
+                        await (supabase as any).from('notifications').insert({
+                            user_id: student.id,
+                            title: '📖 New Lecture Available!',
+                            message: `${lecture.title} has been published. Start learning now!`,
+                            type: 'lecture',
+                            link: `/lectures/${lecture.id}`,
+                        });
+                        notificationsSent++;
+                    }
+                }
+            }
+        }
+
+        return { 
+            id: 'lecture-alerts', 
+            name: 'Lecture Alerts', 
+            success: true, 
+            message: `Sent ${notificationsSent} new lecture notifications`,
+            details: { lecturesFound: newLectures?.length || 0, notificationsSent },
+            duration: Date.now() - start 
+        };
     } catch (error) {
-        return { success: false, message: String(error), duration: Date.now() - start };
+        return { 
+            id: 'lecture-alerts', 
+            name: 'Lecture Alerts', 
+            success: false, 
+            message: String(error),
+            duration: Date.now() - start 
+        };
     }
 }
 
-async function runDatabaseMaintenance(): Promise<{ success: boolean; message: string; duration: number }> {
-    const start = Date.now();
-    try {
-        return { success: true, message: 'Database indexes optimized', duration: Date.now() - start };
-    } catch (error) {
-        return { success: false, message: String(error), duration: Date.now() - start };
-    }
-}
-
-async function runSecurityMonitoring(): Promise<{ success: boolean; message: string; duration: number }> {
-    const start = Date.now();
-    try {
-        const supabase = createAdminSupabaseClient();
-        const { count } = await supabase
-            .from('auth_logs')
-            .select('*', { count: 'exact', head: true })
-            .gte('created_at', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString());
-
-        return { success: true, message: `Audited ${count || 0} auth logs`, duration: Date.now() - start };
-    } catch (error) {
-        return { success: false, message: String(error), duration: Date.now() - start };
-    }
-}
-
-async function runPerformanceOptimization(): Promise<{ success: boolean; message: string; duration: number }> {
-    const start = Date.now();
-    try {
-        return { success: true, message: 'Performance metrics collected', duration: Date.now() - start };
-    } catch (error) {
-        return { success: false, message: String(error), duration: Date.now() - start };
-    }
-}
-
-async function runAutomatedTesting(): Promise<{ success: boolean; message: string; duration: number }> {
-    const start = Date.now();
-    try {
-        return { success: true, message: 'System tests passed', duration: Date.now() - start };
-    } catch (error) {
-        return { success: false, message: String(error), duration: Date.now() - start };
-    }
-}
-
-async function runLiveClassAutomation(): Promise<{ success: boolean; message: string; duration: number }> {
+async function notifyDailyChallenge(): Promise<CronResult> {
     const start = Date.now();
     try {
         const supabase = createAdminSupabaseClient();
         const today = new Date().toISOString().split('T')[0];
-        const { count } = await supabase
-            .from('live_classes')
-            .select('*', { count: 'exact', head: true })
-            .eq('scheduled_date', today);
 
-        return { success: true, message: `Processed ${count || 0} live classes`, duration: Date.now() - start };
+        const { data: challenge } = await (supabase as any)
+            .from('daily_challenges')
+            .select('id, title, challenge_date')
+            .eq('challenge_date', today)
+            .maybeSingle();
+
+        let notificationsSent = 0;
+        if (challenge) {
+            const { data: allStudents } = await (supabase as any)
+                .from('profiles')
+                .select('id, full_name')
+                .eq('role', 'student')
+                .eq('is_active', true)
+                .limit(500);
+
+            if (allStudents) {
+                for (const student of allStudents) {
+                    await (supabase as any).from('notifications').insert({
+                        user_id: student.id,
+                        title: '🎯 Daily Challenge Ready!',
+                        message: `Today's challenge: ${challenge.title}. Test your skills now!`,
+                        type: 'challenge',
+                        link: '/challenge',
+                    });
+                    notificationsSent++;
+                }
+            }
+        }
+
+        return { 
+            id: 'daily-challenge', 
+            name: 'Daily Challenge', 
+            success: true, 
+            message: `Published daily challenge and sent ${notificationsSent} notifications`,
+            details: { notificationsSent },
+            duration: Date.now() - start 
+        };
     } catch (error) {
-        return { success: false, message: String(error), duration: Date.now() - start };
+        return { 
+            id: 'daily-challenge', 
+            name: 'Daily Challenge', 
+            success: false, 
+            message: String(error),
+            duration: Date.now() - start 
+        };
     }
 }
 
-async function runLeadManagement(): Promise<{ success: boolean; message: string; duration: number }> {
+async function updateStudentAnalytics(): Promise<CronResult> {
     const start = Date.now();
     try {
         const supabase = createAdminSupabaseClient();
-        const { count } = await supabase
+
+        const { data: students } = await (supabase as any)
+            .from('profiles')
+            .select('id')
+            .eq('role', 'student')
+            .eq('is_active', true)
+            .limit(500);
+
+        let analyticsUpdated = 0;
+        if (students) {
+            for (const student of students) {
+                const { data: testAttempts } = await (supabase as any)
+                    .from('test_attempts')
+                    .select('total_score, max_score')
+                    .eq('user_id', student.id)
+                    .in('status', ['completed', 'time_up']);
+
+                const { data: lectureProgress } = await (supabase as any)
+                    .from('lecture_progress')
+                    .select('progress_percent')
+                    .eq('user_id', student.id);
+
+                const avgScore = testAttempts && testAttempts.length > 0
+                    ? testAttempts.reduce((sum, t) => sum + (t.total_score / t.max_score * 100), 0) / testAttempts.length
+                    : 0;
+
+                const avgProgress = lectureProgress && lectureProgress.length > 0
+                    ? lectureProgress.reduce((sum, p) => sum + (p.progress_percent || 0), 0) / lectureProgress.length
+                    : 0;
+
+                await (supabase as any).from('student_analytics').upsert({
+                    student_id: student.id,
+                    avg_progress: Math.round(avgProgress),
+                    avg_test_percentile: Math.round(avgScore),
+                    last_updated: new Date().toISOString(),
+                });
+                analyticsUpdated++;
+            }
+        }
+
+        return { 
+            id: 'student-analytics', 
+            name: 'Student Analytics', 
+            success: true, 
+            message: `Updated analytics for ${analyticsUpdated} students`,
+            details: { analyticsUpdated },
+            duration: Date.now() - start 
+        };
+    } catch (error) {
+        return { 
+            id: 'student-analytics', 
+            name: 'Student Analytics', 
+            success: false, 
+            message: String(error),
+            duration: Date.now() - start 
+        };
+    }
+}
+
+async function updateLeaderboard(): Promise<CronResult> {
+    const start = Date.now();
+    try {
+        const supabase = createAdminSupabaseClient();
+
+        const { data: topStudents } = await (supabase as any)
+            .from('user_points')
+            .select('user_id, total_points')
+            .order('total_points', { ascending: false })
+            .limit(100);
+
+        let ranksUpdated = 0;
+        if (topStudents) {
+            for (let i = 0; i < topStudents.length; i++) {
+                await (supabase as any).from('leaderboard').upsert({
+                    user_id: topStudents[i].user_id,
+                    rank: i + 1,
+                    points: topStudents[i].total_points,
+                    updated_at: new Date().toISOString(),
+                });
+                ranksUpdated++;
+            }
+        }
+
+        return { 
+            id: 'leaderboard', 
+            name: 'Leaderboard Update', 
+            success: true, 
+            message: `Updated ranks for top ${ranksUpdated} students`,
+            details: { ranksUpdated },
+            duration: Date.now() - start 
+        };
+    } catch (error) {
+        return { 
+            id: 'leaderboard', 
+            name: 'Leaderboard Update', 
+            success: false, 
+            message: String(error),
+            duration: Date.now() - start 
+        };
+    }
+}
+
+async function processLeads(): Promise<CronResult> {
+    const start = Date.now();
+    try {
+        const supabase = createAdminSupabaseClient();
+
+        const { data: newLeads } = await (supabase as any)
             .from('lead_forms')
-            .select('*', { count: 'exact', head: true })
-            .eq('status', 'new');
+            .select('id, name, phone, email, exam_target')
+            .eq('status', 'new')
+            .limit(100);
 
-        return { success: true, message: `Processed ${count || 0} leads`, duration: Date.now() - start };
+        let leadsProcessed = 0;
+        if (newLeads) {
+            for (const lead of newLeads) {
+                await (supabase as any).from('leads').insert({
+                    name: lead.name,
+                    phone: lead.phone,
+                    email: lead.email,
+                    exam_target: lead.exam_target,
+                    source: 'website',
+                    status: 'new',
+                    created_at: new Date().toISOString(),
+                });
+
+                await (supabase as any).from('lead_forms')
+                    .update({ status: 'processed' })
+                    .eq('id', lead.id);
+                
+                leadsProcessed++;
+            }
+        }
+
+        return { 
+            id: 'lead-processing', 
+            name: 'Lead Processing', 
+            success: true, 
+            message: `Processed ${leadsProcessed} new leads`,
+            details: { leadsProcessed },
+            duration: Date.now() - start 
+        };
     } catch (error) {
-        return { success: false, message: String(error), duration: Date.now() - start };
+        return { 
+            id: 'lead-processing', 
+            name: 'Lead Processing', 
+            success: false, 
+            message: String(error),
+            duration: Date.now() - start 
+        };
     }
 }
 
-async function runSupabaseHealth(): Promise<{ success: boolean; message: string; duration: number }> {
+async function verifyPayments(): Promise<CronResult> {
     const start = Date.now();
     try {
         const supabase = createAdminSupabaseClient();
-        const { error } = await supabase.from('system_health').select('id').limit(1);
+
+        const { data: pendingPayments } = await (supabase as any)
+            .from('payments')
+            .select('id, user_id, amount, status')
+            .eq('status', 'pending')
+            .limit(50);
+
+        let paymentsVerified = 0;
+        if (pendingPayments) {
+            for (const payment of pendingPayments) {
+                const { data: enrollments } = await (supabase as any)
+                    .from('enrollments')
+                    .select('id')
+                    .eq('user_id', payment.user_id)
+                    .limit(1);
+
+                if (enrollments && enrollments.length > 0) {
+                    await (supabase as any).from('payments')
+                        .update({ status: 'completed' })
+                        .eq('id', payment.id);
+                    
+                    await (supabase as any).from('notifications').insert({
+                        user_id: payment.user_id,
+                        title: '✅ Payment Confirmed!',
+                        message: `Your payment of ₹${payment.amount} has been verified. Start learning now!`,
+                        type: 'payment',
+                    });
+                    paymentsVerified++;
+                }
+            }
+        }
+
+        return { 
+            id: 'payment-verification', 
+            name: 'Payment Verification', 
+            success: true, 
+            message: `Verified ${paymentsVerified} payments`,
+            details: { paymentsVerified },
+            duration: Date.now() - start 
+        };
+    } catch (error) {
+        return { 
+            id: 'payment-verification', 
+            name: 'Payment Verification', 
+            success: false, 
+            message: String(error),
+            duration: Date.now() - start 
+        };
+    }
+}
+
+async function checkDatabaseHealth(): Promise<CronResult> {
+    const start = Date.now();
+    try {
+        const supabase = createAdminSupabaseClient();
+        
+        const { error } = await supabase.from('profiles').select('id').limit(1);
         
         if (error) throw error;
-        return { success: true, message: 'Database health verified', duration: Date.now() - start };
+
+        await (supabase as any).from('system_health').insert({
+            check_name: 'database',
+            status: 'healthy',
+            response_time_ms: Date.now() - start,
+            checked_at: new Date().toISOString(),
+        });
+
+        return { 
+            id: 'db-health', 
+            name: 'Database Health', 
+            success: true, 
+            message: 'Database connection healthy',
+            duration: Date.now() - start 
+        };
     } catch (error) {
-        return { success: false, message: String(error), duration: Date.now() - start };
+        return { 
+            id: 'db-health', 
+            name: 'Database Health', 
+            success: false, 
+            message: String(error),
+            duration: Date.now() - start 
+        };
     }
 }
 
-async function runAuthCheck(): Promise<{ success: boolean; message: string; duration: number }> {
-    const start = Date.now();
-    try {
-        return { success: true, message: 'Authentication system verified', duration: Date.now() - start };
-    } catch (error) {
-        return { success: false, message: String(error), duration: Date.now() - start };
-    }
-}
-
-async function runGamification(): Promise<{ success: boolean; message: string; duration: number }> {
-    const start = Date.now();
-    try {
-        const supabase = createAdminSupabaseClient();
-        const { count } = await supabase
-            .from('user_points')
-            .select('*', { count: 'exact', head: true });
-
-        return { success: true, message: `Updated points for ${count || 0} users`, duration: Date.now() - start };
-    } catch (error) {
-        return { success: false, message: String(error), duration: Date.now() - start };
-    }
-}
-
-async function runDailyChallenge(): Promise<{ success: boolean; message: string; duration: number }> {
+async function runGamification(): Promise<CronResult> {
     const start = Date.now();
     try {
         const supabase = createAdminSupabaseClient();
+
+        const { data: students } = await (supabase as any)
+            .from('profiles')
+            .select('id, last_active_at')
+            .eq('role', 'student')
+            .eq('is_active', true)
+            .limit(500);
+
+        let streaksUpdated = 0;
         const today = new Date().toISOString().split('T')[0];
         
-        const { data: exams } = await supabase
-            .from('exams')
-            .select('id')
-            .eq('is_active', true)
-            .limit(5);
+        if (students) {
+            for (const student of students) {
+                const lastActive = student.last_active_at?.split('T')[0];
+                
+                if (lastActive === today) {
+                    const { data: existingStreak } = await (supabase as any)
+                        .from('user_streaks')
+                        .select('current_streak')
+                        .eq('user_id', student.id)
+                        .maybeSingle();
 
-        return { success: true, message: `Published daily challenges for ${exams?.length || 0} exams`, duration: Date.now() - start };
+                    const newStreak = (existingStreak?.current_streak || 0) + 1;
+
+                    await (supabase as any).from('user_streaks').upsert({
+                        user_id: student.id,
+                        current_streak: newStreak,
+                        longest_streak: Math.max(newStreak, existingStreak?.longest_streak || 0),
+                        last_study_date: today,
+                        updated_at: new Date().toISOString(),
+                    });
+                    streaksUpdated++;
+                }
+            }
+        }
+
+        return { 
+            id: 'gamification', 
+            name: 'Gamification', 
+            success: true, 
+            message: `Updated streaks for ${streaksUpdated} students`,
+            details: { streaksUpdated },
+            duration: Date.now() - start 
+        };
     } catch (error) {
-        return { success: false, message: String(error), duration: Date.now() - start };
-    }
-}
-
-async function runPlatformAuditor(): Promise<{ success: boolean; message: string; duration: number }> {
-    const start = Date.now();
-    try {
-        return { success: true, message: 'Platform audit completed', duration: Date.now() - start };
-    } catch (error) {
-        return { success: false, message: String(error), duration: Date.now() - start };
-    }
-}
-
-async function runRankPrediction(): Promise<{ success: boolean; message: string; duration: number }> {
-    const start = Date.now();
-    try {
-        const supabase = createAdminSupabaseClient();
-        const { count } = await supabase
-            .from('student_profiles')
-            .select('*', { count: 'exact', head: true })
-            .not('rank_prediction', 'is', null);
-
-        return { success: true, message: `Updated rank predictions for ${count || 0} students`, duration: Date.now() - start };
-    } catch (error) {
-        return { success: false, message: String(error), duration: Date.now() - start };
+        return { 
+            id: 'gamification', 
+            name: 'Gamification', 
+            success: false, 
+            message: String(error),
+            duration: Date.now() - start 
+        };
     }
 }
 
@@ -269,78 +517,50 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const tasks: CronTask[] = [
-            { id: 'ai-content', name: 'AI Content Generation', execute: runAIContentGeneration },
-            { id: 'exam-engine', name: 'Exam Engine', execute: runExamEngine },
-            { id: 'student-analytics', name: 'Student Analytics', execute: runStudentAnalytics },
-            { id: 'engagement', name: 'Student Engagement', execute: runEngagement },
-            { id: 'marketing-automation', name: 'Marketing Automation', execute: runMarketingAutomation },
-            { id: 'financial-automation', name: 'Financial Automation', execute: runFinancialAutomation },
-            { id: 'database-maintenance', name: 'Database Maintenance', execute: runDatabaseMaintenance },
-            { id: 'security-monitoring', name: 'Security Monitoring', execute: runSecurityMonitoring },
-            { id: 'performance-optimization', name: 'Performance Optimization', execute: runPerformanceOptimization },
-            { id: 'automated-testing', name: 'Automated Testing', execute: runAutomatedTesting },
-            { id: 'live-class-automation', name: 'Live Class Automation', execute: runLiveClassAutomation },
-            { id: 'lead-management', name: 'Lead Management', execute: runLeadManagement },
-            { id: 'supabase-health', name: 'Supabase Health Check', execute: runSupabaseHealth },
-            { id: 'auth-check', name: 'Authentication Check', execute: runAuthCheck },
-            { id: 'gamification', name: 'Gamification', execute: runGamification },
-            { id: 'daily-challenge', name: 'Daily Challenge', execute: runDailyChallenge },
-            { id: 'rank-prediction', name: 'Rank Prediction', execute: runRankPrediction },
-            { id: 'platform-auditor', name: 'Platform Auditor', execute: runPlatformAuditor },
-        ];
+        const results: CronResult[] = [];
 
-        const results: Array<{
-            id: string;
-            name: string;
-            success: boolean;
-            message: string;
-            duration: number;
-        }> = [];
+        // Execute all cron tasks
+        const tasks = [
+            sendStudyReminders,
+            notifyNewLectures,
+            notifyDailyChallenge,
+            updateStudentAnalytics,
+            updateLeaderboard,
+            processLeads,
+            verifyPayments,
+            checkDatabaseHealth,
+            runGamification,
+        ];
 
         const supabase = createAdminSupabaseClient();
 
         for (const task of tasks) {
-            const taskStart = Date.now();
-            
-            await (supabase as any).from('cron_job_logs').insert({
-                job_name: task.id,
-                status: 'running',
-                details: { requestId },
-                executed_at: new Date().toISOString(),
-            });
+            const result = await task();
+            results.push(result);
 
-            const result = await task.execute();
-            result.duration = Date.now() - taskStart;
-            
-            results.push({
-                id: task.id,
-                name: task.name,
-                ...result,
-            });
-
+            // Log to database
             await (supabase as any).from('cron_job_logs').insert({
-                job_name: task.id,
+                job_name: result.id,
                 status: result.success ? 'success' : 'failed',
-                details: { message: result.message, requestId },
+                details: { message: result.message, ...result.details },
                 duration_ms: result.duration,
                 executed_at: new Date().toISOString(),
             });
         }
 
         const totalDuration = Date.now() - startTime;
-        const successfulTasks = results.filter(r => r.success).length;
-        const failedTasks = results.filter(r => !r.success).length;
+        const successful = results.filter(r => r.success).length;
+        const failed = results.filter(r => !r.success).length;
 
-        console.log(`[Unified Cron] Completed in ${totalDuration}ms - Success: ${successfulTasks}, Failed: ${failedTasks}`);
+        console.log(`[Unified Cron] Completed in ${totalDuration}ms - Success: ${successful}, Failed: ${failed}`);
 
         return NextResponse.json({
-            success: failedTasks === 0,
+            success: failed === 0,
             requestId,
             summary: {
                 totalTasks: tasks.length,
-                successful: successfulTasks,
-                failed: failedTasks,
+                successful,
+                failed,
                 totalDuration: `${totalDuration}ms`,
             },
             results,
