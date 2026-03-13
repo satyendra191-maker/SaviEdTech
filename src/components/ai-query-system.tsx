@@ -7,6 +7,7 @@ import {
     FileImage,
     Loader2,
     Mic,
+    Play,
     RefreshCw,
     Send,
     Sparkles,
@@ -21,6 +22,15 @@ import { cn } from '@/lib/utils';
 
 type ResponseView = 'text' | 'visual';
 
+interface VideoSolution {
+    videoId: string;
+    status: 'queued' | 'processing' | 'completed' | 'failed';
+    videoUrl: string | null;
+    thumbnailUrl: string | null;
+    durationSeconds: number | null;
+    estimatedCompletionTime: string | null;
+}
+
 interface AssistantReply {
     response: string | null;
     error: string | null;
@@ -33,6 +43,7 @@ interface AssistantReply {
     extractedText: string | null;
     relatedPractice: Array<{ id: string; question: string; difficulty: string | null }>;
     mode: 'query' | 'scan';
+    videoSolution?: VideoSolution;
 }
 
 interface QueryPayload {
@@ -202,6 +213,7 @@ export function AIQuerySystem() {
                             }))
                         : [],
                     mode: 'scan',
+                    videoSolution: payloadData.videoSolution as VideoSolution | undefined,
                 });
                 return;
             }
@@ -639,6 +651,51 @@ export function AIQuerySystem() {
                                         <div className="rounded-2xl border border-emerald-300/20 bg-emerald-500/10 p-4">
                                             <p className="text-sm font-semibold text-emerald-100">Concept explanation</p>
                                             <p className="mt-2 text-sm text-emerald-50">{reply.conceptExplanation}</p>
+                                        </div>
+                                    ) : null}
+
+                                    {reply.videoSolution ? (
+                                        <div className="rounded-2xl border border-purple-300/20 bg-purple-500/10 p-4">
+                                            <div className="flex items-center justify-between">
+                                                <p className="text-sm font-semibold text-purple-100">Video Solution</p>
+                                                {reply.videoSolution.status === 'queued' && (
+                                                    <span className="rounded-full bg-amber-500/20 px-2 py-1 text-xs text-amber-200">
+                                                        Generating...
+                                                    </span>
+                                                )}
+                                                {reply.videoSolution.status === 'processing' && (
+                                                    <span className="rounded-full bg-blue-500/20 px-2 py-1 text-xs text-blue-200">
+                                                        Processing
+                                                    </span>
+                                                )}
+                                                {reply.videoSolution.status === 'completed' && (
+                                                    <span className="rounded-full bg-emerald-500/20 px-2 py-1 text-xs text-emerald-200">
+                                                        Ready
+                                                    </span>
+                                                )}
+                                                {reply.videoSolution.status === 'failed' && (
+                                                    <span className="rounded-full bg-red-500/20 px-2 py-1 text-xs text-red-200">
+                                                        Failed
+                                                    </span>
+                                                )}
+                                            </div>
+                                            {reply.videoSolution.status === 'completed' && reply.videoSolution.videoUrl ? (
+                                                <a 
+                                                    href={reply.videoSolution.videoUrl} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="mt-3 flex items-center gap-2 rounded-xl bg-purple-500/30 px-4 py-2 text-sm text-white hover:bg-purple-500/40"
+                                                >
+                                                    <Play className="h-4 w-4" />
+                                                    <span className="font-medium">Watch Video Solution</span>
+                                                </a>
+                                            ) : (
+                                                <p className="mt-2 text-sm text-purple-50">
+                                                    {reply.videoSolution.estimatedCompletionTime 
+                                                        ? `Video will be ready by ${new Date(reply.videoSolution.estimatedCompletionTime).toLocaleTimeString()}`
+                                                        : 'Your video solution is being generated. Check back soon!'}
+                                                </p>
+                                            )}
                                         </div>
                                     ) : null}
 

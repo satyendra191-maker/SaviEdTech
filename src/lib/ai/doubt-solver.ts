@@ -11,6 +11,15 @@ export interface DoubtSolveInput {
     imageFile?: File | null;
 }
 
+export interface VideoSolution {
+    videoId: string;
+    status: 'queued' | 'processing' | 'completed' | 'failed';
+    videoUrl: string | null;
+    thumbnailUrl: string | null;
+    durationSeconds: number | null;
+    estimatedCompletionTime: string | null;
+}
+
 export interface SolvedDoubt {
     answer: string;
     conceptExplanation: string;
@@ -25,6 +34,7 @@ export interface SolvedDoubt {
     recommendedTopics: string[];
     savedDoubtId?: string;
     imageUrl?: string | null;
+    videoSolution?: VideoSolution;
 }
 
 function titleCase(value: string): string {
@@ -154,6 +164,68 @@ async function saveDoubtAndResponse(
     return String(doubtRow.id);
 }
 
+async function generateVideoSolution(
+    input: DoubtSolveInput,
+    steps: string[],
+    conceptExplanation: string
+): Promise<VideoSolution | undefined> {
+    const supabase = createAdminSupabaseClient();
+    
+    const videoId = `doubt_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const topicName = titleCase(input.topic || input.subject || 'Academic Concept');
+    
+    const script = [
+        `[INTRO]`,
+        `Welcome! Let's solve this ${topicName} problem together.`,
+        ``,
+        `[CONCEPT]`,
+        conceptExplanation,
+        ``,
+        `[STEPS]`,
+        ...steps.map((step, idx) => `Step ${idx + 1}: ${step}`),
+        ``,
+        `[OUTRO]`,
+        `Great job working through this problem! Keep practicing for better results.`,
+    ].join('\n');
+
+    try {
+        const { data: videoQueueEntry, error: queueError } = await (supabase.from('video_generation_queue') as any)
+            .insert({
+                topic_id: videoId,
+                topic_name: `Doubt Solution: ${topicName}`,
+                content_type: 'doubt_solution',
+                script: script,
+                status: 'pending',
+                request_source: 'ai-doubt-solver',
+                request_metadata: {
+                    original_question: input.question,
+                    subject: input.subject,
+                    topic: input.topic,
+                    steps_count: steps.length,
+                },
+            })
+            .select('id')
+            .single();
+
+        if (queueError) {
+            console.warn('[AI Doubt Solver] Failed to queue video generation:', queueError);
+            return undefined;
+        }
+
+        return {
+            videoId: videoQueueEntry?.id || videoId,
+            status: 'queued',
+            videoUrl: null,
+            thumbnailUrl: null,
+            durationSeconds: null,
+            estimatedCompletionTime: new Date(Date.now() + 5 * 60 * 1000).toISOString(),
+        };
+    } catch (error) {
+        console.warn('[AI Doubt Solver] Video queue error:', error);
+        return undefined;
+    }
+}
+
 export async function solveAcademicDoubt(input: DoubtSolveInput): Promise<SolvedDoubt> {
     const extractedText = input.imageFile
         ? `Uploaded image: ${input.imageFile.name}. OCR fallback mode used; typed question text was prioritized.`
@@ -179,6 +251,8 @@ export async function solveAcademicDoubt(input: DoubtSolveInput): Promise<Solved
 
     const savedDoubtId = await saveDoubtAndResponse(input, responseText, imageUrl);
 
+    const videoSolution = await generateVideoSolution(input, steps, conceptExplanation);
+
     return {
         answer,
         conceptExplanation,
@@ -188,5 +262,6 @@ export async function solveAcademicDoubt(input: DoubtSolveInput): Promise<Solved
         recommendedTopics,
         savedDoubtId,
         imageUrl,
+        videoSolution,
     };
 }
