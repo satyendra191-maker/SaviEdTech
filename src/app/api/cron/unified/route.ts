@@ -517,8 +517,9 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        // Execute all cron tasks
+        // Execute all cron tasks - ALL JOBS AUTOMATED
         const tasks = [
+            // Core - Already defined
             sendStudyReminders,
             notifyNewLectures,
             notifyDailyChallenge,
@@ -528,6 +529,89 @@ export async function GET(request: NextRequest) {
             verifyPayments,
             checkDatabaseHealth,
             runGamification,
+            
+            // Additional automated tasks - trigger endpoints
+            async () => {
+                const start = Date.now();
+                try {
+                    // Content jobs
+                    await triggerCronEndpoint('/api/cron/content-moderation');
+                    await triggerCronEndpoint('/api/cron/content-translation');
+                    await triggerCronEndpoint('/api/cron/lecture-publisher');
+                    return { id: 'content-automation', name: 'Content Automation', success: true, message: 'Content tasks completed', duration: Date.now() - start, details: {} };
+                } catch (e) {
+                    return { id: 'content-automation', name: 'Content Automation', success: false, message: String(e), duration: Date.now() - start, details: {} };
+                }
+            },
+            
+            async () => {
+                const start = Date.now();
+                try {
+                    // Academic jobs
+                    await triggerCronEndpoint('/api/cron/assignment-automation');
+                    await triggerCronEndpoint('/api/cron/attendance-tracking');
+                    await triggerCronEndpoint('/api/cron/certificate-generator');
+                    await triggerCronEndpoint('/api/cron/dpp-generator');
+                    return { id: 'academic-automation', name: 'Academic Automation', success: true, message: 'Academic tasks completed', duration: Date.now() - start, details: {} };
+                } catch (e) {
+                    return { id: 'academic-automation', name: 'Academic Automation', success: false, message: String(e), duration: Date.now() - start, details: {} };
+                }
+            },
+            
+            async () => {
+                const start = Date.now();
+                try {
+                    // Finance jobs
+                    await triggerCronEndpoint('/api/cron/financial-automation');
+                    await triggerCronEndpoint('/api/cron/gst-accounts');
+                    await triggerCronEndpoint('/api/cron/refund-processing');
+                    return { id: 'finance-automation', name: 'Finance Automation', success: true, message: 'Finance tasks completed', duration: Date.now() - start, details: {} };
+                } catch (e) {
+                    return { id: 'finance-automation', name: 'Finance Automation', success: false, message: String(e), duration: Date.now() - start, details: {} };
+                }
+            },
+            
+            async () => {
+                const start = Date.now();
+                try {
+                    // User jobs
+                    await triggerCronEndpoint('/api/cron/inactive-users');
+                    await triggerCronEndpoint('/api/cron/lead-management');
+                    await triggerCronEndpoint('/api/cron/subscription-expiry');
+                    await triggerCronEndpoint('/api/cron/referral-processing');
+                    return { id: 'user-automation', name: 'User Automation', success: true, message: 'User tasks completed', duration: Date.now() - start, details: {} };
+                } catch (e) {
+                    return { id: 'user-automation', name: 'User Automation', success: false, message: String(e), duration: Date.now() - start, details: {} };
+                }
+            },
+            
+            async () => {
+                const start = Date.now();
+                try {
+                    // Marketing jobs
+                    await triggerCronEndpoint('/api/cron/email-notifications');
+                    await triggerCronEndpoint('/api/cron/engagement');
+                    await triggerCronEndpoint('/api/cron/marketing-automation');
+                    await triggerCronEndpoint('/api/cron/push-notifications');
+                    return { id: 'marketing-automation', name: 'Marketing Automation', success: true, message: 'Marketing tasks completed', duration: Date.now() - start, details: {} };
+                } catch (e) {
+                    return { id: 'marketing-automation', name: 'Marketing Automation', success: false, message: String(e), duration: Date.now() - start, details: {} };
+                }
+            },
+            
+            async () => {
+                const start = Date.now();
+                try {
+                    // Platform jobs
+                    await triggerCronEndpoint('/api/cron/health-monitor');
+                    await triggerCronEndpoint('/api/cron/security-monitoring');
+                    await triggerCronEndpoint('/api/cron/database-maintenance');
+                    await triggerCronEndpoint('/api/cron/supabase-health');
+                    return { id: 'platform-automation', name: 'Platform Automation', success: true, message: 'Platform tasks completed', duration: Date.now() - start, details: {} };
+                } catch (e) {
+                    return { id: 'platform-automation', name: 'Platform Automation', success: false, message: String(e), duration: Date.now() - start, details: {} };
+                }
+            },
         ];
 
         const supabase = createAdminSupabaseClient();
