@@ -251,10 +251,14 @@ export function CoursePreview() {
 
 export function QuickLinks() {
   const links = [
-    { name: 'Donate', href: '/donate', description: 'Support education for all', icon: Heart, color: 'text-rose-400' },
+    { name: 'Experiments', href: '/experiments', description: 'Virtual Labs', icon: PlayCircle, color: 'text-cyan-400' },
+    { name: 'Simulations', href: '/simulations', description: 'Interactive Sim', icon: Brain, color: 'text-purple-400' },
+    { name: 'Knowledge', href: '/knowledge-universe', description: 'AI Universe', icon: Sparkles, color: 'text-yellow-400' },
+    { name: 'Journal', href: '/journal', description: 'Lab Journal', icon: BookOpen, color: 'text-green-400' },
+    { name: 'Donate', href: '/donate', description: 'Support education', icon: Heart, color: 'text-rose-400' },
     { name: 'Careers', href: '/careers', description: 'Join our team', icon: Briefcase, color: 'text-blue-400' },
     { name: 'Contact', href: '/contact', description: 'Get in touch', icon: Mail, color: 'text-green-400' },
-    { name: 'SaviTech AI', href: '/savitech-ai', description: 'Explore AI solutions', icon: Sparkles, color: 'text-purple-400' },
+    { name: 'SaviTech AI', href: '/savitech-ai', description: 'Explore AI', icon: Target, color: 'text-purple-400' },
   ];
 
   return (
