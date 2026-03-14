@@ -208,17 +208,35 @@ export default function AdminDashboardPage() {
 
         try {
             setError(null);
-            const { iso: todayStartIso } = getStartOfToday();
+            const { iso: todayStartIso, date: todayDate } = getStartOfToday();
 
-            // Run essential queries in parallel with timeout
-            const timeout = 8000; // 8 second timeout per query
-            
-            const [studentsResult, activeUsersResult, latestLeadsResult, paymentsResult, registrationsTodayResult] = await Promise.all([
+            // Run ALL queries in parallel - collect all data without loss
+            const [
+                studentsResult,
+                activeUsersResult,
+                latestLeadsResult,
+                paymentsResult,
+                healthResult,
+                registrationsTodayResult,
+                dailyChallengeResult,
+                lectureViewsResult,
+                questionAttemptsResult,
+                dppAttemptsResult,
+                testsCompletedResult,
+                careerApplicationsResult,
+            ] = await Promise.all([
                 supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'student'),
                 supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('is_active', true),
                 supabase.from('lead_forms').select('id, name, phone, exam_target, status, created_at').order('created_at', { ascending: false }).limit(5),
                 supabase.from('payments').select('amount, status, payment_type'),
+                supabase.from('system_health').select('check_name, status, response_time_ms, checked_at').order('checked_at', { ascending: false }).limit(50),
                 supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'student').gte('created_at', todayStartIso),
+                supabase.from('daily_challenges').select('total_participants').eq('challenge_date', todayDate).maybeSingle(),
+                supabase.from('lecture_progress').select('id', { count: 'exact', head: true }).gte('last_watched_at', todayStartIso),
+                supabase.from('question_attempts').select('id', { count: 'exact', head: true }).gte('occurred_at', todayStartIso),
+                supabase.from('dpp_attempts').select('id', { count: 'exact', head: true }).gte('started_at', todayStartIso),
+                supabase.from('test_attempts').select('id', { count: 'exact', head: true }).in('status', ['completed', 'time_up']).gte('submitted_at', todayStartIso),
+                supabase.from('career_applications').select('id', { count: 'exact', head: true }),
             ]);
 
             if (!mountedRef.current) return;
@@ -229,6 +247,13 @@ export default function AdminDashboardPage() {
             const completedCoursePurchases = completedPayments.filter((payment) => payment.payment_type === 'course_purchase');
             const completedSubscriptions = completedPayments.filter((payment) => payment.payment_type === 'subscription');
 
+            const latestHealthChecks = new Map<string, HealthCheck>();
+            for (const row of (healthResult.data || []) as HealthCheck[]) {
+                if (!latestHealthChecks.has(row.check_name)) {
+                    latestHealthChecks.set(row.check_name, row);
+                }
+            }
+
             setStats({
                 totalStudents: studentsResult.count || 0,
                 activeUsers: activeUsersResult.count || 0,
@@ -237,20 +262,20 @@ export default function AdminDashboardPage() {
                 completedDonations: completedDonations.length,
                 coursePurchases: completedCoursePurchases.length,
                 premiumSubscriptions: completedSubscriptions.length,
-                careerApplications: 0,
+                careerApplications: careerApplicationsResult.count || 0,
             });
 
             setActivity({
                 newRegistrations: registrationsTodayResult.count || 0,
-                challengeParticipants: 0,
-                lectureViews: 0,
-                practiceAttempts: 0,
-                dppAttempts: 0,
-                testsCompleted: 0,
+                challengeParticipants: (dailyChallengeResult.data as { total_participants?: number } | null)?.total_participants || 0,
+                lectureViews: lectureViewsResult.count || 0,
+                practiceAttempts: questionAttemptsResult.count || 0,
+                dppAttempts: dppAttemptsResult.count || 0,
+                testsCompleted: testsCompletedResult.count || 0,
             });
 
             setRecentLeads((latestLeadsResult.data || []) as RecentLead[]);
-            setHealthChecks([]);
+            setHealthChecks(Array.from(latestHealthChecks.values()));
             setLastUpdatedAt(new Date().toISOString());
         } catch (fetchError) {
             if (!mountedRef.current) return;
@@ -261,15 +286,27 @@ export default function AdminDashboardPage() {
             initialLoadRef.current = false;
             setLoading(false);
             setRefreshing(false);
+            setRefreshing(false);
         }
     }, [supabase]);
 
     useEffect(() => {
         mountedRef.current = true;
+        
+        // Set a timeout to force loading to false after 15 seconds
+        const timeoutId = setTimeout(() => {
+            if (mountedRef.current && loading) {
+                console.warn('Dashboard loading timeout - forcing load');
+                setLoading(false);
+                setError('Loading took too long. Some data may not be available.');
+            }
+        }, 15000);
+        
         void fetchDashboardData();
 
         return () => {
             mountedRef.current = false;
+            clearTimeout(timeoutId);
             if (refreshTimeoutRef.current) {
                 clearTimeout(refreshTimeoutRef.current);
             }
