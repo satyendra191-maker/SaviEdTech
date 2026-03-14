@@ -28,6 +28,8 @@ import {
     LogOut,
     ChevronRight,
     Brain,
+    Youtube,
+    Clock,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -54,6 +56,8 @@ const adminMenuItems = [
     { name: 'Finance', href: '/admin/finance', icon: Landmark },
     { name: 'Daily Challenge', href: '/admin/challenges', icon: Trophy },
     { name: 'Popup Ads', href: '/admin/ads', icon: Image },
+    { name: 'Cron Jobs', href: '/admin/cron-jobs', icon: Clock },
+    { name: 'YouTube Videos', href: '/admin/youtube', icon: Youtube },
     { name: 'Backups', href: '/admin/backups', icon: Database },
     { name: 'Settings', href: '/admin/settings', icon: Settings },
 ];

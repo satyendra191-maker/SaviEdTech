@@ -31,11 +31,11 @@ interface CronJob {
 const AUTOMATED_CRON_JOBS: CronJob[] = [
     {
         id: 'unified',
-        name: 'Unified Cron',
-        description: 'Runs all critical tasks: study reminders, notifications, analytics, leaderboard, payments, gamification',
+        name: 'Unified Cron (Daily 2AM)',
+        description: 'Auto-runs 9 critical tasks: Study Reminders, New Lectures, Daily Challenge, Student Analytics, Leaderboard, Lead Processing, Payment Verification, Database Health, Gamification',
         endpoint: '/api/cron/unified',
         isAutomated: true,
-        category: 'Core',
+        category: 'Core - Automated',
     },
 ];
 
@@ -107,6 +107,8 @@ const NON_AUTOMATED_CRON_JOBS: CronJob[] = [
     { id: 'automated-testing', name: 'Automated Testing', description: 'Run automated tests', endpoint: '/api/cron/automated-testing', isAutomated: false, category: 'Platform' },
     { id: 'student-analytics', name: 'Student Analytics', description: 'Update student analytics', endpoint: '/api/cron/student-analytics', isAutomated: false, category: 'Platform' },
     { id: 'gamification', name: 'Gamification', description: 'Update points and badges', endpoint: '/api/cron/gamification', isAutomated: false, category: 'Platform' },
+    { id: 'auth-check', name: 'Auth Check', description: 'Verify authentication status', endpoint: '/api/cron/auth-check', isAutomated: false, category: 'Platform' },
+    { id: 'live-class-automation', name: 'Live Class Automation', description: 'Manage live class schedules', endpoint: '/api/cron/live-class-automation', isAutomated: false, category: 'Academic' },
 ];
 
 const ALL_JOBS = [...AUTOMATED_CRON_JOBS, ...NON_AUTOMATED_CRON_JOBS];
