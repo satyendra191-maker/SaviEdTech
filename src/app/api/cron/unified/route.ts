@@ -517,8 +517,6 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
-        const results: CronResult[] = [];
-
         // Execute all cron tasks
         const tasks = [
             sendStudyReminders,
@@ -534,19 +532,54 @@ export async function GET(request: NextRequest) {
 
         const supabase = createAdminSupabaseClient();
 
-        for (const task of tasks) {
-            const result = await task();
-            results.push(result);
+        // Run tasks in parallel for faster execution
+        const taskPromises = tasks.map(async (task) => {
+            try {
+                const result = await Promise.race([
+                    task(),
+                    new Promise<CronResult>((resolve) => 
+                        setTimeout(() => resolve({
+                            id: task.name,
+                            name: task.name,
+                            success: false,
+                            message: 'Task timed out after 30 seconds',
+                            duration: 30000
+                        }), 30000)
+                    )
+                ]);
+                
+                // Log to database
+                await (supabase as any).from('cron_job_logs').insert({
+                    job_name: result.id,
+                    status: result.success ? 'success' : 'failed',
+                    details: { message: result.message, ...result.details },
+                    duration_ms: result.duration,
+                    executed_at: new Date().toISOString(),
+                });
+                
+                return result;
+            } catch (error) {
+                const errorResult = {
+                    id: task.name,
+                    name: task.name,
+                    success: false,
+                    message: error instanceof Error ? error.message : 'Unknown error',
+                    duration: 0
+                };
+                
+                await (supabase as any).from('cron_job_logs').insert({
+                    job_name: errorResult.id,
+                    status: 'failed',
+                    details: { message: errorResult.message },
+                    duration_ms: 0,
+                    executed_at: new Date().toISOString(),
+                });
+                
+                return errorResult;
+            }
+        });
 
-            // Log to database
-            await (supabase as any).from('cron_job_logs').insert({
-                job_name: result.id,
-                status: result.success ? 'success' : 'failed',
-                details: { message: result.message, ...result.details },
-                duration_ms: result.duration,
-                executed_at: new Date().toISOString(),
-            });
-        }
+        const results: CronResult[] = await Promise.all(taskPromises);
 
         const totalDuration = Date.now() - startTime;
         const successful = results.filter(r => r.success).length;
