@@ -1,18 +1,17 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { 
     Play, 
-    Pause, 
     RefreshCw, 
     CheckCircle, 
     XCircle, 
     Clock, 
     Zap,
-    Settings,
+    Server,
     Eye,
-    EyeOff,
-    Server
+    Activity,
+    AlertCircle
 } from 'lucide-react';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
 
@@ -24,153 +23,172 @@ interface CronJob {
     isAutomated: boolean;
     category: string;
     lastRun?: string;
-    status?: 'success' | 'failed' | 'running' | 'pending';
+    lastStatus?: 'success' | 'failed' | 'pending';
     duration?: number;
 }
 
+interface CronLog {
+    id: string;
+    job_name: string;
+    status: string;
+    details: any;
+    duration_ms: number;
+    executed_at: string;
+}
+
+// AUTOMATED JOBS - All jobs are now automated via unified cron
 const AUTOMATED_CRON_JOBS: CronJob[] = [
     {
-        id: 'unified',
-        name: 'Unified Cron (Daily 2AM)',
-        description: 'Auto-runs 9 critical tasks: Study Reminders, New Lectures, Daily Challenge, Student Analytics, Leaderboard, Lead Processing, Payment Verification, Database Health, Gamification',
+        id: 'unified-core',
+        name: 'Core Automation (Daily 2AM)',
+        description: 'Study Reminders, Notifications, Analytics, Leaderboard, Payments, Health, Gamification',
         endpoint: '/api/cron/unified',
         isAutomated: true,
         category: 'Core - Automated',
+        lastStatus: 'pending',
+    },
+    {
+        id: 'content-automation',
+        name: 'Content Automation',
+        description: 'Content Moderation, Translation, Lecture Publisher',
+        endpoint: '/api/cron/unified',
+        isAutomated: true,
+        category: 'Content - Automated',
+        lastStatus: 'pending',
+    },
+    {
+        id: 'academic-automation',
+        name: 'Academic Automation',
+        description: 'Assignments, Attendance, Certificates, DPP',
+        endpoint: '/api/cron/unified',
+        isAutomated: true,
+        category: 'Academic - Automated',
+        lastStatus: 'pending',
+    },
+    {
+        id: 'finance-automation',
+        name: 'Finance Automation',
+        description: 'GST Accounts, Refund Processing, Financial Automation',
+        endpoint: '/api/cron/unified',
+        isAutomated: true,
+        category: 'Finance - Automated',
+        lastStatus: 'pending',
+    },
+    {
+        id: 'user-automation',
+        name: 'User Automation',
+        description: 'Inactive Users, Lead Management, Subscriptions, Referrals',
+        endpoint: '/api/cron/unified',
+        isAutomated: true,
+        category: 'Users - Automated',
+        lastStatus: 'pending',
+    },
+    {
+        id: 'marketing-automation',
+        name: 'Marketing Automation',
+        description: 'Email, Engagement, Push Notifications, Marketing',
+        endpoint: '/api/cron/unified',
+        isAutomated: true,
+        category: 'Marketing - Automated',
+        lastStatus: 'pending',
+    },
+    {
+        id: 'platform-automation',
+        name: 'Platform Automation',
+        description: 'Health Monitor, Security, Database Maintenance',
+        endpoint: '/api/cron/unified',
+        isAutomated: true,
+        category: 'Platform - Automated',
+        lastStatus: 'pending',
     },
 ];
 
-const NON_AUTOMATED_CRON_JOBS: CronJob[] = [
-    // Content
-    { id: 'ai-content', name: 'AI Content Generation', description: 'Generate AI-powered study content', endpoint: '/api/cron/ai-content', isAutomated: false, category: 'Content' },
-    { id: 'ai-learning-path', name: 'AI Learning Path', description: 'Create personalized learning paths', endpoint: '/api/cron/ai-learning-path', isAutomated: false, category: 'Content' },
-    { id: 'content-moderation', name: 'Content Moderation', description: 'Review and moderate user-generated content', endpoint: '/api/cron/content-moderation', isAutomated: false, category: 'Content' },
-    { id: 'content-translation', name: 'Content Translation', description: 'Translate content to multiple languages', endpoint: '/api/cron/content-translation', isAutomated: false, category: 'Content' },
-    { id: 'lecture-publisher', name: 'Lecture Publisher', description: 'Auto-publish scheduled lectures', endpoint: '/api/cron/lecture-publisher', isAutomated: false, category: 'Content' },
-    { id: 'notes-generator', name: 'Notes Generator', description: 'Generate study notes from lectures', endpoint: '/api/cron/notes-generator', isAutomated: false, category: 'Content' },
-    { id: 'video-generation', name: 'Video Generation', description: 'Generate video content', endpoint: '/api/cron/video-generation', isAutomated: false, category: 'Content' },
-    
-    // Academic
-    { id: 'assignment-automation', name: 'Assignment Automation', description: 'Create and distribute assignments', endpoint: '/api/cron/assignment-automation', isAutomated: false, category: 'Academic' },
-    { id: 'attendance-tracking', name: 'Attendance Tracking', description: 'Track student attendance', endpoint: '/api/cron/attendance-tracking', isAutomated: false, category: 'Academic' },
-    { id: 'biweekly-test-scheduler', name: 'Biweekly Test Scheduler', description: 'Schedule biweekly mock tests', endpoint: '/api/cron/biweekly-test-scheduler', isAutomated: false, category: 'Academic' },
-    { id: 'certificate-generator', name: 'Certificate Generator', description: 'Generate completion certificates', endpoint: '/api/cron/certificate-generator', isAutomated: false, category: 'Academic' },
-    { id: 'dpp-generator', name: 'DPP Generator', description: 'Generate Daily Practice Papers', endpoint: '/api/cron/dpp-generator', isAutomated: false, category: 'Academic' },
-    { id: 'exam-engine', name: 'Exam Engine', description: 'Manage exam schedules and results', endpoint: '/api/cron/exam-engine', isAutomated: false, category: 'Academic' },
-    { id: 'pyq-updater', name: 'PYQ Updater', description: 'Update Previous Year Questions', endpoint: '/api/cron/pyq-updater', isAutomated: false, category: 'Academic' },
-    { id: 'quiz-analytics', name: 'Quiz Analytics', description: 'Analyze quiz performance', endpoint: '/api/cron/quiz-analytics', isAutomated: false, category: 'Academic' },
-    { id: 'test-runner', name: 'Test Runner', description: 'Execute automated tests', endpoint: '/api/cron/test-runner', isAutomated: false, category: 'Academic' },
-    { id: 'webinar-scheduler', name: 'Webinar Scheduler', description: 'Schedule upcoming webinars', endpoint: '/api/cron/webinar-scheduler', isAutomated: false, category: 'Academic' },
-    { id: 'doubt-clearing', name: 'Doubt Clearing', description: 'Process student doubts', endpoint: '/api/cron/doubt-clearing', isAutomated: false, category: 'Academic' },
-    { id: 'review-automation', name: 'Review Automation', description: 'Automate content reviews', endpoint: '/api/cron/review-automation', isAutomated: false, category: 'Academic' },
-    { id: 'revision-updater', name: 'Revision Updater', description: 'Update revision schedules', endpoint: '/api/cron/revision-updater', isAutomated: false, category: 'Academic' },
-    { id: 'scholarship-management', name: 'Scholarship Management', description: 'Manage scholarship applications', endpoint: '/api/cron/scholarship-management', isAutomated: false, category: 'Academic' },
-    { id: 'daily-challenge', name: 'Daily Challenge', description: 'Create daily challenges', endpoint: '/api/cron/daily-challenge', isAutomated: false, category: 'Academic' },
-    
-    // Finance
-    { id: 'course-bundling', name: 'Course Bundling', description: 'Bundle courses for sales', endpoint: '/api/cron/course-bundling', isAutomated: false, category: 'Finance' },
-    { id: 'financial-automation', name: 'Financial Automation', description: 'Process financial transactions', endpoint: '/api/cron/financial-automation', isAutomated: false, category: 'Finance' },
-    { id: 'gst-accounts', name: 'GST Accounts', description: 'GST calculations and filing', endpoint: '/api/cron/gst-accounts', isAutomated: false, category: 'Finance' },
-    { id: 'pricing-automation', name: 'Pricing Automation', description: 'Dynamic pricing adjustments', endpoint: '/api/cron/pricing-automation', isAutomated: false, category: 'Finance' },
-    { id: 'refund-processing', name: 'Refund Processing', description: 'Process refund requests', endpoint: '/api/cron/refund-processing', isAutomated: false, category: 'Finance' },
-    
-    // Users
-    { id: 'inactive-users', name: 'Inactive Users', description: 'Track and re-engage inactive users', endpoint: '/api/cron/inactive-users', isAutomated: false, category: 'Users' },
-    { id: 'lead-management', name: 'Lead Management', description: 'Process and convert leads', endpoint: '/api/cron/lead-management', isAutomated: false, category: 'Users' },
-    { id: 'subscription-expiry', name: 'Subscription Expiry', description: 'Check expiring subscriptions', endpoint: '/api/cron/subscription-expiry', isAutomated: false, category: 'Users' },
-    { id: 'referral-processing', name: 'Referral Processing', description: 'Process referral rewards', endpoint: '/api/cron/referral-processing', isAutomated: false, category: 'Users' },
-    { id: 'course-expiry', name: 'Course Expiry', description: 'Check expiring course access', endpoint: '/api/cron/course-expiry', isAutomated: false, category: 'Users' },
-    
-    // Marketing
-    { id: 'email-notifications', name: 'Email Notifications', description: 'Send email campaigns', endpoint: '/api/cron/email-notifications', isAutomated: false, category: 'Marketing' },
-    { id: 'engagement', name: 'User Engagement', description: 'Boost user engagement', endpoint: '/api/cron/engagement', isAutomated: false, category: 'Marketing' },
-    { id: 'marketing-automation', name: 'Marketing Automation', description: 'Run marketing campaigns', endpoint: '/api/cron/marketing-automation', isAutomated: false, category: 'Marketing' },
-    { id: 'push-notifications', name: 'Push Notifications', description: 'Send push notifications', endpoint: '/api/cron/push-notifications', isAutomated: false, category: 'Marketing' },
-    { id: 'seo-automation', name: 'SEO Automation', description: 'Automate SEO tasks', endpoint: '/api/cron/seo-automation', isAutomated: false, category: 'Marketing' },
-    { id: 'social-media-automation', name: 'Social Media', description: 'Post to social media', endpoint: '/api/cron/social-media-automation', isAutomated: false, category: 'Marketing' },
-    { id: 'growth-analytics', name: 'Growth Analytics', description: 'Track growth metrics', endpoint: '/api/cron/growth-analytics', isAutomated: false, category: 'Marketing' },
-    { id: 'gov-notifications', name: 'Gov Notifications', description: 'Send government updates', endpoint: '/api/cron/gov-notifications', isAutomated: false, category: 'Marketing' },
-    { id: 'whatsapp-sms-automation', name: 'WhatsApp/SMS', description: 'Send WhatsApp and SMS', endpoint: '/api/cron/whatsapp-sms-automation', isAutomated: false, category: 'Marketing' },
-    
-    // Platform
-    { id: 'database-backup', name: 'Database Backup', description: 'Backup database', endpoint: '/api/cron/database-backup', isAutomated: false, category: 'Platform' },
-    { id: 'database-maintenance', name: 'Database Maintenance', description: 'Optimize database', endpoint: '/api/cron/database-maintenance', isAutomated: false, category: 'Platform' },
-    { id: 'database-optimization', name: 'Database Optimization', description: 'Index and optimize', endpoint: '/api/cron/database-optimization', isAutomated: false, category: 'Platform' },
-    { id: 'health-monitor', name: 'Health Monitor', description: 'Monitor system health', endpoint: '/api/cron/health-monitor', isAutomated: false, category: 'Platform' },
-    { id: 'performance-alerts', name: 'Performance Alerts', description: 'Check performance metrics', endpoint: '/api/cron/performance-alerts', isAutomated: false, category: 'Platform' },
-    { id: 'performance-optimization', name: 'Performance Optimization', description: 'Optimize performance', endpoint: '/api/cron/performance-optimization', isAutomated: false, category: 'Platform' },
-    { id: 'platform-auditor', name: 'Platform Auditor', description: 'Audit platform status', endpoint: '/api/cron/platform-auditor', isAutomated: false, category: 'Platform' },
-    { id: 'rank-prediction', name: 'Rank Prediction', description: 'Update rank predictions', endpoint: '/api/cron/rank-prediction', isAutomated: false, category: 'Platform' },
-    { id: 'security-monitoring', name: 'Security Monitoring', description: 'Monitor security', endpoint: '/api/cron/security-monitoring', isAutomated: false, category: 'Platform' },
-    { id: 'system-health', name: 'System Health', description: 'System health check', endpoint: '/api/cron/system-health', isAutomated: false, category: 'Platform' },
-    { id: 'system-maintenance', name: 'System Maintenance', description: 'General maintenance', endpoint: '/api/cron/system-maintenance', isAutomated: false, category: 'Platform' },
-    { id: 'supabase-health', name: 'Supabase Health', description: 'Check Supabase status', endpoint: '/api/cron/supabase-health', isAutomated: false, category: 'Platform' },
-    { id: 'automated-testing', name: 'Automated Testing', description: 'Run automated tests', endpoint: '/api/cron/automated-testing', isAutomated: false, category: 'Platform' },
-    { id: 'student-analytics', name: 'Student Analytics', description: 'Update student analytics', endpoint: '/api/cron/student-analytics', isAutomated: false, category: 'Platform' },
-    { id: 'gamification', name: 'Gamification', description: 'Update points and badges', endpoint: '/api/cron/gamification', isAutomated: false, category: 'Platform' },
-    { id: 'auth-check', name: 'Auth Check', description: 'Verify authentication status', endpoint: '/api/cron/auth-check', isAutomated: false, category: 'Platform' },
-    { id: 'live-class-automation', name: 'Live Class Automation', description: 'Manage live class schedules', endpoint: '/api/cron/live-class-automation', isAutomated: false, category: 'Academic' },
+// NON-AUTOMATED JOBS - Jobs that can be triggered manually if needed
+const MANUAL_JOBS: CronJob[] = [
+    { id: 'ai-content', name: 'AI Content Generation', description: 'Generate AI study content', endpoint: '/api/cron/ai-content', isAutomated: false, category: 'Manual' },
+    { id: 'certificate-generator', name: 'Certificate Generator', description: 'Generate certificates', endpoint: '/api/cron/certificate-generator', isAutomated: false, category: 'Manual' },
+    { id: 'database-backup', name: 'Database Backup', description: 'Backup database', endpoint: '/api/cron/database-backup', isAutomated: false, category: 'Manual' },
 ];
-
-const ALL_JOBS = [...AUTOMATED_CRON_JOBS, ...NON_AUTOMATED_CRON_JOBS];
 
 export default function CronJobsPage() {
     const supabase = getSupabaseBrowserClient();
-    const [jobs, setJobs] = useState<CronJob[]>(ALL_JOBS);
+    const [jobs, setJobs] = useState<CronJob[]>([...AUTOMATED_CRON_JOBS, ...MANUAL_JOBS]);
     const [runningJobs, setRunningJobs] = useState<Set<string>>(new Set());
-    const [jobLogs, setJobLogs] = useState<Record<string, any[]>>({});
+    const [jobLogs, setJobLogs] = useState<Record<string, CronLog[]>>({});
     const [showLogs, setShowLogs] = useState<Record<string, boolean>>({});
-    const [filter, setFilter] = useState<'all' | 'automated' | 'manual'>('all');
-    const [categoryFilter, setCategoryFilter] = useState<string>('all');
-    const [cronSecret, setCronSecret] = useState('');
-    const [showSecret, setShowSecret] = useState(false);
+    const [filter, setFilter] = useState<'all' | 'automated' | 'manual'>('automated');
+    const [loading, setLoading] = useState(true);
+    const [lastCronRun, setLastCronRun] = useState<any>(null);
 
-    const categories = ['all', ...new Set(NON_AUTOMATED_CRON_JOBS.map(j => j.category))];
-
-    const fetchJobLogs = useCallback(async (jobId: string) => {
+    const fetchJobLogs = useCallback(async () => {
         if (!supabase) return;
         
-        const { data } = await supabase
-            .from('cron_job_logs')
-            .select('*')
-            .eq('job_name', jobId)
-            .order('executed_at', { ascending: false })
-            .limit(10);
-        
-        if (data) {
-            setJobLogs(prev => ({ ...prev, [jobId]: data }));
+        setLoading(true);
+        try {
+            // Fetch all cron job logs
+            const { data: logs } = await supabase
+                .from('cron_job_logs')
+                .select('*')
+                .order('executed_at', { ascending: false })
+                .limit(100);
+
+            if (logs) {
+                // Group logs by job
+                const grouped: Record<string, CronLog[]> = {};
+                logs.forEach((log: any) => {
+                    if (!grouped[log.job_name]) {
+                        grouped[log.job_name] = [];
+                    }
+                    grouped[log.job_name].push(log);
+                });
+                setJobLogs(grouped);
+
+                // Update job statuses
+                setJobs(prev => prev.map(job => {
+                    const jobLogs = grouped[job.id] || [];
+                    const latestLog = jobLogs[0];
+                    return {
+                        ...job,
+                        lastRun: latestLog?.executed_at,
+                        lastStatus: latestLog?.status as 'success' | 'failed' | 'pending',
+                        duration: latestLog?.duration_ms,
+                    };
+                }));
+
+                // Get last unified cron run
+                const unifiedLogs = grouped['unified'] || [];
+                if (unifiedLogs.length > 0) {
+                    setLastCronRun(unifiedLogs[0]);
+                }
+            }
+        } catch (e) {
+            console.error('Error fetching logs:', e);
         }
+        setLoading(false);
     }, [supabase]);
 
     useEffect(() => {
-        // Fetch logs for automated jobs
-        AUTOMATED_CRON_JOBS.forEach(job => {
-            fetchJobLogs(job.id);
-        });
+        fetchJobLogs();
+        
+        // Refresh every 30 seconds
+        const interval = setInterval(fetchJobLogs, 30000);
+        return () => clearInterval(interval);
     }, [fetchJobLogs]);
 
     const runJob = async (job: CronJob) => {
-        if (!cronSecret) {
-            alert('Please enter CRON_SECRET to run jobs manually');
-            return;
-        }
-
         setRunningJobs(prev => new Set(prev).add(job.id));
         
         try {
             const response = await fetch(`${job.endpoint}`, {
                 method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${cronSecret}`,
-                },
             });
             
-            const result = await response.json();
-            
             if (response.ok) {
-                alert(`✅ ${job.name} completed successfully!`);
-                fetchJobLogs(job.id);
+                alert(`✅ ${job.name} completed!`);
+                fetchJobLogs();
             } else {
-                alert(`❌ ${job.name} failed: ${result.error || 'Unknown error'}`);
+                const data = await response.json();
+                alert(`❌ ${job.name} failed: ${data.error || 'Unknown error'}`);
             }
         } catch (error) {
             alert(`❌ Error running ${job.name}: ${error}`);
@@ -184,44 +202,62 @@ export default function CronJobsPage() {
     };
 
     const filteredJobs = jobs.filter(job => {
-        if (filter === 'automated' && !job.isAutomated) return false;
-        if (filter === 'manual' && job.isAutomated) return false;
-        if (categoryFilter !== 'all' && job.category !== categoryFilter) return false;
+        if (filter === 'automated') return job.isAutomated;
+        if (filter === 'manual') return !job.isAutomated;
         return true;
     });
 
-    const automatedCount = AUTOMATED_CRON_JOBS.length;
-    const manualCount = NON_AUTOMATED_CRON_JOBS.length;
+    const getStatusIcon = (status?: string) => {
+        if (status === 'success') return <CheckCircle className="w-4 h-4 text-emerald-500" />;
+        if (status === 'failed') return <XCircle className="w-4 h-4 text-red-500" />;
+        return <AlertCircle className="w-4 h-4 text-amber-500" />;
+    };
+
+    const getStatusBadge = (status?: string) => {
+        if (status === 'success') return 'bg-emerald-100 text-emerald-700';
+        if (status === 'failed') return 'bg-red-100 text-red-700';
+        return 'bg-amber-100 text-amber-700';
+    };
 
     return (
         <div className="space-y-6">
             {/* Header */}
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900">Cron Jobs Manager</h1>
-                    <p className="text-sm text-slate-500">Manage automated and manual background tasks</p>
+                    <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                        <Clock className="w-6 h-6" />
+                        Cron Jobs Manager
+                    </h1>
+                    <p className="text-sm text-slate-500">Track and manage automated background tasks</p>
                 </div>
-                <div className="flex items-center gap-2">
-                    <div className="flex items-center gap-2 bg-white rounded-xl border border-slate-200 px-3 py-2">
-                        <Server className="w-4 h-4 text-slate-400" />
-                        <input
-                            type={showSecret ? "text" : "password"}
-                            placeholder="Enter CRON_SECRET"
-                            value={cronSecret}
-                            onChange={(e) => setCronSecret(e.target.value)}
-                            className="text-sm border-none outline-none w-40 bg-transparent"
-                        />
-                        <button
-                            onClick={() => setShowSecret(!showSecret)}
-                            className="text-slate-400 hover:text-slate-600"
-                        >
-                            {showSecret ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                        </button>
-                    </div>
-                </div>
+                <button
+                    onClick={fetchJobLogs}
+                    disabled={loading}
+                    className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 disabled:opacity-50"
+                >
+                    <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                    Refresh Status
+                </button>
             </div>
 
-            {/* Stats Cards */}
+            {/* Last Run Status */}
+            {lastCronRun && (
+                <div className="bg-gradient-to-r from-emerald-500 to-emerald-600 rounded-2xl p-4 text-white">
+                    <div className="flex items-center gap-3">
+                        <Activity className="w-6 h-6" />
+                        <div>
+                            <p className="font-semibold">Last Unified Cron Run</p>
+                            <p className="text-sm text-white/80">
+                                {new Date(lastCronRun.executed_at).toLocaleString()} • 
+                                {lastCronRun.status === 'success' ? ' ✅ Success' : ' ❌ Failed'}
+                                {lastCronRun.duration_ms ? ` • ${lastCronRun.duration_ms}ms` : ''}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Stats */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="bg-gradient-to-br from-emerald-500 to-emerald-600 rounded-2xl p-5 text-white">
                     <div className="flex items-center gap-3">
@@ -229,7 +265,7 @@ export default function CronJobsPage() {
                             <Zap className="w-5 h-5" />
                         </div>
                         <div>
-                            <p className="text-2xl font-bold">{automatedCount}</p>
+                            <p className="text-2xl font-bold">{AUTOMATED_CRON_JOBS.length}</p>
                             <p className="text-xs text-white/80">Automated Jobs</p>
                         </div>
                     </div>
@@ -237,10 +273,10 @@ export default function CronJobsPage() {
                 <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-5 text-white">
                     <div className="flex items-center gap-3">
                         <div className="p-2 bg-white/20 rounded-lg">
-                            <Settings className="w-5 h-5" />
+                            <Server className="w-5 h-5" />
                         </div>
                         <div>
-                            <p className="text-2xl font-bold">{manualCount}</p>
+                            <p className="text-2xl font-bold">{MANUAL_JOBS.length}</p>
                             <p className="text-xs text-white/80">Manual Jobs</p>
                         </div>
                     </div>
@@ -259,45 +295,31 @@ export default function CronJobsPage() {
             </div>
 
             {/* Filters */}
-            <div className="flex flex-wrap gap-3">
-                <div className="flex gap-1 bg-slate-100 p-1 rounded-xl">
-                    <button
-                        onClick={() => setFilter('all')}
-                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                            filter === 'all' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                        }`}
-                    >
-                        All Jobs
-                    </button>
-                    <button
-                        onClick={() => setFilter('automated')}
-                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                            filter === 'automated' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                        }`}
-                    >
-                        Automated
-                    </button>
-                    <button
-                        onClick={() => setFilter('manual')}
-                        className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                            filter === 'manual' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
-                        }`}
-                    >
-                        Manual
-                    </button>
-                </div>
-                
-                <select
-                    value={categoryFilter}
-                    onChange={(e) => setCategoryFilter(e.target.value)}
-                    className="px-4 py-2 text-sm bg-white border border-slate-200 rounded-xl outline-none focus:border-indigo-500"
+            <div className="flex gap-1 bg-slate-100 p-1 rounded-xl w-fit">
+                <button
+                    onClick={() => setFilter('automated')}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                        filter === 'automated' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                    }`}
                 >
-                    {categories.map(cat => (
-                        <option key={cat} value={cat}>
-                            {cat === 'all' ? 'All Categories' : cat}
-                        </option>
-                    ))}
-                </select>
+                    Automated ({AUTOMATED_CRON_JOBS.length})
+                </button>
+                <button
+                    onClick={() => setFilter('manual')}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                        filter === 'manual' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                >
+                    Manual ({MANUAL_JOBS.length})
+                </button>
+                <button
+                    onClick={() => setFilter('all')}
+                    className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                        filter === 'all' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                >
+                    All Jobs
+                </button>
             </div>
 
             {/* Jobs List */}
@@ -316,16 +338,24 @@ export default function CronJobsPage() {
                                             ? 'bg-emerald-100 text-emerald-700' 
                                             : 'bg-blue-100 text-blue-700'
                                     }`}>
-                                        {job.isAutomated ? 'AUTOMATED' : 'MANUAL'}
+                                        {job.isAutomated ? 'AUTO' : 'MANUAL'}
                                     </span>
                                     <span className="px-2 py-0.5 text-[10px] font-bold rounded-full bg-slate-100 text-slate-600">
                                         {job.category}
                                     </span>
+                                    <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full ${getStatusBadge(job.lastStatus)}`}>
+                                        {job.lastStatus?.toUpperCase() || 'PENDING'}
+                                    </span>
                                 </div>
                                 <p className="text-sm text-slate-500 mb-2">{job.description}</p>
-                                <code className="text-xs bg-slate-100 px-2 py-1 rounded text-slate-600">
-                                    {job.endpoint}
-                                </code>
+                                <div className="flex items-center gap-4 text-xs text-slate-400">
+                                    {job.lastRun && (
+                                        <span>Last run: {new Date(job.lastRun).toLocaleString()}</span>
+                                    )}
+                                    {job.duration && (
+                                        <span>Duration: {job.duration}ms</span>
+                                    )}
+                                </div>
                             </div>
                             
                             <div className="flex items-center gap-2">
@@ -333,29 +363,24 @@ export default function CronJobsPage() {
                                     <button
                                         onClick={() => runJob(job)}
                                         disabled={runningJobs.has(job.id)}
-                                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-xl hover:bg-indigo-700 disabled:opacity-50"
                                     >
                                         {runningJobs.has(job.id) ? (
-                                            <>
-                                                <RefreshCw className="w-4 h-4 animate-spin" />
-                                                Running...
-                                            </>
+                                            <RefreshCw className="w-4 h-4 animate-spin" />
                                         ) : (
-                                            <>
-                                                <Play className="w-4 h-4" />
-                                                Run Now
-                                            </>
+                                            <Play className="w-4 h-4" />
                                         )}
+                                        Run
                                     </button>
                                 )}
                                 <button
                                     onClick={() => {
                                         setShowLogs(prev => ({ ...prev, [job.id]: !prev[job.id] }));
-                                        if (!showLogs[job.id]) fetchJobLogs(job.id);
+                                        if (!showLogs[job.id]) fetchJobLogs();
                                     }}
-                                    className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                                    className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl"
                                 >
-                                    <Clock className="w-4 h-4" />
+                                    <Eye className="w-4 h-4" />
                                 </button>
                             </div>
                         </div>
@@ -363,10 +388,10 @@ export default function CronJobsPage() {
                         {/* Logs Section */}
                         {showLogs[job.id] && (
                             <div className="mt-4 pt-4 border-t border-slate-100">
-                                <h4 className="text-sm font-medium text-slate-700 mb-2">Recent Runs</h4>
+                                <h4 className="text-sm font-medium text-slate-700 mb-2">Execution History</h4>
                                 {jobLogs[job.id]?.length > 0 ? (
                                     <div className="space-y-2 max-h-48 overflow-y-auto">
-                                        {jobLogs[job.id].map((log: any, idx: number) => (
+                                        {jobLogs[job.id].slice(0, 10).map((log, idx) => (
                                             <div key={idx} className="flex items-center gap-3 text-xs bg-slate-50 p-2 rounded-lg">
                                                 {log.status === 'success' ? (
                                                     <CheckCircle className="w-4 h-4 text-emerald-500" />
@@ -377,7 +402,7 @@ export default function CronJobsPage() {
                                                     {new Date(log.executed_at).toLocaleString()}
                                                 </span>
                                                 <span className="text-slate-400">
-                                                    {log.duration_ms ? `${log.duration_ms}ms` : '-'}
+                                                    {log.duration_ms}ms
                                                 </span>
                                                 <span className="text-slate-500 flex-1 truncate">
                                                     {log.details?.message || '-'}
@@ -386,7 +411,7 @@ export default function CronJobsPage() {
                                         ))}
                                     </div>
                                 ) : (
-                                    <p className="text-xs text-slate-400">No recent logs available</p>
+                                    <p className="text-xs text-slate-400">No execution history yet</p>
                                 )}
                             </div>
                         )}
