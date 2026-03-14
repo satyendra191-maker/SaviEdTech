@@ -180,6 +180,7 @@ export default function AdminDashboardPage() {
     const supabase = useMemo(() => getSupabaseBrowserClient(), []);
     const initialLoadRef = useRef(true);
     const refreshTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const mountedRef = useRef(true);
 
     const [stats, setStats] = useState<DashboardStats>(EMPTY_STATS);
     const [activity, setActivity] = useState<DashboardActivity>(EMPTY_ACTIVITY);
@@ -191,6 +192,8 @@ export default function AdminDashboardPage() {
     const [error, setError] = useState<string | null>(null);
 
     const fetchDashboardData = useCallback(async (silent = false) => {
+        if (!mountedRef.current) return;
+        
         if (!supabase) {
             setLoading(false);
             setError('Supabase browser client is unavailable.');
@@ -268,29 +271,7 @@ export default function AdminDashboardPage() {
                     .select('id', { count: 'exact', head: true }),
             ]);
 
-            const requiredErrors = [
-                studentsResult.error,
-                activeUsersResult.error,
-                latestLeadsResult.error,
-                paymentsResult.error,
-                healthResult.error,
-                registrationsTodayResult.error,
-                dailyChallengeResult.error,
-            ].filter(Boolean);
-
-            if (requiredErrors.length > 0) {
-                throw requiredErrors[0];
-            }
-
-            let careerApplicationsCount = careerApplicationsResult.count || 0;
-            if (careerApplicationsResult.error) {
-                const fallbackCareerResult = await supabase
-                    .from('job_applications')
-                    .select('id', { count: 'exact', head: true });
-                if (!fallbackCareerResult.error) {
-                    careerApplicationsCount = fallbackCareerResult.count || 0;
-                }
-            }
+            if (!mountedRef.current) return;
 
             const payments = (paymentsResult.data || []) as PaymentSummary[];
             const completedPayments = payments.filter((payment) => payment.status === 'completed');
@@ -313,7 +294,7 @@ export default function AdminDashboardPage() {
                 completedDonations: completedDonations.length,
                 coursePurchases: completedCoursePurchases.length,
                 premiumSubscriptions: completedSubscriptions.length,
-                careerApplications: careerApplicationsCount,
+                careerApplications: careerApplicationsResult.count || 0,
             });
 
             setActivity({
@@ -329,9 +310,11 @@ export default function AdminDashboardPage() {
             setHealthChecks(Array.from(latestHealthChecks.values()));
             setLastUpdatedAt(new Date().toISOString());
         } catch (fetchError) {
+            if (!mountedRef.current) return;
             console.error('Error fetching admin dashboard data:', fetchError);
             setError(fetchError instanceof Error ? fetchError.message : 'Failed to load dashboard data');
         } finally {
+            if (!mountedRef.current) return;
             initialLoadRef.current = false;
             setLoading(false);
             setRefreshing(false);
@@ -339,43 +322,18 @@ export default function AdminDashboardPage() {
     }, [supabase]);
 
     useEffect(() => {
+        mountedRef.current = true;
         void fetchDashboardData();
 
-        if (!supabase) {
-            return undefined;
-        }
-
-        const scheduleRefresh = () => {
-            if (refreshTimeoutRef.current) {
-                clearTimeout(refreshTimeoutRef.current);
-            }
-
-            refreshTimeoutRef.current = setTimeout(() => {
-                void fetchDashboardData(true);
-            }, 250);
-        };
-
-        const channel = supabase
-            .channel('admin-dashboard-sync')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, scheduleRefresh)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'lead_forms' }, scheduleRefresh)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'payments' }, scheduleRefresh)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'career_applications' }, scheduleRefresh)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'job_applications' }, scheduleRefresh)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'lecture_progress' }, scheduleRefresh)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'question_attempts' }, scheduleRefresh)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'dpp_attempts' }, scheduleRefresh)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'test_attempts' }, scheduleRefresh)
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'system_health' }, scheduleRefresh)
-            .subscribe();
-
         return () => {
+            mountedRef.current = false;
             if (refreshTimeoutRef.current) {
                 clearTimeout(refreshTimeoutRef.current);
             }
-            void channel.unsubscribe();
         };
-    }, [fetchDashboardData, supabase]);
+    }, [fetchDashboardData]);
+
+    // Simplified: removed realtime subscriptions that could cause issues
 
     if (loading) {
         return (
