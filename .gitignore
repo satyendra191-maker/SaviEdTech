@@ -48,3 +48,4 @@ supabase/.temp/
 supabase/*.sql
 !supabase/migrations/*.sql
 .vercel
+tsc.log
