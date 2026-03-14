@@ -51,22 +51,28 @@ export async function GET(request: NextRequest) {
             return NextResponse.redirect(`${requestUrl.origin}/auth/auth-code-error?message=User+not+found`);
         }
 
-        const profileResponse: { data: { role?: string } | null } = await supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', data.user.id)
-            .single();
+        const storedRedirect = cookieStore.get('oauth_redirect')?.value;
+        cookieStore.delete('oauth_redirect');
 
-        let redirectPath = '/dashboard';
-        const profile = profileResponse.data as { role?: string } | null;
-        const role = profile?.role || 'student';
+        let redirectPath = storedRedirect || '/dashboard';
         
-        if (role === 'admin' || role === 'content_manager') {
-            redirectPath = '/admin';
-        } else if (role === 'finance_manager') {
-            redirectPath = '/admin/finance';
-        } else if (role === 'parent') {
-            redirectPath = '/dashboard/parent';
+        if (!storedRedirect) {
+            const profileResponse: { data: { role?: string } | null } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', data.user.id)
+                .single();
+
+            const profile = profileResponse.data as { role?: string } | null;
+            const role = profile?.role || 'student';
+            
+            if (role === 'admin' || role === 'content_manager') {
+                redirectPath = '/admin';
+            } else if (role === 'finance_manager') {
+                redirectPath = '/admin/finance';
+            } else if (role === 'parent') {
+                redirectPath = '/dashboard/parent';
+            }
         }
 
         return NextResponse.redirect(`${requestUrl.origin}${redirectPath}`);

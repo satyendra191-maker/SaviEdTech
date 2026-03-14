@@ -1,14 +1,16 @@
 /**
  * Next.js Configuration
  * 
- * SECURITY CONFIGURATION:
- * - Security headers are set here for static files and pages
- * - Additional headers are added via middleware.ts for dynamic responses
- * - Both configurations work together for comprehensive protection
+ * PERFORMANCE OPTIMIZATIONS:
+ * - Bundle optimization
+ * - Image optimization
+ * - Font optimization
+ * - Aggressive caching
+ * - Bundle splitting
  * 
- * DOCKER CONFIGURATION:
- * - Output set to 'standalone' for Docker deployment
- * - Reduces image size and improves security
+ * SECURITY CONFIGURATION:
+ * - Security headers
+ * - CSP policies
  */
 
 import type { NextConfig } from 'next';
@@ -19,8 +21,18 @@ const nextConfig: NextConfig = {
     
     reactStrictMode: true,
 
+    // Compression
+    compress: true,
+
+    // Image optimization
     images: {
-        domains: ['localhost', '*.supabase.co', 'cdn.saviedutech.com'],
+        domains: [
+            'localhost', 
+            '*.supabase.co', 
+            'cdn.saviedutech.com',
+            'img.youtube.com',
+            'i.ytimg.com',
+        ],
         remotePatterns: [
             {
                 protocol: 'https',
@@ -30,73 +42,113 @@ const nextConfig: NextConfig = {
                 protocol: 'https',
                 hostname: '**.cloudfront.net',
             },
+            {
+                protocol: 'https',
+                hostname: 'img.youtube.com',
+            },
+            {
+                protocol: 'https',
+                hostname: 'i.ytimg.com',
+            },
         ],
+        formats: ['image/avif', 'image/webp'],
+        minimumCacheTTL: 60 * 60 * 24 * 30, // 30 days
     },
 
+    // Bundle optimization
     experimental: {
-        optimizePackageImports: ['lucide-react', 'recharts'],
+        optimizePackageImports: [
+            'lucide-react', 
+            'recharts',
+            'date-fns',
+            'clsx',
+            'tailwind-merge',
+        ],
+        scrollRestoration: true,
     },
 
-    /**
-     * Security Headers
-     * 
-     * These headers are applied to all routes and provide protection against
-     * common web attacks including XSS, clickjacking, and MIME sniffing.
-     * 
-     * Note: Middleware adds additional headers for API routes and dynamic content
-     */
+    // Webpack config
+    webpack: (config, { isServer }) => {
+        if (!isServer) {
+            config.optimization = {
+                ...config.optimization,
+                splitChunks: {
+                    chunks: 'all',
+                    cacheGroups: {
+                        default: false,
+                        vendors: false,
+                        commons: {
+                            name: 'commons',
+                            chunks: 'all',
+                            minChunks: 2,
+                        },
+                        lib: {
+                            test: /[\\/]node_modules[\\/]/,
+                            name(module: { context: string }) {
+                                const match = module.context.match(/[\\/]node_modules[\\/](.*?)([\\/]|$)/);
+                                const packageName = match ? match[1] : 'vendors';
+                                return `npm.${packageName.replace('@', '')}`;
+                            },
+                            priority: 10,
+                        },
+                    },
+                },
+            };
+        }
+        return config;
+    },
+
+    // Redirects for better SEO
+    async redirects() {
+        return [
+            {
+                source: '/home',
+                destination: '/',
+                permanent: true,
+            },
+            {
+                source: '/index',
+                destination: '/',
+                permanent: true,
+            },
+        ];
+    },
+
+    // Headers
     async headers() {
         return [
             {
                 source: '/:path*',
                 headers: [
                     {
-                        // DNS Prefetch Control - improves performance
                         key: 'X-DNS-Prefetch-Control',
                         value: 'on',
                     },
                     {
-                        // Strict Transport Security - forces HTTPS
-                        // max-age: 2 years (63072000 seconds)
-                        // includeSubDomains: applies to all subdomains
-                        // preload: allows browser preloading
                         key: 'Strict-Transport-Security',
                         value: 'max-age=63072000; includeSubDomains; preload',
                     },
                     {
-                        // Content Type Options - prevents MIME sniffing
-                        // Ensures browsers respect the declared Content-Type
                         key: 'X-Content-Type-Options',
                         value: 'nosniff',
                     },
                     {
-                        // Frame Options - prevents clickjacking attacks
-                        // DENY: page cannot be displayed in a frame
-                        // Changed from SAMEORIGIN to DENY for maximum security
                         key: 'X-Frame-Options',
                         value: 'DENY',
                     },
                     {
-                        // XSS Protection - enables browser XSS filters
-                        // Legacy but still useful for older browsers
                         key: 'X-XSS-Protection',
                         value: '1; mode=block',
                     },
                     {
-                        // Referrer Policy - controls referrer information
-                        // strict-origin-when-cross-origin: full URL for same-origin, origin only for cross-origin
                         key: 'Referrer-Policy',
                         value: 'strict-origin-when-cross-origin',
                     },
                     {
-                        // Permissions Policy - controls browser features
-                        // Allow the in-browser AI assistant to access media capture on same-origin pages
                         key: 'Permissions-Policy',
                         value: 'camera=(self), microphone=(self), display-capture=(self), geolocation=(), interest-cohort=()',
                     },
                     {
-                        // Content Security Policy - controls resource loading
-                        // Comprehensive policy to prevent XSS and data injection
                         key: 'Content-Security-Policy',
                         value: [
                             "default-src 'self'",
@@ -116,23 +168,27 @@ const nextConfig: NextConfig = {
                 ],
             },
             {
-                // Specific headers for API routes
                 source: '/api/:path*',
                 headers: [
                     {
-                        // Prevent caching of API responses
                         key: 'Cache-Control',
                         value: 'no-store, max-age=0',
                     },
                 ],
             },
             {
-                // Headers for static assets (caching)
                 source: '/:all*(\\.png|\\.jpg|\\.jpeg|\\.gif|\\.ico|\\.svg|\\.woff|\\.woff2|\\.ttf|\\.eot)',
                 headers: [
                     {
-                        // Cache public static assets for 1 year with immutable flag.
-                        // Do not override JS/CSS caching; Next manages chunk assets correctly.
+                        key: 'Cache-Control',
+                        value: 'public, max-age=31536000, immutable',
+                    },
+                ],
+            },
+            {
+                source: '/_next/static/:path*',
+                headers: [
+                    {
                         key: 'Cache-Control',
                         value: 'public, max-age=31536000, immutable',
                     },

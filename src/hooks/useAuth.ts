@@ -227,20 +227,21 @@ export function useAuth(): UseAuthReturn {
         }
         try {
             const baseUrl = getBaseUrl();
-            // Use the API route directly for callback
-            const redirectUrl = `${baseUrl}/api/auth/callback`;
-
-            let { error } = await supabase.auth.signInWithOAuth({
-                provider: 'google',
-                options: {
-                    redirectTo: redirectUrl,
-                    queryParams: { prompt: 'consent' },
-                },
+            
+            const response = await fetch(`${baseUrl}/api/auth/google`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ redirectTo: '/dashboard' }),
             });
 
-            if (error) {
-                console.error('Google OAuth error:', error.message);
-                return { error: error.message };
+            const data = await response.json();
+
+            if (data.error) {
+                return { error: data.error };
+            }
+
+            if (data.url) {
+                window.location.href = data.url;
             }
 
             return { error: null };
