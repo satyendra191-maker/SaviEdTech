@@ -79,9 +79,9 @@ class AnalyticsEngine {
 
     async trackEvent(event: AnalyticsEvent): Promise<void> {
         try {
-            await this.supabase.from('analytics_events').insert({
+            await (this.supabase as any).from('analytics_events').insert({
                 event_type: event.event_type,
-                user_id: event.userId,
+                user_id: event.user_id,
                 session_id: event.session_id,
                 metadata: event.metadata,
                 recorded_at: event.timestamp,
@@ -112,14 +112,14 @@ class AnalyticsEngine {
                     .eq('user_id', userId),
             ]);
 
-            const sessions = sessionRes.data || [];
-            const lectures = lectureRes.data || [];
-            const tests = testRes.data || [];
+            const sessions = (sessionRes.data || []) as any[];
+            const lectures = (lectureRes.data || []) as any[];
+            const tests = (testRes.data || []) as any[];
             const avgSession = sessions.length > 0 
-                ? sessions.reduce((sum, s) => sum + (s.duration_minutes || 0), 0) / sessions.length 
+                ? sessions.reduce((sum: number, s: any) => sum + (s.duration_minutes || 0), 0) / sessions.length 
                 : 0;
             const avgTest = tests.length > 0 
-                ? tests.reduce((sum, t) => sum + (t.score || 0), 0) / tests.length 
+                ? tests.reduce((sum: number, t: any) => sum + (t.score || 0), 0) / tests.length 
                 : 0;
 
             return {
@@ -128,7 +128,7 @@ class AnalyticsEngine {
                 weeklyActive: weeklyRes.count || 0,
                 monthlyActive: monthlyRes.count || 0,
                 avgSessionDuration: avgSession,
-                totalWatchTime: sessions.reduce((sum, s) => sum + (s.duration_minutes || 0), 0),
+                totalWatchTime: sessions.reduce((sum: number, s: any) => sum + (s.duration_minutes || 0), 0),
                 lecturesCompleted: lectures.length,
                 testsTaken: tests.length,
                 avgTestScore: avgTest,
@@ -151,7 +151,7 @@ class AnalyticsEngine {
                     .eq('status', 'completed'),
             ]);
 
-            const progress = progressRes.data || [];
+            const progress = (progressRes.data || []) as any[];
             const enrollments = enrollRes.count || 0;
             const completions = completionRes.count || 0;
 
@@ -161,7 +161,7 @@ class AnalyticsEngine {
                 completions,
                 completionRate: enrollments > 0 ? (completions / enrollments) * 100 : 0,
                 avgProgress: progress.length > 0 
-                    ? progress.reduce((sum, p) => sum + (p.progress_percentage || 0), 0) / progress.length 
+                    ? progress.reduce((sum: number, p: any) => sum + (p.progress_percentage || 0), 0) / progress.length 
                     : 0,
                 avgTimeToComplete: 0,
                 dropOffPoints: [],
@@ -185,21 +185,21 @@ class AnalyticsEngine {
                     .eq('role', 'student'),
             ]);
 
-            const payments = paymentsRes.data || [];
+            const payments = (paymentsRes.data || []) as any[];
             
             return {
                 period,
-                totalRevenue: payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0),
-                courseRevenue: payments.filter(p => p.payment_type === 'course_purchase')
-                    .reduce((sum, p) => sum + (Number(p.amount) || 0), 0),
-                subscriptionRevenue: payments.filter(p => p.payment_type === 'subscription')
-                    .reduce((sum, p) => sum + (Number(p.amount) || 0), 0),
-                donationRevenue: payments.filter(p => p.payment_type === 'donation')
-                    .reduce((sum, p) => sum + (Number(p.amount) || 0), 0),
+                totalRevenue: payments.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0),
+                courseRevenue: payments.filter((p: any) => p.payment_type === 'course_purchase')
+                    .reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0),
+                subscriptionRevenue: payments.filter((p: any) => p.payment_type === 'subscription')
+                    .reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0),
+                donationRevenue: payments.filter((p: any) => p.payment_type === 'donation')
+                    .reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0),
                 newCustomers: customersRes.count || 0,
                 churnRate: 0,
                 avgOrderValue: payments.length > 0 
-                    ? payments.reduce((sum, p) => sum + (Number(p.amount) || 0), 0) / payments.length 
+                    ? payments.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0) / payments.length 
                     : 0,
                 ltv: 0,
             };
@@ -232,12 +232,12 @@ class AnalyticsEngine {
                     .single(),
             ]);
 
-            const topics = topicRes.data || [];
-            const tests = testRes.data || [];
-            const study = studyRes.data;
+            const topics = (topicRes.data || []) as any[];
+            const tests = (testRes.data || []) as any[];
+            const study = studyRes.data as any | null;
 
-            const weaknesses = topics.filter(t => (t.mastery_score || 0) < 50).map(t => t.topic_id);
-            const strengths = topics.filter(t => (t.mastery_score || 0) >= 70).map(t => t.topic_id);
+            const weaknesses = topics.filter((t: any) => (t.mastery_score || 0) < 50).map((t: any) => t.topic_id);
+            const strengths = topics.filter((t: any) => (t.mastery_score || 0) >= 70).map((t: any) => t.topic_id);
 
             return {
                 userId,
@@ -246,7 +246,7 @@ class AnalyticsEngine {
                 recommendedTopics: weaknesses.slice(0, 5),
                 studyStreak: study?.streak_days || 0,
                 totalStudyHours: study?.total_hours || 0,
-                topicMastery: topics.reduce((acc, t) => {
+                topicMastery: topics.reduce((acc: Record<string, number>, t: any) => {
                     acc[t.topic_id] = t.mastery_score || 0;
                     return acc;
                 }, {} as Record<string, number>),
@@ -274,14 +274,14 @@ class AnalyticsEngine {
                 this.supabase.from('ai_usage_logs').select('response_time_ms'),
             ]);
 
-            const times = timeRes.data || [];
+            const times = (timeRes.data || []) as any[];
             
             return {
                 totalRequests: requestsRes.count || 0,
                 successfulRequests: (requestsRes.count || 0) - (failedRes.count || 0),
                 failedRequests: failedRes.count || 0,
                 avgResponseTime: times.length > 0 
-                    ? times.reduce((sum, t) => sum + (t.response_time_ms || 0), 0) / times.length 
+                    ? times.reduce((sum: number, t: any) => sum + (t.response_time_ms || 0), 0) / times.length 
                     : 0,
                 usageByFeature: {},
                 costEstimate: (requestsRes.count || 0) * 0.001,

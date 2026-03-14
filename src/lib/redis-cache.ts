@@ -39,16 +39,16 @@ class RedisCache {
                 lazyConnect: true,
             });
 
-            this.client.on('connect', () => {
+            (this.client as any).on('connect', () => {
                 this.isConnected = true;
                 console.log('[Redis] Connected');
             });
 
-            this.client.on('error', (err: Error) => {
+            (this.client as any).on('error', (err: Error) => {
                 console.error('[Redis] Error:', err.message);
             });
 
-            this.client.on('close', () => {
+            (this.client as any).on('close', () => {
                 this.isConnected = false;
             });
 

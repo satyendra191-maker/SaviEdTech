@@ -27,14 +27,14 @@ function getSupabaseClient(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
-    const module = searchParams.get('module') || 'dashboard';
+    const moduleName = searchParams.get('module') || 'dashboard';
     const subModule = searchParams.get('sub') || '';
 
     try {
         const supabase = getSupabaseClient(request);
 
         // Dashboard overview
-        if (module === 'dashboard') {
+        if (moduleName === 'dashboard') {
             const [students, courses, revenue, leads, tests] = await Promise.all([
                 supabase.from('profiles').select('id', { count: 'exact', head: true }).eq('role', 'student'),
                 supabase.from('courses').select('id', { count: 'exact', head: true }),
@@ -43,7 +43,7 @@ export async function GET(request: NextRequest) {
                 supabase.from('tests').select('id', { count: 'exact', head: true }),
             ]);
 
-            const totalRevenue = (revenue.data || []).reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+            const totalRevenue = (revenue.data as any[] || []).reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
 
             return NextResponse.json({
                 stats: {
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
         }
 
         // System health
-        if (module === 'system') {
+        if (moduleName === 'system') {
             return NextResponse.json({
                 system: {
                     status: 'healthy',
@@ -68,7 +68,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Users module
-        if (module === 'users') {
+        if (moduleName === 'users') {
             const role = searchParams.get('role') || 'student';
             const { data, count } = await supabase
                 .from('profiles')
@@ -81,7 +81,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Academic module
-        if (module === 'academic') {
+        if (moduleName === 'academic') {
             if (subModule === 'courses') {
                 const { data } = await supabase
                     .from('courses')
@@ -122,15 +122,15 @@ export async function GET(request: NextRequest) {
         }
 
         // Finance module
-        if (module === 'finance') {
+        if (moduleName === 'finance') {
             const [payments, subscriptions] = await Promise.all([
                 supabase.from('payments').select('*').order('created_at', { ascending: false }).limit(50),
                 supabase.from('subscriptions').select('*').order('created_at', { ascending: false }).limit(20),
             ]);
 
-            const totalRevenue = (payments.data || [])
-                .filter(p => p.status === 'completed')
-                .reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+            const totalRevenue = ((payments.data || []) as any[])
+                .filter((p: any) => p.status === 'completed')
+                .reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0);
 
             return NextResponse.json({
                 payments: payments.data || [],
@@ -140,7 +140,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Analytics module
-        if (module === 'analytics') {
+        if (moduleName === 'analytics') {
             const [engagement, revenue] = await Promise.all([
                 supabase.from('activity_logs').select('id', { count: 'exact', head: true })
                     .gte('created_at', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString()),
@@ -154,13 +154,13 @@ export async function GET(request: NextRequest) {
                     weeklyActive: engagement.count || 0,
                 },
                 revenue: {
-                    monthly: revenue.data?.reduce((sum, p) => sum + (Number(p.amount) || 0), 0) || 0,
+                    monthly: (revenue.data as any[] | undefined)?.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0) || 0,
                 },
             });
         }
 
         // Security module
-        if (module === 'security') {
+        if (moduleName === 'security') {
             const { data } = await supabase
                 .from('security_events')
                 .select('*')
@@ -171,7 +171,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Automation/Cron module
-        if (module === 'automation') {
+        if (moduleName === 'automation') {
             const { data } = await supabase
                 .from('cron_logs')
                 .select('*')
@@ -182,7 +182,7 @@ export async function GET(request: NextRequest) {
         }
 
         // Content module
-        if (module === 'content') {
+        if (moduleName === 'content') {
             const { data: blogs } = await supabase
                 .from('blog_posts')
                 .select('*')
@@ -219,10 +219,12 @@ export async function POST(request: NextRequest) {
             const jobName = body.job;
 
             // Log the manual execution
-            await supabase.from('cron_logs').insert({
+            await (supabase as any).from('cron_logs').insert({
                 job_name: jobName,
-                status: 'manual_trigger',
-                executed_at: new Date().toISOString(),
+                job_id: `manual-${Date.now()}`,
+                timestamp: new Date().toISOString(),
+                duration_ms: 0,
+                status: 'success',
             });
 
             return NextResponse.json({ success: true, message: `Job ${jobName} triggered` });
@@ -233,7 +235,7 @@ export async function POST(request: NextRequest) {
             const body = await request.json();
             const { key, value } = body;
 
-            await supabase.from('system_settings').upsert({
+            await (supabase as any).from('system_settings').upsert({
                 key,
                 value,
             }, { onConflict: 'key' });
