@@ -474,14 +474,15 @@ export interface RedisClient {
     del(key: string): Promise<number>;
 }
 
+let redisClientInstance: RedisClient | null = null;
+
 export async function initRedisClient(url?: string): Promise<RedisClient | null> {
-    if (!url) {
-        console.warn('[Redis] No Redis URL provided, using in-memory fallback');
+    if (!url || typeof window !== 'undefined') {
+        console.warn('[Redis] No Redis URL provided or running in browser, using in-memory fallback');
         return null;
     }
 
     try {
-        // Dynamic import for ioredis in production
         const Redis = await import('ioredis').catch(() => null);
         if (!Redis) {
             console.warn('[Redis] ioredis not installed, using in-memory fallback');
@@ -490,12 +491,11 @@ export async function initRedisClient(url?: string): Promise<RedisClient | null>
 
         const redis = new Redis.default(url);
         
-        // Test connection
         await redis.ping();
         
         console.log('[Redis] Connected successfully');
         
-        globalThis.__redisClient = {
+        redisClientInstance = {
             incr: (key) => redis.incr(key),
             expire: (key, seconds) => redis.expire(key, seconds),
             ttl: (key) => redis.ttl(key),
@@ -509,7 +509,9 @@ export async function initRedisClient(url?: string): Promise<RedisClient | null>
             del: (key) => redis.del(key),
         };
         
-        return globalThis.__redisClient;
+        globalThis.__redisClient = redisClientInstance;
+        
+        return redisClientInstance;
     } catch (error) {
         console.error('[Redis] Failed to connect:', error);
         return null;

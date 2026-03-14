@@ -5,7 +5,7 @@
  * All functions here should be used carefully and reviewed regularly.
  * 
  * Security measures implemented:
- * - Rate limiting to prevent brute force attacks (Redis-backed with in-memory fallback)
+ * - Rate limiting to prevent brute force attacks (in-memory)
  * - Input sanitization to prevent XSS and injection attacks
  * - Request validation to ensure data integrity
  * - Security headers for browser protection
@@ -16,18 +16,9 @@
  */
 
 import { z } from 'zod';
-import { initRedisClient, getRedisClient, type RedisClient } from './security-enhanced';
 
 // ============================================================================
-// REDIS CLIENT (Lazy initialization)
-// ============================================================================
-
-declare global {
-    var __redisClient: RedisClient | undefined;
-}
-
-// ============================================================================
-// RATE LIMITING
+// RATE LIMITING (In-Memory)
 // ============================================================================
 
 /**
@@ -72,56 +63,22 @@ export const RATE_LIMITS: Record<string, RateLimitConfig> = {
 
 /**
  * Check if a request should be rate limited
- * Uses Redis when available, falls back to in-memory
+ * Uses in-memory rate limiting
  * 
  * @param identifier - Unique identifier (IP + route, user ID, etc.)
  * @param limit - Rate limit configuration
  * @returns Object with allowed status and remaining requests
  */
-export async function checkRateLimit(
+export function checkRateLimit(
     identifier: string,
     limit: RateLimitConfig
-): Promise<{ allowed: boolean; remaining: number; resetTime: number }> {
+): { allowed: boolean; remaining: number; resetTime: number } {
     const now = Date.now();
     
-    // Try Redis first if available
-    const redis = getRedisClient();
-    if (redis) {
-        try {
-            const key = `ratelimit:${identifier}`;
-            const windowSeconds = Math.ceil(limit.windowMs / 1000);
-            
-            const current = await redis.incr(key);
-            
-            if (current === 1) {
-                await redis.expire(key, windowSeconds);
-            }
-            
-            const ttl = await redis.ttl(key);
-            const resetTime = Date.now() + (ttl > 0 ? ttl * 1000 : limit.windowMs);
-            
-            if (current > limit.maxRequests) {
-                return {
-                    allowed: false,
-                    remaining: 0,
-                    resetTime,
-                };
-            }
-            
-            return {
-                allowed: true,
-                remaining: limit.maxRequests - current,
-                resetTime,
-            };
-        } catch (error) {
-            console.warn('[RateLimit] Redis failed, falling back to in-memory');
-        }
-    }
-    
-    // Fallback to in-memory
+    // In-memory rate limiting
     const entry = rateLimitStore.get(identifier);
 
-    // Clean up expired entries periodically
+    // Clean up expired entries
     if (entry && now > entry.resetTime) {
         rateLimitStore.delete(identifier);
     }
