@@ -6,7 +6,7 @@ import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
 import { NoticeBar } from '@/components/notice-bar';
 import { NotificationBar } from '@/components/notification-bar';
-import { MobileBottomNav, MobileHeader, MobileAIFloatingButton } from '@/components/mobile-nav';
+import { MobileBottomNav, MobileHeader } from '@/components/mobile-nav';
 
 export const metadata: Metadata = {
     title: {
@@ -48,7 +48,6 @@ export default function RootLayout({
                         </main>
                         <Footer />
                         <MobileBottomNav />
-                        <MobileAIFloatingButton />
                     </div>
                 </Providers>
             </body>

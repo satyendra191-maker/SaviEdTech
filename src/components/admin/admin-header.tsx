@@ -1,8 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { Bell, Search, User } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Bell, Search, User, LogOut } from 'lucide-react';
 import { BrandLogo } from '@/components/brand-logo';
+import { useAuth } from '@/hooks/useAuth';
 
 interface AdminHeaderProps {
     role?: string;
@@ -21,15 +23,21 @@ function formatRole(role?: string) {
 }
 
 export function AdminHeader({ role }: AdminHeaderProps) {
+    const { signOut } = useAuth();
+    const router = useRouter();
+
+    const handleSignOut = async () => {
+        await signOut();
+        router.push('/');
+    };
+
     return (
         <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-xl border-b border-slate-200/80">
             <div className="max-w-6xl mx-auto flex h-16 items-center justify-between px-4 lg:px-6">
-                {/* Logo — same as homepage navbar */}
                 <Link href="/admin" className="shrink-0" aria-label="SaviEduTech admin">
-                    <BrandLogo size="xs" showText={true} showTagline={true} />
+                    <BrandLogo size="lg" showText={true} showTagline={true} />
                 </Link>
 
-                {/* Search (desktop) */}
                 <div className="hidden lg:block flex-1 max-w-lg mx-6">
                     <div className="relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
@@ -41,7 +49,6 @@ export function AdminHeader({ role }: AdminHeaderProps) {
                     </div>
                 </div>
 
-                {/* Actions */}
                 <div className="flex items-center gap-2">
                     <Link
                         href="/admin/search"
@@ -66,6 +73,14 @@ export function AdminHeader({ role }: AdminHeaderProps) {
                             <User className="w-4 h-4 text-white" />
                         </div>
                     </div>
+                    <button
+                        onClick={handleSignOut}
+                        className="rounded-xl p-2 transition-colors hover:bg-red-50 active:scale-95"
+                        aria-label="Logout"
+                        title="Logout"
+                    >
+                        <LogOut className="h-5 w-5 text-slate-500 hover:text-red-600" />
+                    </button>
                 </div>
             </div>
         </header>

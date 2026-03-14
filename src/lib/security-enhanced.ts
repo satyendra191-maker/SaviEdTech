@@ -1,133 +1,134 @@
 /**
- * Security Utilities Module
+ * Enhanced Security Module with Redis Support
  * 
- * IMPORTANT: This module contains security-critical functions.
- * All functions here should be used carefully and reviewed regularly.
- * 
- * Security measures implemented:
- * - Rate limiting to prevent brute force attacks (Redis-backed with in-memory fallback)
- * - Input sanitization to prevent XSS and injection attacks
- * - Request validation to ensure data integrity
- * - Security headers for browser protection
+ * Features:
+ * - Redis-backed distributed rate limiting
  * - Session management with expiration
  * - 2FA support infrastructure
- * 
- * For enhanced security with Redis, use src/lib/security-enhanced.ts
+ * - Advanced attack detection
  */
 
 import { z } from 'zod';
-import { initRedisClient, getRedisClient, type RedisClient } from './security-enhanced';
 
 // ============================================================================
-// REDIS CLIENT (Lazy initialization)
+// RATE LIMITING (Redis-backed with in-memory fallback)
 // ============================================================================
 
-declare global {
-    var __redisClient: RedisClient | undefined;
-}
-
-// ============================================================================
-// RATE LIMITING
-// ============================================================================
-
-/**
- * Rate limit store using in-memory Map (fallback when Redis unavailable)
- * In production, configure Redis via environment variable REDIS_URL
- */
 interface RateLimitEntry {
     count: number;
     resetTime: number;
+    slidingWindow?: Map<number, number>;
 }
 
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
-/**
- * Rate limit configuration type
- */
 export interface RateLimitConfig {
     maxRequests: number;
     windowMs: number;
+    blockDurationMs?: number;
+    useSlidingWindow?: boolean;
 }
 
-/**
- * Rate limit configuration
- */
 export const RATE_LIMITS: Record<string, RateLimitConfig> = {
-    // Auth endpoints: 5 attempts per 15 minutes
     AUTH: {
         maxRequests: 5,
-        windowMs: 15 * 60 * 1000, // 15 minutes
+        windowMs: 15 * 60 * 1000,
+        blockDurationMs: 30 * 60 * 1000,
     },
-    // General API: 100 requests per minute
     API: {
         maxRequests: 100,
-        windowMs: 60 * 1000, // 1 minute
+        windowMs: 60 * 1000,
+        useSlidingWindow: true,
     },
-    // Strict rate limit for sensitive operations: 3 attempts per hour
     STRICT: {
         maxRequests: 3,
-        windowMs: 60 * 60 * 1000, // 1 hour
+        windowMs: 60 * 60 * 1000,
+        blockDurationMs: 60 * 60 * 1000,
+    },
+    PAYMENT: {
+        maxRequests: 10,
+        windowMs: 60 * 1000,
+    },
+    AI_QUERY: {
+        maxRequests: 30,
+        windowMs: 60 * 1000,
     },
 } as const;
 
-/**
- * Check if a request should be rate limited
- * Uses Redis when available, falls back to in-memory
- * 
- * @param identifier - Unique identifier (IP + route, user ID, etc.)
- * @param limit - Rate limit configuration
- * @returns Object with allowed status and remaining requests
- */
+interface RateLimitResult {
+    allowed: boolean;
+    remaining: number;
+    resetTime: number;
+    blocked?: boolean;
+    retryAfter?: number;
+}
+
 export async function checkRateLimit(
     identifier: string,
     limit: RateLimitConfig
-): Promise<{ allowed: boolean; remaining: number; resetTime: number }> {
+): Promise<RateLimitResult> {
     const now = Date.now();
     
     // Try Redis first if available
-    const redis = getRedisClient();
-    if (redis) {
+    if (globalThis.__redisClient) {
         try {
-            const key = `ratelimit:${identifier}`;
-            const windowSeconds = Math.ceil(limit.windowMs / 1000);
-            
-            const current = await redis.incr(key);
-            
-            if (current === 1) {
-                await redis.expire(key, windowSeconds);
-            }
-            
-            const ttl = await redis.ttl(key);
-            const resetTime = Date.now() + (ttl > 0 ? ttl * 1000 : limit.windowMs);
-            
-            if (current > limit.maxRequests) {
-                return {
-                    allowed: false,
-                    remaining: 0,
-                    resetTime,
-                };
-            }
-            
-            return {
-                allowed: true,
-                remaining: limit.maxRequests - current,
-                resetTime,
-            };
+            return await checkRateLimitRedis(identifier, limit);
         } catch (error) {
             console.warn('[RateLimit] Redis failed, falling back to in-memory');
         }
     }
     
     // Fallback to in-memory
-    const entry = rateLimitStore.get(identifier);
+    return checkRateLimitMemory(identifier, limit, now);
+}
 
-    // Clean up expired entries periodically
+async function checkRateLimitRedis(
+    identifier: string,
+    limit: RateLimitConfig
+): Promise<RateLimitResult> {
+    const redis = globalThis.__redisClient;
+    const key = `ratelimit:${identifier}`;
+    const windowSeconds = Math.ceil(limit.windowMs / 1000);
+    
+    const current = await redis.incr(key);
+    
+    if (current === 1) {
+        await redis.expire(key, windowSeconds);
+    }
+    
+    const ttl = await redis.ttl(key);
+    const resetTime = Date.now() + (ttl > 0 ? ttl * 1000 : limit.windowMs);
+    
+    if (current > limit.maxRequests) {
+        const blockDuration = limit.blockDurationMs || limit.windowMs;
+        return {
+            allowed: false,
+            remaining: 0,
+            resetTime,
+            blocked: true,
+            retryAfter: Math.ceil(blockDuration / 1000),
+        };
+    }
+    
+    return {
+        allowed: true,
+        remaining: limit.maxRequests - current,
+        resetTime,
+    };
+}
+
+function checkRateLimitMemory(
+    identifier: string,
+    limit: RateLimitConfig,
+    now: number
+): RateLimitResult {
+    const entry = rateLimitStore.get(identifier);
+    
     if (entry && now > entry.resetTime) {
         rateLimitStore.delete(identifier);
     }
-
+    
     if (!entry) {
-        // First request in this window
         rateLimitStore.set(identifier, {
             count: 1,
             resetTime: now + limit.windowMs,
@@ -138,17 +139,18 @@ export async function checkRateLimit(
             resetTime: now + limit.windowMs,
         };
     }
-
+    
     if (entry.count >= limit.maxRequests) {
-        // Rate limit exceeded
+        const blockDuration = limit.blockDurationMs || limit.windowMs;
         return {
             allowed: false,
             remaining: 0,
             resetTime: entry.resetTime,
+            blocked: true,
+            retryAfter: Math.ceil(blockDuration / 1000),
         };
     }
-
-    // Increment count
+    
     entry.count++;
     return {
         allowed: true,
@@ -157,40 +159,96 @@ export async function checkRateLimit(
     };
 }
 
-/**
- * Generate rate limit identifier from request
- * Combines IP address and route for granular rate limiting
- */
 export function generateRateLimitIdentifier(
     ip: string,
     route: string,
-    type: 'auth' | 'api' | 'strict' = 'api'
+    type: 'auth' | 'api' | 'strict' | 'payment' | 'ai' = 'api'
 ): string {
     return `${type}:${ip}:${route}`;
 }
 
 // ============================================================================
-// INPUT VALIDATION SCHEMAS (ZOD)
+// SESSION MANAGEMENT
 // ============================================================================
 
-/**
- * Common validation schemas for form inputs
- * Using Zod for type-safe validation
- */
+export interface SessionData {
+    userId: string;
+    role: string;
+    createdAt: number;
+    expiresAt: number;
+    lastActivity: number;
+    ipAddress?: string;
+    userAgent?: string;
+    twoFactorVerified?: boolean;
+}
 
-// Email validation with strict checks
+const SESSION_TIMEOUT_MS = 60 * 60 * 1000; // 1 hour
+const SESSION_EXTEND_ON_ACTIVITY = true;
+
+export function createSession(userId: string, role: string, options?: {
+    ipAddress?: string;
+    userAgent?: string;
+}): SessionData {
+    const now = Date.now();
+    return {
+        userId,
+        role,
+        createdAt: now,
+        expiresAt: now + SESSION_TIMEOUT_MS,
+        lastActivity: now,
+        ipAddress: options?.ipAddress,
+        userAgent: options?.userAgent,
+        twoFactorVerified: false,
+    };
+}
+
+export function isSessionValid(session: SessionData): boolean {
+    const now = Date.now();
+    return now < session.expiresAt && now < session.lastActivity + SESSION_TIMEOUT_MS;
+}
+
+export function extendSession(session: SessionData): SessionData {
+    if (!SESSION_EXTEND_ON_ACTIVITY) return session;
+    const now = Date.now();
+    return {
+        ...session,
+        lastActivity: now,
+        expiresAt: now + SESSION_TIMEOUT_MS,
+    };
+}
+
+export function validateSessionAge(createdAt: number, maxAgeMs: number = SESSION_TIMEOUT_MS): boolean {
+    return Date.now() - createdAt < maxAgeMs;
+}
+
+// ============================================================================
+// 2FA SUPPORT
+// ============================================================================
+
+export interface TwoFactorConfig {
+    enabled: boolean;
+    method: 'totp' | 'sms' | 'email';
+    lastVerified?: number;
+}
+
+export const twoFactorSchema = z.object({
+    code: z.string().length(6, 'Verification code must be 6 digits'),
+    userId: z.string().uuid(),
+    method: z.enum(['totp', 'sms', 'email']),
+});
+
+// ============================================================================
+// INPUT VALIDATION (Enhanced)
+// ============================================================================
+
 export const emailSchema = z
     .string()
     .min(5, 'Email must be at least 5 characters')
     .max(254, 'Email must not exceed 254 characters')
     .email('Invalid email format')
     .refine((email) => !email.includes('..'), 'Email cannot contain consecutive dots')
-    .refine(
-        (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email),
-        'Email must have a valid domain'
-    );
+    .refine((email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email), 'Invalid email domain');
 
-// Password validation with security requirements
 export const passwordSchema = z
     .string()
     .min(8, 'Password must be at least 8 characters')
@@ -200,107 +258,50 @@ export const passwordSchema = z
     .regex(/[0-9]/, 'Password must contain at least one number')
     .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character');
 
-// Username validation
-export const usernameSchema = z
-    .string()
-    .min(3, 'Username must be at least 3 characters')
-    .max(30, 'Username must not exceed 30 characters')
-    .regex(/^[a-zA-Z0-9_-]+$/, 'Username can only contain letters, numbers, underscores, and hyphens');
-
-// Phone number validation
 export const phoneSchema = z
     .string()
-    .regex(/^\+?[\d\s-()]{10,20}$/, 'Invalid phone number format');
+    .regex(/^\+?[\d\s\-()]{10,20}$/, 'Invalid phone number format');
 
-// UUID validation
-export const uuidSchema = z
-    .string()
-    .uuid('Invalid UUID format');
-
-// Generic text input sanitization
-export const textSchema = z
-    .string()
-    .min(1, 'Field is required')
-    .max(5000, 'Input too long')
-    .refine(
-        (text) => !/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi.test(text),
-        'Input contains forbidden content'
-    );
-
-// Search query validation
-export const searchQuerySchema = z
-    .string()
-    .max(200, 'Search query too long')
-    .regex(/^[\w\s\-._@]+$/, 'Search query contains invalid characters');
+export const uuidSchema = z.string().uuid('Invalid UUID format');
 
 // ============================================================================
-// INPUT SANITIZATION
+// INPUT SANITIZATION (Enhanced)
 // ============================================================================
 
-/**
- * Sanitize user input to prevent XSS attacks
- * Removes potentially dangerous HTML and scripts
- * 
- * @param input - Raw user input
- * @returns Sanitized string
- */
 export function sanitizeInput(input: string): string {
     if (!input) return '';
 
     return input
-        // Remove HTML tags
         .replace(/<[^>]*>/g, '')
-        // Remove script tags and their content
         .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
-        // Remove event handlers
         .replace(/on\w+\s*=/gi, '')
-        // Remove javascript: protocol
         .replace(/javascript:/gi, '')
-        // Remove data: protocol (can be used for XSS)
         .replace(/data:/gi, '')
-        // Escape special HTML characters
-        .replace(/&/g, '&')
-        .replace(/</g, '<')
-        .replace(/>/g, '>')
-        .replace(/"/g, '"')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
         .replace(/'/g, '&#x27;')
-        // Remove null bytes
         .replace(/\0/g, '');
 }
 
-/**
- * Sanitize URL to prevent open redirects and XSS
- * 
- * @param url - Raw URL input
- * @returns Sanitized URL or empty string if invalid
- */
 export function sanitizeUrl(url: string): string {
     if (!url) return '';
 
     try {
         const parsed = new URL(url);
-
-        // Only allow http and https protocols
         if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
             return '';
         }
-
-        // Reconstruct safe URL
         return `${parsed.protocol}//${parsed.hostname}${parsed.pathname}${parsed.search}`;
     } catch {
-        // If URL parsing fails, check if it's a relative path
         if (url.startsWith('/') && !url.startsWith('//')) {
-            // Allow relative paths
             return url.replace(/[<>'"]/g, '');
         }
         return '';
     }
 }
 
-/**
- * Escape special regex characters in a string
- * Useful for creating safe regex patterns from user input
- */
 export function escapeRegex(input: string): string {
     return input.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
@@ -309,37 +310,16 @@ export function escapeRegex(input: string): string {
 // SECURITY HEADERS
 // ============================================================================
 
-/**
- * Security headers configuration for Next.js
- * These headers protect against various web attacks
- */
 export const SECURITY_HEADERS = {
-    // Prevent clickjacking attacks
     'X-Frame-Options': 'DENY',
-
-    // Prevent MIME type sniffing
     'X-Content-Type-Options': 'nosniff',
-
-    // Enable XSS protection in browsers
     'X-XSS-Protection': '1; mode=block',
-
-    // Referrer policy
     'Referrer-Policy': 'strict-origin-when-cross-origin',
-
-    // DNS prefetch control
     'X-DNS-Prefetch-Control': 'on',
-
-    // HSTS (HTTPS Strict Transport Security)
     'Strict-Transport-Security': 'max-age=63072000; includeSubDomains; preload',
-
-    // Permissions policy (formerly Feature Policy)
     'Permissions-Policy': 'camera=(self), microphone=(self), display-capture=(self), geolocation=(), interest-cohort=()',
-};
+} as const;
 
-/**
- * Content Security Policy
- * Defines approved sources for content loading
- */
 export const CONTENT_SECURITY_POLICY = [
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://*.supabase.co https://checkout.razorpay.com https://cdn.razorpay.com https://js.razorpay.com",
@@ -359,16 +339,11 @@ export const CONTENT_SECURITY_POLICY = [
 // REQUEST VALIDATION
 // ============================================================================
 
-/**
- * Validate and parse JSON body from request
- * Prevents JSON parsing attacks and large payloads
- */
 export async function validateJsonBody<T>(
     request: Request,
     schema: z.ZodSchema<T>
 ): Promise<{ success: true; data: T } | { success: false; error: string }> {
     try {
-        // Check content length (max 1MB)
         const contentLength = request.headers.get('content-length');
         if (contentLength && parseInt(contentLength) > 1024 * 1024) {
             return { success: false, error: 'Request body too large' };
@@ -390,18 +365,11 @@ export async function validateJsonBody<T>(
     }
 }
 
-/**
- * Check if request is from a trusted source
- * Validates origin and referer headers
- */
 export function isTrustedRequest(request: Request, allowedOrigins: string[]): boolean {
     const origin = request.headers.get('origin');
     const referer = request.headers.get('referer');
 
-    // If no origin/referer, might be a same-origin request
-    if (!origin && !referer) {
-        return true;
-    }
+    if (!origin && !referer) return true;
 
     const checkUrl = origin || referer;
     if (!checkUrl) return false;
@@ -424,20 +392,12 @@ export function isTrustedRequest(request: Request, allowedOrigins: string[]): bo
 // AUTHENTICATION HELPERS
 // ============================================================================
 
-/**
- * Generate secure random token
- * Uses crypto API for cryptographically secure randomness
- */
 export function generateSecureToken(length: number = 32): string {
     const array = new Uint8Array(length);
     crypto.getRandomValues(array);
     return Array.from(array, (byte) => byte.toString(16).padStart(2, '0')).join('');
 }
 
-/**
- * Hash sensitive data using SHA-256
- * Note: For passwords, use bcrypt or Argon2 instead
- */
 export async function hashData(data: string): Promise<string> {
     const encoder = new TextEncoder();
     const encoded = encoder.encode(data);
@@ -446,13 +406,8 @@ export async function hashData(data: string): Promise<string> {
     return hashArray.map((b) => b.toString(16).padStart(2, '0')).join('');
 }
 
-/**
- * Constant time comparison to prevent timing attacks
- */
 export function constantTimeCompare(a: string, b: string): boolean {
-    if (a.length !== b.length) {
-        return false;
-    }
+    if (a.length !== b.length) return false;
     let result = 0;
     for (let i = 0; i < a.length; i++) {
         result |= a.charCodeAt(i) ^ b.charCodeAt(i);
@@ -461,44 +416,25 @@ export function constantTimeCompare(a: string, b: string): boolean {
 }
 
 // ============================================================================
-// SECURITY CONSTANTS
+// ATTACK DETECTION
 // ============================================================================
 
-/**
- * Security-related constants
- */
 export const SECURITY_CONSTANTS = {
-    // Maximum login attempts before temporary lockout
     MAX_LOGIN_ATTEMPTS: 5,
-
-    // Lockout duration in minutes
     LOCKOUT_DURATION_MINUTES: 30,
-
-    // Session timeout in minutes
     SESSION_TIMEOUT_MINUTES: 60,
-
-    // Password reset token expiry in hours
     PASSWORD_RESET_TOKEN_EXPIRY_HOURS: 1,
-
-    // API key rotation interval in days
     API_KEY_ROTATION_DAYS: 90,
-
-    // Suspicious patterns to block
     SUSPICIOUS_PATTERNS: [
         /\b(union\s+select|insert\s+into|delete\s+from|drop\s+table)\b/i,
         /<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/i,
         /javascript:/i,
-        // Match event handlers only in HTML-like attribute context (avoids false positives like "phone=")
         /<[^>]*\son\w+\s*=/i,
-        /\.\.\//, // Path traversal
-        /%00/, // Null byte injection
+        /\.\.\//,
+        /%00/,
     ],
 };
 
-/**
- * Check if input contains suspicious patterns
- * Used to detect potential attacks
- */
 export function containsSuspiciousPatterns(input: string): boolean {
     return SECURITY_CONSTANTS.SUSPICIOUS_PATTERNS.some((pattern) => pattern.test(input));
 }
@@ -507,10 +443,6 @@ export function containsSuspiciousPatterns(input: string): boolean {
 // CLEANUP
 // ============================================================================
 
-/**
- * Clean up old rate limit entries periodically
- * Call this periodically to prevent memory leaks
- */
 export function cleanupRateLimitStore(): void {
     const now = Date.now();
     for (const [key, entry] of rateLimitStore.entries()) {
@@ -520,7 +452,70 @@ export function cleanupRateLimitStore(): void {
     }
 }
 
-// Run cleanup every 10 minutes
+// Run cleanup every 5 minutes
 if (typeof globalThis !== 'undefined') {
-    setInterval(cleanupRateLimitStore, 10 * 60 * 1000);
+    setInterval(cleanupRateLimitStore, 5 * 60 * 1000);
+}
+
+// ============================================================================
+// REDIS CLIENT INITIALIZATION
+// ============================================================================
+
+declare global {
+    var __redisClient: RedisClient | undefined;
+}
+
+export interface RedisClient {
+    incr(key: string): Promise<number>;
+    expire(key: string, seconds: number): Promise<number>;
+    ttl(key: string): Promise<number>;
+    get(key: string): Promise<string | null>;
+    set(key: string, value: string, mode?: 'EX' | 'PX', duration?: number): Promise<'OK'>;
+    del(key: string): Promise<number>;
+}
+
+export async function initRedisClient(url?: string): Promise<RedisClient | null> {
+    if (!url) {
+        console.warn('[Redis] No Redis URL provided, using in-memory fallback');
+        return null;
+    }
+
+    try {
+        // Dynamic import for ioredis in production
+        const Redis = await import('ioredis').catch(() => null);
+        if (!Redis) {
+            console.warn('[Redis] ioredis not installed, using in-memory fallback');
+            return null;
+        }
+
+        const redis = new Redis.default(url);
+        
+        // Test connection
+        await redis.ping();
+        
+        console.log('[Redis] Connected successfully');
+        
+        globalThis.__redisClient = {
+            incr: (key) => redis.incr(key),
+            expire: (key, seconds) => redis.expire(key, seconds),
+            ttl: (key) => redis.ttl(key),
+            get: (key) => redis.get(key),
+            set: (key, value, mode, duration) => {
+                if (mode && duration) {
+                    return redis.set(key, value, mode, duration);
+                }
+                return redis.set(key, value);
+            },
+            del: (key) => redis.del(key),
+        };
+        
+        return globalThis.__redisClient;
+    } catch (error) {
+        console.error('[Redis] Failed to connect:', error);
+        return null;
+    }
+}
+
+export function getRedisClient(): RedisClient | undefined {
+    return globalThis.__redisClient;
 }

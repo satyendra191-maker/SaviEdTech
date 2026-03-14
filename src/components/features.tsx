@@ -75,7 +75,7 @@ const features = [
     description: 'Curated daily practice problems (DPP) with solutions.',
     color: 'bg-gradient-to-br from-cyan-100 to-cyan-200 text-cyan-700',
     borderColor: 'border-cyan-300',
-    href: '/dpp',
+    href: '/dashboard/dpp',
   },
   {
     icon: Users,
@@ -83,7 +83,7 @@ const features = [
     description: 'Join a community of 100,000+ aspirants and learn together.',
     color: 'bg-gradient-to-br from-indigo-100 to-indigo-200 text-indigo-700',
     borderColor: 'border-indigo-300',
-    href: '/community',
+    href: '/dashboard/practice',
   },
 ];
 
@@ -99,14 +99,14 @@ const aiFeatures = [
     icon: Target,
     title: 'AI Adaptive Learning',
     description: 'System adapts to your learning style and pace',
-    href: '/ai-adaptive',
+    href: '/ai-tutor',
     color: 'from-blue-500 to-cyan-500',
   },
   {
     icon: GraduationCap,
     title: 'AI Rank Simulator',
     description: 'Predict your All India Rank with precision',
-    href: '/ai-rank-simulator',
+    href: '/dashboard/analytics',
     color: 'from-green-500 to-emerald-500',
   },
   {

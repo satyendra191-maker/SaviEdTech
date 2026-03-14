@@ -27,6 +27,7 @@ import {
     X,
     LogOut,
     ChevronRight,
+    Brain,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -36,6 +37,7 @@ interface AdminMobileNavProps {
 
 const adminMenuItems = [
     { name: 'Dashboard', href: '/admin', icon: LayoutDashboard },
+    { name: 'AI Superbrain', href: '/admin/superbrain', icon: Brain },
     { name: 'AI Assistant', href: '/admin/ai-assistant', icon: Bot },
     { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
     { name: 'Students', href: '/admin/students', icon: Users },

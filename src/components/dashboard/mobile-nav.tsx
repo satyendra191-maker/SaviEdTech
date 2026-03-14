@@ -21,7 +21,6 @@ const getStudentNavItems = () => [
     { name: 'Home', href: '/dashboard', icon: LayoutDashboard },
     { name: 'Courses', href: '/dashboard/lectures', icon: GraduationCap },
     { name: 'Practice', href: '/dashboard/practice', icon: Crosshair },
-    { name: 'AI Tutor', href: '/ai-tutor', icon: Brain },
     { name: 'Profile', href: '/dashboard/settings', icon: User },
 ];
 

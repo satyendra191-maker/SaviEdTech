@@ -5,11 +5,18 @@
  * - Security headers are set here for static files and pages
  * - Additional headers are added via middleware.ts for dynamic responses
  * - Both configurations work together for comprehensive protection
+ * 
+ * DOCKER CONFIGURATION:
+ * - Output set to 'standalone' for Docker deployment
+ * - Reduces image size and improves security
  */
 
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+    // Enable standalone output for Docker
+    output: process.env.DOCKER_BUILD === 'true' ? 'standalone' : undefined,
+    
     reactStrictMode: true,
 
     images: {

@@ -2,7 +2,8 @@
 
 import { useMemo } from 'react';
 import Link from 'next/link';
-import { Bell, Search, User } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { Bell, Search, User, LogOut } from 'lucide-react';
 import { BrandLogo } from '@/components/brand-logo';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -14,10 +15,16 @@ function getGreeting(): string {
 }
 
 export function Header() {
-    const { user } = useAuth();
+    const { user, signOut } = useAuth();
+    const router = useRouter();
 
     const greeting = useMemo(() => getGreeting(), []);
     const firstName = (user as any)?.full_name?.split(' ')[0] || '';
+
+    const handleSignOut = async () => {
+        await signOut();
+        router.push('/');
+    };
 
     return (
         <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-xl border-b border-slate-200/80">
@@ -25,7 +32,7 @@ export function Header() {
                 <div className="flex h-16 items-center justify-between px-4">
                     {/* Logo — same as homepage navbar */}
                     <Link href="/dashboard" className="shrink-0" aria-label="SaviEduTech dashboard">
-                        <BrandLogo size="xs" showText={true} showTagline={true} />
+                        <BrandLogo size="lg" showText={true} showTagline={true} />
                     </Link>
 
                     {/* Right actions */}
@@ -55,6 +62,14 @@ export function Header() {
                         >
                             <User className="h-5 w-5 text-slate-500" />
                         </Link>
+                        <button
+                            onClick={handleSignOut}
+                            className="rounded-xl p-2 transition-colors hover:bg-red-50 active:scale-95"
+                            aria-label="Logout"
+                            title="Logout"
+                        >
+                            <LogOut className="h-5 w-5 text-slate-500 hover:text-red-600" />
+                        </button>
                     </div>
                 </div>
 

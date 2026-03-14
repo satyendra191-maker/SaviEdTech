@@ -131,7 +131,7 @@ export async function middleware(request: NextRequest) {
         const rateLimitConfig = isAuthRoute ? RATE_LIMITS.AUTH : RATE_LIMITS.API;
 
         const rateLimitId = generateRateLimitIdentifier(ip, pathname, rateLimitType as 'auth' | 'api');
-        const rateLimitResult = checkRateLimit(rateLimitId, rateLimitConfig);
+        const rateLimitResult = await checkRateLimit(rateLimitId, rateLimitConfig);
 
         if (!rateLimitResult.allowed) {
             return new NextResponse(
