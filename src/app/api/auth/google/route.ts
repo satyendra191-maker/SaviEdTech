@@ -28,11 +28,9 @@ export async function POST(request: NextRequest) {
             }
         );
 
-        const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_VERCEL_URL 
-            ? `https://${process.env.NEXT_PUBLIC_VERCEL_URL}` 
-            : 'http://localhost:3000';
+        const baseUrl = 'https://saviedutech.com';
 
-        const redirectUrl = `${baseUrl}/api/auth/callback`;
+        const redirectUrl = `${baseUrl}/auth/callback`;
         
         cookieStore.set('oauth_redirect', redirectTo, {
             httpOnly: true,
