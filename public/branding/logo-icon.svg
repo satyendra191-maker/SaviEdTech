@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <defs>
+    <linearGradient id="logo-orange-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F58220" />
+      <stop offset="100%" stop-color="#E57210" />
+    </linearGradient>
+    <linearGradient id="logo-blue-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#004A99" />
+      <stop offset="100%" stop-color="#00356B" />
+    </linearGradient>
+  </defs>
+  <!-- The 'S' Ribbon - Top Curve (Orange) -->
+  <path
+    d="M95 30 C95 30 85 15 55 15 C25 15 20 40 45 60 C55 68 70 75 75 85 C80 100 65 110 50 110 C35 110 25 100 25 100"
+    stroke="url(#logo-orange-gradient)"
+    stroke-width="18"
+    stroke-linecap="round"
+    fill="none"
+  />
+  <!-- The 'S' Ribbon - Bottom Curve (Blue) -->
+  <path
+    d="M25 90 C25 90 35 105 55 105 C85 105 95 80 75 60 C65 50 45 45 40 35 C35 20 50 10 65 10 C80 10 90 20 90 20"
+    stroke="url(#logo-blue-gradient)"
+    stroke-width="16"
+    stroke-linecap="round"
+    fill="none"
+    opacity="0.8"
+  />
+  <!-- Digital Nodes -->
+  <rect x="10" y="30" width="8" height="8" fill="#F58220" />
+  <rect x="20" y="30" width="8" height="8" fill="#F58220" opacity="0.6" />
+  <rect x="10" y="40" width="8" height="8" fill="#F58220" opacity="0.8" />
+  <rect x="5" y="45" width="6" height="6" fill="#004A99" opacity="0.4" />
+  <rect x="15" y="50" width="8" height="8" fill="#004A99" />
+  <rect x="5" y="55" width="8" height="8" fill="#004A99" opacity="0.7" />
+</svg>

@@ -14,7 +14,7 @@ import {
     Twitter,
     Youtube,
 } from 'lucide-react';
-import { BrandLogo } from '@/components/brand-logo';
+import { Logo } from '@/components/brand/Logo';
 
 const quickLinks = [
     { name: 'Courses', href: '/courses' },
@@ -54,13 +54,10 @@ export function Footer() {
                 <div className="grid gap-10 xl:grid-cols-[1fr_0.75fr_0.9fr]">
                     <div>
                         <Link href="/" className="inline-flex">
-                            <BrandLogo
+                            <Logo
                                 size="sm"
-                                showText={true}
-                                showTagline={true}
-                                taglineTone="dark"
-                                wordmarkTone="dark"
-                                iconClassName="scale-[1.1]"
+                                variant="full"
+                                theme="dark"
                             />
                         </Link>
 

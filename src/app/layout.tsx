@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import React from 'react';
+
 import './globals.css';
+
 import { Providers } from '@/components/providers';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
@@ -16,8 +18,12 @@ export const metadata: Metadata = {
     description: 'India\'s premier digital coaching platform for JEE and NEET preparation.',
     metadataBase: new URL('https://saviedutech.com'),
     icons: {
-        icon: '/icons/icon-192.png',
-        shortcut: '/icons/icon-192.png',
+        icon: [
+            { url: '/favicon.svg', type: 'image/svg+xml' },
+            { url: '/branding/favicon.svg', type: 'image/svg+xml' },
+            { url: '/icons/icon-192.png', sizes: '192x192', type: 'image/png' },
+        ],
+        shortcut: '/favicon.svg',
         apple: '/icons/icon-512.png',
     },
     manifest: '/manifest.json',

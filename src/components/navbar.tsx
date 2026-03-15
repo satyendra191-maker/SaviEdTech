@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { ChevronDown, LayoutDashboard, LogOut, Menu, X, Sparkles } from 'lucide-react';
-import { BrandLogo } from '@/components/brand-logo';
+import { Logo } from '@/components/brand/Logo';
 import { useAuth } from '@/hooks/useAuth';
 
 const courseLinks = [
@@ -73,10 +73,13 @@ export function Navbar() {
     };
 
     return (
-        <nav className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl">
-            <div className="mx-auto flex h-20 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-                <Link href="/" className="shrink-0" aria-label="SaviEduTech home">
-                    <BrandLogo size="lg" showText={true} showTagline={true} />
+        <nav className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl h-[64px] flex items-center">
+            <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+                <Link href="/" className="flex items-center gap-[24px]" aria-label="SaviEduTech home">
+                    {/* Desktop Version */}
+                    <Logo size="md" variant="full" className="hidden lg:block" height={36} />
+                    {/* Mobile Version (Icon Only) */}
+                    <Logo size="sm" variant="icon" className="lg:hidden" height={28} />
                 </Link>
 
                 <div className="hidden items-center gap-1 lg:flex">

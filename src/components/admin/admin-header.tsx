@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Bell, Search, User, LogOut } from 'lucide-react';
-import { BrandLogo } from '@/components/brand-logo';
+import { Logo } from '@/components/brand/Logo';
 import { useAuth } from '@/hooks/useAuth';
 
 interface AdminHeaderProps {
@@ -35,7 +35,7 @@ export function AdminHeader({ role }: AdminHeaderProps) {
         <header className="sticky top-0 z-30 bg-white/90 backdrop-blur-xl border-b border-slate-200/80">
             <div className="max-w-6xl mx-auto flex h-16 items-center justify-between px-4 lg:px-6">
                 <Link href="/admin" className="shrink-0" aria-label="SaviEduTech admin">
-                    <BrandLogo size="lg" showText={true} showTagline={true} />
+                    <Logo size="md" variant="icon" height={32} />
                 </Link>
 
                 <div className="hidden lg:block flex-1 max-w-lg mx-6">

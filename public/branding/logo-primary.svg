@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 120" fill="none">
+  <defs>
+    <linearGradient id="logo-orange-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F58220" />
+      <stop offset="100%" stop-color="#E57210" />
+    </linearGradient>
+    <linearGradient id="logo-blue-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#004A99" />
+      <stop offset="100%" stop-color="#00356B" />
+    </linearGradient>
+  </defs>
+  <g transform="translate(10, 5)">
+    <!-- The 'S' Ribbon -->
+    <path d="M85 25 C85 25 75 10 45 10 C15 10 10 35 35 55 C45 63 60 70 65 80 C70 95 55 105 40 105 C25 105 15 95 15 95" stroke="url(#logo-orange-gradient)" stroke-width="16" stroke-linecap="round" fill="none" />
+    <path d="M15 85 C15 85 25 100 45 100 C75 100 85 75 65 55 C55 45 35 40 30 30 C25 15 40 5 55 5 C70 5 80 15 80 15" stroke="url(#logo-blue-gradient)" stroke-width="14" stroke-linecap="round" fill="none" opacity="0.8" />
+    <!-- Digital Nodes -->
+    <rect x="0" y="25" width="6" height="6" fill="#F58220" />
+    <rect x="8" y="25" width="6" height="6" fill="#F58220" opacity="0.6" />
+    <rect x="0" y="33" width="6" height="6" fill="#F58220" opacity="0.8" />
+  </g>
+  <!-- Wordmark -->
+  <text x="115" y="65" font-family="sans-serif" font-size="48" font-weight="900" letter-spacing="-1.5">
+    <tspan fill="#F58220">Savi</tspan><tspan fill="#004A99">EduTech</tspan>
+  </text>
+  <!-- Tagline -->
+  <text x="115" y="92" font-family="sans-serif" font-size="16" font-weight="600" fill="#4D4D4D">Empowering Digital Learning</text>
+</svg>

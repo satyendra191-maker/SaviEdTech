@@ -1,0 +1,17 @@
+<svg width="200" height="200" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg">
+  <g transform="translate(20, 45)">
+    <!-- Lightened fragments for dark background visibility -->
+    <rect x="0" y="10" width="12" height="12" fill="#7dd3fc" rx="1" />
+    <rect x="15" y="0" width="12" height="12" fill="#f97316" rx="1" />
+    <rect x="30" y="10" width="12" height="12" fill="#f97316" rx="1" opacity="0.6" />
+    <rect x="15" y="25" width="12" height="12" fill="#7dd3fc" rx="1" opacity="0.8" />
+  </g>
+  <g transform="translate(60, 25)">
+    <!-- Sky blue instead of navy for better dark mode contrast -->
+    <path d="M50,65 C50,110 160,110 160,65 C160,40 50,40 50,-10" 
+          stroke="#7dd3fc" stroke-width="26" fill="none" stroke-linecap="round" />
+    <!-- Vibrant orange -->
+    <path d="M50,15 C50,-20 160,-20 160,15 C160,40 50,40 50,115" 
+          stroke="#f97316" stroke-width="26" fill="none" stroke-linecap="round" />
+  </g>
+</svg>

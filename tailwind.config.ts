@@ -16,6 +16,22 @@ const config: Config = {
                 ring: 'hsl(var(--ring))',
                 background: 'hsl(var(--background))',
                 foreground: 'hsl(var(--foreground))',
+                brand: {
+                    primary: {
+                        600: '#004A99', // New Logo Blue
+                        500: '#005CBF',
+                        800: '#1B1464',
+                    },
+                    secondary: {
+                        500: '#F58220', // New Logo Orange
+                        400: '#FB923C',
+                    },
+                    accent: {
+                        600: '#004A99',
+                        500: '#005CBF',
+                    }
+                },
+
                 primary: {
                     DEFAULT: 'hsl(var(--primary))',
                     foreground: 'hsl(var(--primary-foreground))',
@@ -71,8 +87,9 @@ const config: Config = {
                 sm: 'calc(var(--radius) - 4px)',
             },
             fontFamily: {
-                sans: ['Inter', 'system-ui', 'sans-serif'],
-                display: ['Poppins', 'system-ui', 'sans-serif'],
+                sans:    ['Inter', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+                display: ['Poppins', 'Plus Jakarta Sans', 'system-ui', 'sans-serif'],
+                jakarta: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
             },
             keyframes: {
                 'accordion-down': {

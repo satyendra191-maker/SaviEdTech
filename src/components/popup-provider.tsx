@@ -326,7 +326,9 @@ export function PopupProvider({ children }: PopupProviderProps) {
         void loadPopup();
 
         const supabase = getSupabaseBrowserClient();
-        const subscription = supabase?.auth.onAuthStateChange((event) => {
+        if (!supabase) return () => { isMounted = false; };
+
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
             if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
                 void loadPopup();
             }
@@ -334,14 +336,14 @@ export function PopupProvider({ children }: PopupProviderProps) {
             if (event === 'SIGNED_OUT') {
                 resetPopup();
             }
-        }).data.subscription;
+        });
 
         return () => {
             isMounted = false;
             if (showTimer) {
                 clearTimeout(showTimer);
             }
-            subscription?.unsubscribe();
+            subscription.unsubscribe();
         };
     }, [popupPlacement]);
 

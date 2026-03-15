@@ -1,157 +1,46 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
+import { Logo } from '@/components/brand/Logo';
+import type { LogoSize } from '@/components/brand/Logo';
 
 interface AnimatedLogoProps {
-    size?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | '2xl';
-    showText?: boolean;
+    size?:        LogoSize;
+    showText?:    boolean;
     showTagline?: boolean;
-    className?: string;
+    className?:   string;
 }
 
-const sizeClasses = {
-    xs: 'w-8 h-8',
-    sm: 'w-12 h-12',
-    md: 'w-16 h-16',
-    lg: 'w-24 h-24',
-    xl: 'w-32 h-32',
-    '2xl': 'w-48 h-48',
-};
-
-const textSizeClasses = {
-    xs: 'text-sm',
-    sm: 'text-lg',
-    md: 'text-xl',
-    lg: 'text-3xl',
-    xl: 'text-4xl',
-    '2xl': 'text-5xl',
-};
-
-const taglineSizeClasses = {
-    xs: 'text-[8px]',
-    sm: 'text-[10px]',
-    md: 'text-xs',
-    lg: 'text-sm',
-    xl: 'text-base',
-    '2xl': 'text-lg',
-};
-
-export function AnimatedLogo({ size = 'md', showText = true, showTagline = true, className = '' }: AnimatedLogoProps) {
-    // Use mounted state to prevent hydration mismatch
+/**
+ * AnimatedLogo — wraps the brand Logo with a float animation for hero sections.
+ * Drop-in replacement for the old animated-logo (same props API).
+ */
+export function AnimatedLogo({
+    size        = 'md',
+    showText    = true,
+    showTagline = false,
+    className   = '',
+}: AnimatedLogoProps) {
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
         setMounted(true);
     }, []);
 
-    // Render static SVG during SSR and initial render to avoid hydration mismatch
-    // Enhanced brighter logo with improved contrast
-    const logoSvg = (
-        <div className={`relative ${sizeClasses[size]} drop-shadow-2xl`}>
-            {/* Glow effect - brighter blue/violet gradient */}
-            <div className="absolute inset-0 bg-gradient-to-r from-blue-600 via-indigo-600 to-violet-700 rounded-full blur-xl opacity-90" />
-
-            {/* Main 3D Online Study Icon Container */}
-            <svg
-                viewBox="0 0 100 100"
-                className={`${sizeClasses[size]} relative z-10 filter drop-shadow-lg`}
-            >
-                <defs>
-                    <linearGradient id="atomGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#1d4ed8" />
-                        <stop offset="50%" stopColor="#3730a3" />
-                        <stop offset="100%" stopColor="#5b21b6" />
-                    </linearGradient>
-                    <linearGradient id="electronGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#06b6d4" />
-                        <stop offset="100%" stopColor="#0891b2" />
-                    </linearGradient>
-                    <linearGradient id="studyGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                        <stop offset="0%" stopColor="#ec4899" />
-                        <stop offset="50%" stopColor="#8b5cf6" />
-                        <stop offset="100%" stopColor="#6366f1" />
-                    </linearGradient>
-                    <filter id="glow">
-                        <feGaussianBlur stdDeviation="2" result="coloredBlur" />
-                        <feMerge>
-                            <feMergeNode in="coloredBlur" />
-                            <feMergeNode in="SourceGraphic" />
-                        </feMerge>
-                    </filter>
-                    <filter id="shadow">
-                        <feDropShadow dx="0" dy="3" stdDeviation="3" floodOpacity="0.5" />
-                    </filter>
-                    <filter id="innerShadow">
-                        <feOffset dx="0" dy="2" />
-                        <feGaussianBlur stdDeviation="2" result="offset-blur" />
-                        <feComposite operator="out" in="SourceGraphic" in2="offset-blur" result="inverse" />
-                        <feFlood floodColor="black" floodOpacity="0.3" result="color" />
-                        <feComposite operator="in" in="color" in2="inverse" result="shadow" />
-                        <feComposite operator="over" in="shadow" in2="SourceGraphic" />
-                    </filter>
-                </defs>
-
-                {/* Central sphere - representing online learning platform - brighter */}
-                <circle cx="50" cy="50" r="22" fill="url(#atomGradient)" filter="url(#glow)" />
-
-                {/* Inner highlight - more visible */}
-                <circle cx="42" cy="42" r="8" fill="white" opacity="0.5" />
-
-                {/* Orbit rings - representing global connectivity - brighter opacity */}
-                <ellipse cx="50" cy="50" rx="32" ry="12" fill="none" stroke="url(#electronGradient)" strokeWidth="1.5" transform="rotate(0 50 50)" opacity="0.9" />
-                <ellipse cx="50" cy="50" rx="32" ry="12" fill="none" stroke="url(#studyGradient)" strokeWidth="1.5" transform="rotate(60 50 50)" opacity="0.9" />
-                <ellipse cx="50" cy="50" rx="32" ry="12" fill="none" stroke="#f472b6" strokeWidth="1.5" transform="rotate(-60 50 50)" opacity="0.9" />
-
-                {/* Electrons on orbits */}
-                <circle cx="82" cy="50" r="3" fill="#22d3ee" filter="url(#glow)" />
-                <circle cx="34" cy="77.7" r="3" fill="#a855f7" filter="url(#glow)" />
-                <circle cx="34" cy="22.3" r="3" fill="#f472b6" filter="url(#glow)" />
-
-                {/* Book/Study symbol in center */}
-                <g transform="translate(42, 42)">
-                    <path d="M2 4 L8 1 L14 4 L14 12 L8 15 L2 12 Z" fill="#ffffff" opacity="0.95" filter="url(#shadow)" />
-                    <path d="M2 4 L8 7 L14 4" fill="none" stroke="#ddd6fe" strokeWidth="0.5" />
-                    <rect x="5" y="8" width="6" height="1" fill="#e9d5ff" />
-                    <rect x="5" y="10" width="5" height="1" fill="#e9d5ff" />
-                </g>
-
-                {/* Decorative dots around - brighter */}
-                <circle cx="15" cy="25" r="2" fill="#22d3ee" opacity="0.8" />
-                <circle cx="85" cy="25" r="2" fill="#a855f7" opacity="0.8" />
-                <circle cx="15" cy="75" r="2" fill="#f472b6" opacity="0.8" />
-                <circle cx="85" cy="75" r="2" fill="#3b82f6" opacity="0.8" />
-            </svg>
-        </div>
-    );
-
-    const textContent = showText && (
-        <div className="flex flex-col items-start">
-            <div className={`font-black ${textSizeClasses[size]} bg-gradient-to-r from-blue-600 via-violet-600 to-pink-600 bg-clip-text text-transparent drop-shadow-lg`}>
-                SaviEduTech
-            </div>
-            {showTagline && (
-                <div className={`font-bold ${taglineSizeClasses[size]} bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 bg-clip-text text-transparent drop-shadow-md`}>
-                    JEE | NEET | Board Preparation
-                </div>
-            )}
-        </div>
-    );
-
-    // On server/initial render, return static content without state-dependent elements
-    if (!mounted) {
-        return (
-            <div className={`flex items-center gap-2 ${className}`}>
-                {logoSvg}
-                {textContent}
-            </div>
-        );
-    }
+    const variant = showText ? 'full' : 'icon';
 
     return (
-        <div className={`flex items-center gap-2 ${className}`}>
-            {logoSvg}
-            {textContent}
+        <div
+            className={`inline-flex items-center gap-3 ${mounted ? 'animate-float' : ''} ${className}`}
+        >
+            <Logo
+                size={size}
+                variant={variant}
+                theme="light"
+                showTagline={showTagline}
+            />
         </div>
     );
 }
+
+export default AnimatedLogo;

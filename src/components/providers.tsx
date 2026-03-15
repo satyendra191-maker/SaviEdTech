@@ -3,8 +3,8 @@
 import { ReactNode, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { ChunkRecovery } from './chunk-recovery';
-import { PopupProvider } from './popup-provider';
 import { GlobalErrorBoundary } from './error-boundary';
+import { AuthProvider } from '@/lib/auth/AuthProvider';
 
 interface ProvidersProps {
     children: ReactNode;
@@ -28,9 +28,9 @@ export function Providers({ children }: ProvidersProps) {
         <QueryClientProvider client={queryClient}>
             <GlobalErrorBoundary>
                 <ChunkRecovery />
-                <PopupProvider>
+                <AuthProvider>
                     {children}
-                </PopupProvider>
+                </AuthProvider>
             </GlobalErrorBoundary>
         </QueryClientProvider>
     );

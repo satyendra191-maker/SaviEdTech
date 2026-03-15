@@ -4,7 +4,7 @@ import { useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Bell, Search, User, LogOut } from 'lucide-react';
-import { BrandLogo } from '@/components/brand-logo';
+import { Logo } from '@/components/brand/Logo';
 import { useAuth } from '@/hooks/useAuth';
 
 function getGreeting(): string {
@@ -31,8 +31,11 @@ export function Header() {
             <div className="max-w-6xl mx-auto">
                 <div className="flex h-16 items-center justify-between px-4">
                     {/* Logo — same as homepage navbar */}
-                    <Link href="/dashboard" className="shrink-0" aria-label="SaviEduTech dashboard">
-                        <BrandLogo size="lg" showText={true} showTagline={true} />
+                    <Link href="/dashboard" className="flex items-center gap-[12px]" aria-label="SaviEduTech dashboard">
+                        {/* Desktop Version */}
+                        <Logo size="md" variant="full" className="hidden lg:block" height={32} />
+                        {/* Mobile Version (Icon Only) */}
+                        <Logo size="sm" variant="icon" className="lg:hidden" height={28} />
                     </Link>
 
                     {/* Right actions */}
