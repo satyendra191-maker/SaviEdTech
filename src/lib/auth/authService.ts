@@ -69,12 +69,8 @@ export const authService = {
     }
 
     try {
-      const result = await withTimeout(
-        supabase.auth.signInWithPassword({ email, password }),
-        20000,
-        'Sign in request timed out'
-      );
-      return { data: result.data, error: result.error };
+      const result = await supabase.auth.signInWithPassword({ email, password });
+      return { data: result.data as AuthResult['data'], error: result.error as Error | null };
     } catch (error) {
       return { error: error as Error };
     }
@@ -87,24 +83,20 @@ export const authService = {
     }
 
     try {
-      const result = await withTimeout(
-        supabase.auth.signUp({
-          email: data.email,
-          password: data.password,
-          options: {
-            data: {
-              full_name: data.fullName,
-              phone: data.phone,
-              role: data.role || 'student',
-              ...data.metadata,
-            },
-            emailRedirectTo: `${getBaseUrl()}/auth/callback`,
+      const result = await supabase.auth.signUp({
+        email: data.email,
+        password: data.password,
+        options: {
+          data: {
+            full_name: data.fullName,
+            phone: data.phone,
+            role: data.role || 'student',
+            ...data.metadata,
           },
-        }),
-        25000,
-        'Sign up request timed out'
-      );
-      return { data: result.data, error: result.error };
+          emailRedirectTo: `${getBaseUrl()}/auth/callback`,
+        },
+      });
+      return { data: result.data as AuthResult['data'], error: result.error as Error | null };
     } catch (error) {
       return { error: error as Error };
     }
@@ -157,7 +149,7 @@ export const authService = {
         }),
         15000,
         'Magic link request timed out'
-      );
+      ) as { error: { message: string } | null };
 
       if (result.error) {
         return { error: result.error.message };
@@ -222,8 +214,8 @@ export const authService = {
         supabase.auth.verifyOtp({ phone, token, type: 'sms' }),
         15000,
         'OTP verification timed out'
-      );
-      return { data: result.data, error: result.error };
+      ) as { data: unknown; error: unknown };
+      return { data: result.data as AuthResult['data'], error: result.error as Error | null };
     } catch (error) {
       return { error: error as Error };
     }
