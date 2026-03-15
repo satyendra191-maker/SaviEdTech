@@ -154,7 +154,7 @@ export function ContactPageClient() {
 
                     <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-sm">
                         <div className="mb-6 flex justify-start">
-                            <BrandLogo size="md" showText={true} showTagline={true} taglineTone="dark" wordmarkTone="dark" />
+                            <BrandLogo size="md" />
                         </div>
 
                         <h2 className="text-2xl font-bold text-slate-950">Send a message</h2>

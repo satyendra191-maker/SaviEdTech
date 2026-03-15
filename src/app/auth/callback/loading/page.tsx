@@ -7,7 +7,7 @@ export default function AuthCallbackLoadingPage() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex flex-col items-center justify-center p-4">
             <div className="text-center mb-8">
-                <BrandLogo size="lg" showText={true} showTagline={true} taglineTone="dark" wordmarkTone="dark" />
+                <BrandLogo size="lg" />
             </div>
             
             <div className="bg-white rounded-2xl shadow-xl p-8 flex flex-col items-center">

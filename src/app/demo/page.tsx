@@ -31,7 +31,7 @@ export default function DemoPage() {
                         Back to Home
                     </Link>
                     <Link href="/" className="shrink-0">
-                        <BrandLogo size="md" showText={true} showTagline={true} />
+                        <BrandLogo size="md" />
                     </Link>
                     <div className="w-24" />
                 </div>
