@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { Logo } from '@/components/brand/Logo';
-import type { LogoSize } from '@/components/brand/Logo';
+
+type LogoSize = 'sm' | 'md' | 'lg' | 'custom';
 
 interface AnimatedLogoProps {
     size?:        LogoSize;
@@ -37,7 +38,6 @@ export function AnimatedLogo({
                 size={size}
                 variant={variant}
                 theme="light"
-                showTagline={showTagline}
             />
         </div>
     );
