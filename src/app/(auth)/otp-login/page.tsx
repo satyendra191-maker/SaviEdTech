@@ -156,7 +156,7 @@ export default function OTPLoginPage() {
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <Link href="/" className="inline-flex">
-              <Logo size="md" variant="full" showTagline={true} />
+              <Logo size="md" variant="full" />
             </Link>
           </div>
           <div className="bg-white rounded-2xl shadow-xl p-8 flex items-center justify-center">
@@ -172,7 +172,7 @@ export default function OTPLoginPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex">
-            <Logo size="lg" variant="full" showTagline={true} />
+            <Logo size="lg" variant="full" />
           </Link>
         </div>
 

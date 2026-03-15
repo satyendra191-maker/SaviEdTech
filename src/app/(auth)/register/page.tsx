@@ -167,12 +167,14 @@ export default function RegisterPage() {
       }
 
       const { error } = await signUp(data.email, data.password, {
-        full_name: data.fullName,
+        fullName: data.fullName,
         phone: data.phone || undefined,
-        exam_target: examTarget as any,
-        class_level: classLevel as any,
         role: role,
-        referred_by_code: referralCode || undefined,
+        metadata: {
+          exam_target: examTarget,
+          class_level: classLevel,
+          referred_by_code: referralCode,
+        }
       });
 
       if (error) {
@@ -210,7 +212,7 @@ export default function RegisterPage() {
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
             <Link href="/" className="inline-flex">
-              <Logo size="md" variant="full" showTagline={true} />
+              <Logo size="md" variant="full" />
             </Link>
           </div>
 
@@ -251,7 +253,7 @@ export default function RegisterPage() {
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex">
-            <Logo size="lg" variant="full" showTagline={true} />
+            <Logo size="lg" variant="full" />
           </Link>
         </div>
 
