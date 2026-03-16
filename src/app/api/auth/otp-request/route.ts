@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
       result = await supabase.auth.signInWithOtp({
         email: identifier,
         options: {
-          emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/callback`,
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_APP_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000')}/auth/callback`,
         },
       });
     } else {

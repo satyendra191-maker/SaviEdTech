@@ -53,11 +53,10 @@ export function Footer() {
             <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 lg:px-8">
                 <div className="grid gap-10 xl:grid-cols-[1fr_0.75fr_0.9fr]">
                     <div>
-                        <Link href="/" className="inline-flex">
+                        <Link href="/" className="inline-flex rounded-xl" aria-label="SaviEduTech home">
                             <Logo
-                                size="sm"
-                                variant="full"
-                                theme="dark"
+                                size="lg"
+                                variant="dark"
                             />
                         </Link>
 

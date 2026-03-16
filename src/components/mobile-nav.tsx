@@ -81,8 +81,8 @@ export function MobileHeader() {
     return (
         <header className="fixed top-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-sm border-b border-slate-200 md:hidden">
             <div className="flex items-center justify-between h-14 px-3">
-                <Link href="/" className="flex items-center gap-2 touch-manipulation" aria-label="SaviEduTech home">
-                    <Logo size="sm" variant="icon" height={28} />
+                <Link href="/" className="flex items-center gap-2 rounded-xl p-2 touch-manipulation" aria-label="SaviEduTech home">
+                    <Logo size="sm" className="shrink-0" />
                 </Link>
                 
                 <div className="flex items-center gap-1">

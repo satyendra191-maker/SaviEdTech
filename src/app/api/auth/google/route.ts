@@ -28,8 +28,15 @@ export async function POST(request: NextRequest) {
             }
         );
 
-        const baseUrl = 'https://saviedutech.com';
+        const { searchParams } = new URL(request.url);
+        // Function to get the base URL dynamically
+        function getBaseUrl(): string {
+            const host = request.headers.get('host');
+            const protocol = host?.includes('localhost') ? 'http' : 'https';
+            return `${protocol}://${host}`;
+        }
 
+        const baseUrl = getBaseUrl();
         const redirectUrl = `${baseUrl}/auth/callback`;
         
         cookieStore.set('oauth_redirect', redirectTo, {

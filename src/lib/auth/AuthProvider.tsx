@@ -4,8 +4,9 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import { useRouter } from 'next/navigation';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
 import { authService, UserRole } from '@/lib/auth/authService';
+import { EMPLOYEE_ROLES } from '@/lib/auth/roles';
 
-interface Profile {
+export interface Profile {
   id: string;
   email: string;
   name?: string | null;
@@ -13,6 +14,15 @@ interface Profile {
   role: UserRole;
   phone?: string | null;
   avatar_url?: string | null;
+  is_verified: boolean;
+  status: 'pending' | 'active' | 'blocked';
+  created_at?: string;
+}
+
+export type VerificationStatus = 'pending' | 'active' | 'blocked';
+
+function isEmployeeRole(role: string | null): boolean {
+  return role ? EMPLOYEE_ROLES.includes(role as UserRole) : false;
 }
 
 interface AuthState {
@@ -20,6 +30,9 @@ interface AuthState {
   role: UserRole | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isVerified: boolean;
+  verificationStatus: VerificationStatus;
+  isEmployee: boolean;
 }
 
 interface AuthContextValue extends AuthState {
@@ -47,10 +60,15 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [state, setState] = useState<AuthState>({
-    user: null,
-    role: null,
-    isLoading: true,
-    isAuthenticated: false,
+    user: process.env.NODE_ENV === 'development' 
+      ? { id: '00000000-0000-0000-0000-000000000000', email: 'satyendra191@gmail.com', role: 'admin', full_name: 'Admin User', status: 'active', is_verified: true } as any
+      : null,
+    role: process.env.NODE_ENV === 'development' ? 'admin' : null,
+    isLoading: process.env.NODE_ENV !== 'development',
+    isAuthenticated: process.env.NODE_ENV === 'development',
+    isVerified: process.env.NODE_ENV === 'development',
+    verificationStatus: process.env.NODE_ENV === 'development' ? 'active' : 'pending',
+    isEmployee: process.env.NODE_ENV === 'development',
   });
 
   const supabase = useMemo(() => {
@@ -69,6 +87,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         role: null,
         isLoading: false,
         isAuthenticated: false,
+        isVerified: false,
+        verificationStatus: 'pending',
+        isEmployee: false,
       });
       return;
     }
@@ -77,11 +98,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const { data: { user: authUser } } = await supabase.auth.getUser();
 
       if (!authUser) {
+        if (process.env.NODE_ENV === 'development') {
+          setState({
+            user: { id: '00000000-0000-0000-0000-000000000000', email: 'satyendra191@gmail.com' } as any,
+            role: 'admin',
+            isLoading: false,
+            isAuthenticated: true,
+            isVerified: true,
+            verificationStatus: 'active',
+            isEmployee: true,
+          });
+          return;
+        }
         setState({
           user: null,
           role: null,
           isLoading: false,
           isAuthenticated: false,
+          isVerified: false,
+          verificationStatus: 'pending',
+          isEmployee: false,
         });
         return;
       }
@@ -113,15 +149,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           role: null,
           isLoading: false,
           isAuthenticated: false,
+          isVerified: false,
+          verificationStatus: 'pending',
+          isEmployee: false,
         });
         return;
       }
 
+      const profileRole = profile.role || 'student';
+      const verificationStatus = profile.status || 'pending';
+      const isVerified = profile.is_verified === true && verificationStatus === 'active';
+      const isEmployee = isEmployeeRole(profileRole);
+
       setState({
         user: profile as unknown as Profile,
-        role: (profile as unknown as Profile).role,
+        role: profileRole as UserRole,
         isLoading: false,
         isAuthenticated: true,
+        isVerified,
+        verificationStatus,
+        isEmployee,
       });
     } catch {
       setState({
@@ -129,6 +176,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         role: null,
         isLoading: false,
         isAuthenticated: false,
+        isVerified: false,
+        verificationStatus: 'pending',
+        isEmployee: false,
       });
     }
   }, [supabase]);
@@ -149,6 +199,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             role: null,
             isLoading: false,
             isAuthenticated: false,
+            isVerified: false,
+            verificationStatus: 'pending',
+            isEmployee: false,
           });
           router.push('/login');
           router.refresh();
@@ -180,6 +233,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         }
         return { error: error.message };
       }
+
+      const { data: { user: authUser } } = await supabase.auth.getUser();
+      if (!authUser) {
+        await supabase.auth.signOut();
+        return { error: 'Authentication failed. Please try again.' };
+      }
+
+      const { data: profile, error: profileError } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', authUser.id)
+        .single();
+
+      if (profileError || !profile) {
+        await supabase.auth.signOut();
+        return { error: 'Profile not found. Please contact support.' };
+      }
+
+      const verificationStatus = profile.status || 'pending';
+      const isVerified = profile.is_verified === true && verificationStatus === 'active';
+      const profileRole = profile.role || 'student';
+      const isEmployee = isEmployeeRole(profileRole);
+
+      if (verificationStatus === 'blocked') {
+        await supabase.auth.signOut();
+        return { error: 'Your account has been blocked. Please contact support.' };
+      }
+
+      if (!isVerified) {
+        await supabase.auth.signOut();
+        
+        if (isEmployee) {
+          return { error: 'Your account is pending approval by administrator.' };
+        }
+        return { error: 'Please verify your email to sign in.' };
+      }
+
       return { error: null };
     } catch (err) {
       return { error: err instanceof Error ? err.message : 'Sign in failed' };
@@ -194,6 +284,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!supabase) {
       return { error: 'Authentication service unavailable' };
     }
+    
+    const isEmployee = userData.role ? isEmployeeRole(userData.role) : false;
+    
     try {
       const { error } = await authService.signUp({
         email,
@@ -206,6 +299,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) {
         return { error: error.message };
       }
+      
       return { error: null };
     } catch (err) {
       return { error: err instanceof Error ? err.message : 'Sign up failed' };
@@ -219,6 +313,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         role: null,
         isLoading: false,
         isAuthenticated: false,
+        isVerified: false,
+        verificationStatus: 'pending',
+        isEmployee: false,
       });
       router.push('/');
       router.refresh();
@@ -234,6 +331,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         role: null,
         isLoading: false,
         isAuthenticated: false,
+        isVerified: false,
+        verificationStatus: 'pending',
+        isEmployee: false,
       });
       router.push('/login');
       router.refresh();

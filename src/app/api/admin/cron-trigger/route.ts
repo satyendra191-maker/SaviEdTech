@@ -19,6 +19,7 @@ import {
     RATE_LIMITS,
     sanitizeInput,
 } from '@/lib/security';
+import { ADMIN_PRIVILEGED_ROLES } from '@/lib/auth/roles';
 import { z } from 'zod';
 
 // Allowed cron jobs that can be triggered
@@ -46,6 +47,9 @@ const cronTriggerSchema = z.object({
         'cron_test_runner',
     ]),
 });
+
+const hasRole = (roles: readonly string[], role: string | null | undefined) =>
+    !!role && roles.includes(role);
 
 /**
  * Helper to get client IP from request
@@ -136,7 +140,7 @@ export async function POST(request: NextRequest) {
             .eq('id', user.id)
             .single() as { data: { role: string } | null; error: Error | null };
 
-        if (profileError || !profile || profile.role !== 'admin') {
+        if (profileError || !profile || !hasRole(ADMIN_PRIVILEGED_ROLES, profile.role)) {
             console.error(`[Security] Non-admin user attempted cron trigger: ${user.id}, requestId: ${requestId}`);
 
             return NextResponse.json(
@@ -330,7 +334,7 @@ export async function GET(request: NextRequest) {
             .eq('id', user.id)
             .single() as { data: { role: string } | null };
 
-        if (!profile || profile.role !== 'admin') {
+        if (!profile || !hasRole(ADMIN_PRIVILEGED_ROLES, profile.role)) {
             return NextResponse.json(
                 { error: 'Forbidden' },
                 { status: 403 }

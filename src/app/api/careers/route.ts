@@ -5,6 +5,10 @@ import { createServerClient } from '@supabase/ssr';
 import { createAdminSupabaseClient } from '@/lib/supabase';
 import type { Database } from '@/types/supabase';
 import { cookies } from 'next/headers';
+import { HR_ROLES } from '@/lib/auth/roles';
+
+const CAREERS_ADMIN_ROLES = new Set<string>([...HR_ROLES, 'content_manager']);
+const isCareersAdmin = (role?: string | null) => !!role && CAREERS_ADMIN_ROLES.has(role);
 
 function extractResumeStoragePath(resumeUrl?: string | null, resumePath?: string | null): string | null {
     if (typeof resumePath === 'string' && resumePath.trim()) {
@@ -81,7 +85,7 @@ export async function GET(request: NextRequest) {
                 .eq('id', user.id)
                 .single();
 
-            if (!profile || !['admin', 'content_manager', 'hr'].includes(profile.role as string)) {
+            if (!profile || !isCareersAdmin(profile.role)) {
                 return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
             }
 
@@ -170,7 +174,7 @@ export async function POST(request: NextRequest) {
                 .eq('id', user.id)
                 .single();
 
-            if (!profile || !['admin', 'content_manager', 'hr'].includes(profile.role as string)) {
+            if (!profile || !isCareersAdmin(profile.role)) {
                 return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
             }
 
@@ -360,7 +364,7 @@ export async function PATCH(request: NextRequest) {
             .eq('id', user.id)
             .single();
 
-        if (!profile || !['admin', 'content_manager', 'hr'].includes(profile.role)) {
+        if (!profile || !isCareersAdmin(profile.role)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 
@@ -456,7 +460,7 @@ export async function DELETE(request: NextRequest) {
             .eq('id', user.id)
             .single();
 
-        if (!profile || !['admin', 'content_manager', 'hr'].includes(profile.role)) {
+        if (!profile || !isCareersAdmin(profile.role)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 

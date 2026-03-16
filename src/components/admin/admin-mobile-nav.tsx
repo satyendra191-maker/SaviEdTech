@@ -32,6 +32,14 @@ import {
     Clock,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import {
+    ADMIN_PRIVILEGED_ROLES,
+    CONTENT_ROLES,
+    FINANCE_ROLES,
+    HR_ROLES,
+    MARKETING_ROLES,
+    TEACHING_ROLES,
+} from '@/lib/auth/roles';
 
 interface AdminMobileNavProps {
     role?: string;
@@ -43,12 +51,14 @@ const adminMenuItems = [
     { name: 'AI Assistant', href: '/admin/ai-assistant', icon: Bot },
     { name: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
     { name: 'Students', href: '/admin/students', icon: Users },
+    { name: 'Faculty', href: '/admin/faculty', icon: GraduationCap },
     { name: 'Courses', href: '/admin/courses', icon: BookOpen },
     { name: 'Lectures', href: '/admin/lectures', icon: PlayCircle },
     { name: 'Questions', href: '/admin/questions', icon: HelpCircle },
     { name: 'Tests', href: '/admin/tests', icon: GraduationCap },
     { name: 'Online Exams', href: '/admin/online-exams', icon: ShieldCheck },
     { name: 'Careers', href: '/admin/careers', icon: Briefcase },
+    { name: 'HR', href: '/admin/hr', icon: Users },
     { name: 'Leads', href: '/admin/leads', icon: FileText },
     { name: 'CMS', href: '/admin/cms', icon: FileCode },
     { name: 'AI Content', href: '/admin/ai-content', icon: Sparkles },
@@ -66,30 +76,78 @@ const getNavItems = (role?: string) => {
     const allItems = [
         { name: 'Home', href: '/admin', icon: LayoutDashboard },
         { name: 'Students', href: '/admin/students', icon: Users },
+        { name: 'Faculty', href: '/admin/faculty', icon: GraduationCap },
         { name: 'Courses', href: '/admin/courses', icon: BookOpen },
         { name: 'Lectures', href: '/admin/lectures', icon: PlayCircle },
         { name: 'Tests', href: '/admin/tests', icon: GraduationCap },
+        { name: 'HR', href: '/admin/hr', icon: Users },
         { name: 'Finance', href: '/admin/finance', icon: Landmark },
         { name: 'Payments', href: '/admin/payments', icon: CreditCard },
         { name: 'Leads', href: '/admin/leads', icon: FileText },
+        { name: 'CMS', href: '/admin/cms', icon: FileCode },
+        { name: 'AI Content', href: '/admin/ai-content', icon: Sparkles },
         { name: 'More', isAction: true, icon: MoreHorizontal },
     ];
 
-    if (role === 'finance_manager') {
+    const isAdminPrivileged = role ? ADMIN_PRIVILEGED_ROLES.includes(role as (typeof ADMIN_PRIVILEGED_ROLES)[number]) : false;
+    const isFinanceRole = role ? FINANCE_ROLES.includes(role as (typeof FINANCE_ROLES)[number]) : false;
+    const isHrRole = role ? HR_ROLES.includes(role as (typeof HR_ROLES)[number]) : false;
+    const isMarketingRole = role ? MARKETING_ROLES.includes(role as (typeof MARKETING_ROLES)[number]) : false;
+    const isContentRole = role ? CONTENT_ROLES.includes(role as (typeof CONTENT_ROLES)[number]) : false;
+    const isTeachingRole = role ? TEACHING_ROLES.includes(role as (typeof TEACHING_ROLES)[number]) : false;
+
+    if (isFinanceRole && !isAdminPrivileged) {
         return [
             allItems[0], // Home
-            allItems[5], // Finance
-            allItems[6], // Payments
-            allItems[8], // More
+            allItems[7], // Finance
+            allItems[8], // Payments
+            allItems[12], // More
+        ];
+    }
+
+    if (isHrRole && !isAdminPrivileged) {
+        return [
+            allItems[0], // Home
+            allItems[6], // HR
+            allItems[9], // Leads
+            allItems[12], // More
+        ];
+    }
+
+    if (isMarketingRole && !isAdminPrivileged) {
+        return [
+            allItems[0], // Home
+            allItems[9], // Leads
+            allItems[11], // AI Content
+            allItems[12], // More
+        ];
+    }
+
+    if (isContentRole && !isAdminPrivileged) {
+        return [
+            allItems[0], // Home
+            allItems[3], // Courses
+            allItems[4], // Lectures
+            allItems[10], // CMS
+            allItems[12], // More
+        ];
+    }
+
+    if (isTeachingRole && !isAdminPrivileged) {
+        return [
+            allItems[0], // Home
+            allItems[2], // Faculty
+            allItems[4], // Lectures
+            allItems[12], // More
         ];
     }
 
     return [
         allItems[0], // Home
         allItems[1], // Students
-        allItems[2], // Courses
-        allItems[4], // Tests
-        allItems[8], // More
+        allItems[3], // Courses
+        allItems[5], // Tests
+        allItems[12], // More
     ];
 };
 

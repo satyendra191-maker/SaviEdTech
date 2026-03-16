@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { createAdminSupabaseClient } from '@/lib/supabase';
 import type { Database } from '@/types/supabase';
+import { ADMIN_PRIVILEGED_ROLES } from '@/lib/auth/roles';
 import {
     runTests,
     getRecentTestResults,
@@ -23,6 +24,9 @@ import { sendAlert } from '@/lib/platform-manager/alerts';
 /**
  * Check if request is from an admin user via session
  */
+const hasRole = (roles: readonly string[], role: string | null | undefined) =>
+    !!role && roles.includes(role);
+
 async function checkAdminAccess(request: NextRequest): Promise<boolean> {
     const supabase = createServerClient<Database>(
         process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -55,7 +59,7 @@ async function checkAdminAccess(request: NextRequest): Promise<boolean> {
         return false;
     }
 
-    return profile.role === 'admin';
+    return hasRole(ADMIN_PRIVILEGED_ROLES, profile.role);
 }
 
 // Authentication helper - checks API keys or admin session

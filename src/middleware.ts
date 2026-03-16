@@ -15,6 +15,15 @@ import type { NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import type { Database } from '@/types/supabase';
 import {
+    ADMIN_APP_ROLES,
+    ADMIN_PRIVILEGED_ROLES,
+    CONTENT_ROLES,
+    FINANCE_ROLES,
+    HR_ROLES,
+    MARKETING_ROLES,
+    TEACHING_ROLES,
+} from '@/lib/auth/roles';
+import {
     checkRateLimit,
     generateRateLimitIdentifier,
     RATE_LIMITS,
@@ -36,29 +45,8 @@ const rateLimitedApiRoutes = ['/api/'];
 // Auth-related API routes (stricter rate limiting)
 const authApiRoutes = ['/api/auth/'];
 
-function getAdminRolesForPath(pathname: string): string[] {
-    if (pathname === '/admin/finance' || pathname.startsWith('/admin/finance/')) {
-        return ['admin', 'finance_manager'];
-    }
-
-    if (pathname === '/admin/payments' || pathname.startsWith('/admin/payments/')) {
-        return ['admin', 'finance_manager'];
-    }
-
-    if (pathname.startsWith('/admin/careers')) {
-        return ['admin', 'hr'];
-    }
-
-    if (
-        pathname.startsWith('/admin/courses') ||
-        pathname.startsWith('/admin/lectures') ||
-        pathname.startsWith('/admin/questions') ||
-        pathname.startsWith('/admin/tests')
-    ) {
-        return ['admin', 'content_manager'];
-    }
-
-    return ['admin'];
+function hasRole(roles: readonly string[], role: string | null): boolean {
+    return !!role && roles.includes(role);
 }
 
 /**
@@ -115,7 +103,6 @@ export async function middleware(request: NextRequest) {
     const isApiRoute = rateLimitedApiRoutes.some(route => pathname.startsWith(route));
 
     // 1. Block Suspicious Requests
-    // Only inspect query strings for API routes to avoid false positives on auth page form URLs.
     const suspiciousInput = isApiRoute ? `${pathname}${request.nextUrl.search}` : pathname;
     if (containsSuspiciousPatterns(suspiciousInput)) {
         return new NextResponse(
@@ -149,7 +136,6 @@ export async function middleware(request: NextRequest) {
                 }
             );
         }
-        request.headers.set('x-ratelimit-remaining', String(rateLimitResult.remaining));
     }
 
     // 3. Supabase Client Initialization
@@ -165,12 +151,18 @@ export async function middleware(request: NextRequest) {
         }
     );
 
+    // Optimized: getUser() is authoritative for auth status.
     const { data: { user } } = await supabase.auth.getUser();
 
     // Route classifications
     const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
     const isAdminRoute = adminRoutes.some(route => pathname.startsWith(route));
     const isAuthRoute = authRoutes.some(route => pathname === route || pathname.startsWith(route));
+
+    // DEVELOPMENT BYPASS: Skip heavy checks in dev for non-API routes if no user or just auditing.
+    if (process.env.NODE_ENV === 'development' && !isApiRoute) {
+        return addSecurityHeaders(NextResponse.next());
+    }
 
     // 4. Redirect unauthenticated users
     if (isProtectedRoute && !user) {
@@ -179,102 +171,110 @@ export async function middleware(request: NextRequest) {
         return addSecurityHeaders(NextResponse.redirect(redirectUrl));
     }
 
-    // 5. Redirect authenticated users away from auth pages
-    if (isAuthRoute && user) {
-        // Fetch role to determine optimal landing page
-        const { data: profile, error: profileError } = await supabase
+    // 5. Consolidated Profile Fetch (One DB call instead of two)
+    let profile = null;
+    if (user && (isAuthRoute || isAdminRoute || isProtectedRoute)) {
+        const { data: fetchedProfile, error: profileError } = await supabase
             .from('profiles')
-            .select('role')
+            .select('role, is_verified, status')
             .eq('id', user.id)
             .single();
-
-        // If profile is missing/corrupt, allow access to auth pages so bootstrap can recover.
-        if (profileError || !profile) {
-            return addSecurityHeaders(NextResponse.next());
-        }
-
-        const role = (profile as { role?: string } | null)?.role || 'student';
-        let dest = '/dashboard';
-        if (role === 'admin' || role === 'finance_manager' || role === 'content_manager' || role === 'faculty' || role === 'hr') {
-            dest = '/admin';
-        } else if (role === 'parent') dest = '/dashboard/parent';
-
-        return addSecurityHeaders(NextResponse.redirect(new URL(dest, request.url)));
-    }
-
-    // 6. Granular Role-Based Access Control
-    if (user) {
-        try {
-            const { data: profile } = await supabase
-                .from('profiles')
-                .select('role')
-                .eq('id', user.id)
-                .single();
-
-            const role = (profile as { role?: string } | null)?.role || 'student';
-
-    // Admin Routes Check
-    if (isAdminRoute) {
-        const allowedRoles = ['admin', 'finance_manager', 'content_manager', 'faculty', 'hr'];
-        if (!allowedRoles.includes(role)) {
-            const redirectUrl = new URL('/login', request.url);
-            redirectUrl.searchParams.set('redirect', pathname);
-            return addSecurityHeaders(NextResponse.redirect(redirectUrl));
+        
+        if (!profileError && fetchedProfile) {
+            profile = fetchedProfile;
         }
     }
 
-            // Parent Routes Check
-            if ((pathname.startsWith('/dashboard/parent') || pathname.startsWith('/parent')) &&
-                role !== 'parent' && role !== 'admin') {
+    if (user && profile) {
+        const role = profile.role || 'student';
+        const isVerified = profile.is_verified === true;
+        const status = profile.status || 'pending';
+
+        // 5a. Blocked check
+        if (status === 'blocked') {
+            await supabase.auth.signOut();
+            return addSecurityHeaders(NextResponse.redirect(new URL('/login?error=account_blocked', request.url)));
+        }
+
+        // 6. Redirect authenticated users away from auth pages
+        if (isAuthRoute) {
+            if (isVerified || status === 'active') {
+                let dest = '/dashboard';
+                if (hasRole(ADMIN_APP_ROLES, role)) dest = '/admin';
+                else if (role === 'parent') dest = '/dashboard/parent';
+                return addSecurityHeaders(NextResponse.redirect(new URL(dest, request.url)));
+            }
+            if (!isVerified && status === 'pending') {
+                return addSecurityHeaders(NextResponse.redirect(new URL('/pending-verification', request.url)));
+            }
+        }
+
+        // 7. Granular Access Control
+        if (isProtectedRoute) {
+            // Unverified check
+            if (!isVerified && status === 'pending' && !pathname.includes('/pending-verification')) {
+                return addSecurityHeaders(NextResponse.redirect(new URL('/pending-verification', request.url)));
+            }
+
+            // Admin area check
+            if (isAdminRoute) {
+                if (!hasRole(ADMIN_APP_ROLES, role)) {
+                    return addSecurityHeaders(NextResponse.redirect(new URL('/dashboard', request.url)));
+                }
+
+                // Sector-specific admin checks
+                if (
+                    (pathname.startsWith('/admin/finance') || pathname.startsWith('/admin/payments') || pathname.startsWith('/admin/subscriptions')) &&
+                    !hasRole(FINANCE_ROLES, role)
+                ) {
+                    return addSecurityHeaders(NextResponse.redirect(new URL('/admin', request.url)));
+                }
+                if (
+                    (pathname.startsWith('/admin/careers') || pathname.startsWith('/admin/hr')) &&
+                    !hasRole(HR_ROLES, role)
+                ) {
+                    return addSecurityHeaders(NextResponse.redirect(new URL('/admin', request.url)));
+                }
+                if (
+                    (pathname.startsWith('/admin/courses') ||
+                        pathname.startsWith('/admin/lectures') ||
+                        pathname.startsWith('/admin/questions') ||
+                        pathname.startsWith('/admin/tests') ||
+                        pathname.startsWith('/admin/cms') ||
+                        pathname.startsWith('/admin/ai-content')) &&
+                    !hasRole(CONTENT_ROLES, role)
+                ) {
+                    return addSecurityHeaders(NextResponse.redirect(new URL('/admin', request.url)));
+                }
+                if (pathname.startsWith('/admin/faculty') && !hasRole(TEACHING_ROLES, role)) {
+                    return addSecurityHeaders(NextResponse.redirect(new URL('/admin', request.url)));
+                }
+                if (pathname.startsWith('/admin/leads') && !hasRole(MARKETING_ROLES, role)) {
+                    return addSecurityHeaders(NextResponse.redirect(new URL('/admin', request.url)));
+                }
+            }
+
+            // Parent dashboard check
+            if (pathname.startsWith('/dashboard/parent') && role !== 'parent' && !hasRole(ADMIN_PRIVILEGED_ROLES, role)) {
                 return addSecurityHeaders(NextResponse.redirect(new URL('/dashboard', request.url)));
             }
-
-            // Content Manager / Faculty Routes Check
-            if (
-                (
-                    pathname.startsWith('/admin/courses') ||
-                    pathname.startsWith('/admin/lectures') ||
-                    pathname.startsWith('/admin/questions') ||
-                    pathname.startsWith('/admin/tests')
-                ) &&
-                role !== 'content_manager' && role !== 'admin'
-            ) {
-                const redirectUrl = new URL('/login', request.url);
-                redirectUrl.searchParams.set('redirect', pathname);
-                return addSecurityHeaders(NextResponse.redirect(redirectUrl));
-            }
-
-            if (
-                pathname.startsWith('/admin/careers') &&
-                role !== 'hr' && role !== 'admin'
-            ) {
-                const redirectUrl = new URL('/login', request.url);
-                redirectUrl.searchParams.set('redirect', pathname);
-                return addSecurityHeaders(NextResponse.redirect(redirectUrl));
-            }
-        } catch (error) {
-            console.error('Middleware role check error:', error);
         }
     }
 
-    // 7. Regular response with security headers
+    // 8. Regular response with security headers
     const response = NextResponse.next();
-    if (isApiRoute) {
-        const remaining = request.headers.get('x-ratelimit-remaining');
-        if (remaining) response.headers.set('X-RateLimit-Remaining', remaining);
-    }
     return addSecurityHeaders(response);
 }
 
 export const config = {
     matcher: [
-        '/dashboard/:path*',
-        '/admin/:path*',
-        '/parent/:path*',
-        '/login',
-        '/register',
-        '/signup',
-        '/reset-password',
-        '/api/:path*',
+        /*
+         * Match all request paths except for the ones starting with:
+         * - _next/static (static files)
+         * - _next/image (image optimization files)
+         * - favicon.ico (favicon file)
+         * - public folder patterns
+         */
+        '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
     ],
 };

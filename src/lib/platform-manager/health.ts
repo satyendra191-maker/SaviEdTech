@@ -11,6 +11,7 @@
 import { createAdminSupabaseClient, createServerSupabaseClient } from '@/lib/supabase';
 import { recordHealthCheck, type HealthStatus } from './monitor';
 import type { Database } from '@/types/supabase';
+import { APP_URL } from '@/config';
 
 // Health check result types
 export interface HealthCheckResult {
@@ -74,8 +75,7 @@ export async function checkAPIHealth(
     expectedStatus: number = 200
 ): Promise<HealthCheckResult> {
     const startTime = Date.now();
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
-        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+    const baseUrl = APP_URL;
 
     try {
         const response = await fetch(`${baseUrl}${endpoint}`, {
@@ -327,8 +327,7 @@ export async function checkCronHealth(): Promise<HealthCheckResult[]> {
         return results;
     }
 
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
-        (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+    const baseUrl = APP_URL;
 
     for (const endpoint of API_ENDPOINTS.cron) {
         const startTime = Date.now();

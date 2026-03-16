@@ -3,6 +3,7 @@ import { Document, Packer, Paragraph, Table, TableCell, TableRow, TextRun, Width
 import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 import { createAdminSupabaseClient } from '@/lib/supabase';
+import { CONTENT_ROLES, FINANCE_ROLES, HR_ROLES } from '@/lib/auth/roles';
 
 export type RoleReportFormat = 'pdf' | 'xlsx' | 'json' | 'docx';
 
@@ -209,7 +210,7 @@ export async function buildRoleReportDataset(userId: string, role: string): Prom
         });
     }
 
-    if (role === 'content_manager' || role === 'faculty' || role === 'admin') {
+    if (role === 'faculty' || CONTENT_ROLES.includes(role as (typeof CONTENT_ROLES)[number])) {
         sections.push({
             title: 'Content Operations',
             rows: [
@@ -219,7 +220,7 @@ export async function buildRoleReportDataset(userId: string, role: string): Prom
         });
     }
 
-    if (role === 'finance_manager' || role === 'accounts_manager') {
+    if (FINANCE_ROLES.includes(role as (typeof FINANCE_ROLES)[number])) {
         sections.push({
             title: 'Finance Activity',
             rows: [
@@ -229,7 +230,7 @@ export async function buildRoleReportDataset(userId: string, role: string): Prom
         });
     }
 
-    if (role === 'hr') {
+    if (HR_ROLES.includes(role as (typeof HR_ROLES)[number])) {
         sections.push({
             title: 'Hiring Overview',
             rows: [

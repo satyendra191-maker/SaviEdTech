@@ -16,7 +16,7 @@ export interface Database {
                     full_name: string | null;
                     phone: string | null;
                     avatar_url: string | null;
-                    role: 'student' | 'admin' | 'content_manager' | 'parent' | 'hr' | 'finance_manager';
+                    role: 'student' | 'parent' | 'faculty' | 'teacher' | 'admin' | 'super_admin' | 'platform_admin' | 'academic_director' | 'content_manager' | 'video_production_manager' | 'ai_content_trainer' | 'ai_trainer' | 'hr' | 'hr_manager' | 'finance' | 'finance_manager' | 'accounts_manager' | 'marketing' | 'marketing_manager' | 'social_media_manager' | 'technical_support' | 'support' | 'compliance' | 'compliance_team';
                     exam_target: 'JEE' | 'NEET' | 'Both' | 'JEE Mains' | 'JEE Advanced' | 'CBSE Board' | 'Foundation' | null;
                     class_level: '11' | '12' | 'Dropper' | 'Class 9' | 'Class 10' | 'Class 11' | 'Class 12' | null;
                     city: string | null;
@@ -25,6 +25,9 @@ export interface Database {
                     updated_at: string;
                     last_active_at: string;
                     is_active: boolean;
+                    status: string | null;
+                    is_verified: boolean | null;
+                    parent_student_id: string | null;
                     reminder_sent_24h: boolean;
                     reminder_sent_1h: boolean;
                     last_weekly_digest: string | null;
@@ -36,7 +39,7 @@ export interface Database {
                     full_name?: string | null;
                     phone?: string | null;
                     avatar_url?: string | null;
-                    role?: 'student' | 'admin' | 'content_manager' | 'parent' | 'hr' | 'finance_manager';
+                    role?: 'student' | 'parent' | 'faculty' | 'teacher' | 'admin' | 'super_admin' | 'platform_admin' | 'academic_director' | 'content_manager' | 'video_production_manager' | 'ai_content_trainer' | 'ai_trainer' | 'hr' | 'hr_manager' | 'finance' | 'finance_manager' | 'accounts_manager' | 'marketing' | 'marketing_manager' | 'social_media_manager' | 'technical_support' | 'support' | 'compliance' | 'compliance_team';
                     exam_target?: 'JEE' | 'NEET' | 'Both' | 'JEE Mains' | 'JEE Advanced' | 'CBSE Board' | 'Foundation' | null;
                     class_level?: '11' | '12' | 'Dropper' | 'Class 9' | 'Class 10' | 'Class 11' | 'Class 12' | null;
                     city?: string | null;
@@ -45,6 +48,9 @@ export interface Database {
                     updated_at?: string;
                     last_active_at?: string;
                     is_active?: boolean;
+                    status?: string | null;
+                    is_verified?: boolean | null;
+                    parent_student_id?: string | null;
                     reminder_sent_24h?: boolean;
                     reminder_sent_1h?: boolean;
                     last_weekly_digest?: string | null;
@@ -56,7 +62,7 @@ export interface Database {
                     full_name?: string | null;
                     phone?: string | null;
                     avatar_url?: string | null;
-                    role?: 'student' | 'admin' | 'content_manager' | 'parent' | 'hr' | 'finance_manager';
+                    role?: 'student' | 'parent' | 'faculty' | 'teacher' | 'admin' | 'super_admin' | 'platform_admin' | 'academic_director' | 'content_manager' | 'video_production_manager' | 'ai_content_trainer' | 'ai_trainer' | 'hr' | 'hr_manager' | 'finance' | 'finance_manager' | 'accounts_manager' | 'marketing' | 'marketing_manager' | 'social_media_manager' | 'technical_support' | 'support' | 'compliance' | 'compliance_team';
                     exam_target?: 'JEE' | 'NEET' | 'Both' | 'JEE Mains' | 'JEE Advanced' | 'CBSE Board' | 'Foundation' | null;
                     class_level?: '11' | '12' | 'Dropper' | 'Class 9' | 'Class 10' | 'Class 11' | 'Class 12' | null;
                     city?: string | null;
@@ -65,10 +71,63 @@ export interface Database {
                     updated_at?: string;
                     last_active_at?: string;
                     is_active?: boolean;
+                    status?: string | null;
+                    is_verified?: boolean | null;
+                    parent_student_id?: string | null;
                     reminder_sent_24h?: boolean;
                     reminder_sent_1h?: boolean;
                     last_weekly_digest?: string | null;
                     welcome_email_sent?: boolean;
+                };
+            };
+            users: {
+                Row: {
+                    id: string;
+                    email: string | null;
+                    full_name: string | null;
+                    phone: string | null;
+                    role: string | null;
+                    avatar_url: string | null;
+                    exam_target: string | null;
+                    class_level: string | null;
+                    city: string | null;
+                    state: string | null;
+                    is_active: boolean | null;
+                    created_at: string | null;
+                    updated_at: string | null;
+                    last_active_at: string | null;
+                };
+                Insert: {
+                    id?: string;
+                    email?: string | null;
+                    full_name?: string | null;
+                    phone?: string | null;
+                    role?: string | null;
+                    avatar_url?: string | null;
+                    exam_target?: string | null;
+                    class_level?: string | null;
+                    city?: string | null;
+                    state?: string | null;
+                    is_active?: boolean | null;
+                    created_at?: string | null;
+                    updated_at?: string | null;
+                    last_active_at?: string | null;
+                };
+                Update: {
+                    id?: string;
+                    email?: string | null;
+                    full_name?: string | null;
+                    phone?: string | null;
+                    role?: string | null;
+                    avatar_url?: string | null;
+                    exam_target?: string | null;
+                    class_level?: string | null;
+                    city?: string | null;
+                    state?: string | null;
+                    is_active?: boolean | null;
+                    created_at?: string | null;
+                    updated_at?: string | null;
+                    last_active_at?: string | null;
                 };
             };
             roles: {
@@ -390,42 +449,561 @@ export interface Database {
                     name: string;
                     code: string;
                     subject: string;
+                    user_id: string | null;
                     avatar_url: string | null;
                     bio: string | null;
                     teaching_style: string | null;
                     qualifications: string[];
                     experience_years: number | null;
+                    qualification: string | null;
                     color_theme: string | null;
                     is_active: boolean;
                     created_at: string;
+                    updated_at: string | null;
                 };
                 Insert: {
                     id?: string;
                     name: string;
                     code: string;
                     subject: string;
+                    user_id?: string | null;
                     avatar_url?: string | null;
                     bio?: string | null;
                     teaching_style?: string | null;
                     qualifications?: string[];
                     experience_years?: number | null;
+                    qualification?: string | null;
                     color_theme?: string | null;
                     is_active?: boolean;
                     created_at?: string;
+                    updated_at?: string | null;
                 };
                 Update: {
                     id?: string;
                     name?: string;
                     code?: string;
                     subject?: string;
+                    user_id?: string | null;
                     avatar_url?: string | null;
                     bio?: string | null;
                     teaching_style?: string | null;
                     qualifications?: string[];
                     experience_years?: number | null;
+                    qualification?: string | null;
                     color_theme?: string | null;
                     is_active?: boolean;
                     created_at?: string;
+                    updated_at?: string | null;
+                };
+            };
+            faculty: {
+                Row: {
+                    id: string;
+                    user_id: string;
+                    subject: string | null;
+                    experience_years: number | null;
+                    qualification: string | null;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    user_id: string;
+                    subject?: string | null;
+                    experience_years?: number | null;
+                    qualification?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string;
+                    subject?: string | null;
+                    experience_years?: number | null;
+                    qualification?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+            };
+            students: {
+                Row: {
+                    id: string;
+                    user_id: string;
+                    class_level: string | null;
+                    school_name: string | null;
+                    enrollment_status: 'active' | 'inactive' | 'suspended' | 'graduated';
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    user_id: string;
+                    class_level?: string | null;
+                    school_name?: string | null;
+                    enrollment_status?: 'active' | 'inactive' | 'suspended' | 'graduated';
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string;
+                    class_level?: string | null;
+                    school_name?: string | null;
+                    enrollment_status?: 'active' | 'inactive' | 'suspended' | 'graduated';
+                    created_at?: string;
+                    updated_at?: string;
+                };
+            };
+            parents: {
+                Row: {
+                    id: string;
+                    user_id: string;
+                    student_id: string;
+                    relationship: string | null;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    user_id: string;
+                    student_id: string;
+                    relationship?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string;
+                    student_id?: string;
+                    relationship?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+            };
+            lessons: {
+                Row: {
+                    id: string;
+                    course_id: string;
+                    title: string;
+                    video_url: string | null;
+                    notes: string | null;
+                    position: number;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    course_id: string;
+                    title: string;
+                    video_url?: string | null;
+                    notes?: string | null;
+                    position?: number;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    course_id?: string;
+                    title?: string;
+                    video_url?: string | null;
+                    notes?: string | null;
+                    position?: number;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+            };
+            experiments: {
+                Row: {
+                    id: string;
+                    title: string;
+                    subject: string;
+                    class_level: string | null;
+                    materials: string | null;
+                    procedure: string | null;
+                    observation_template: string | null;
+                    conclusion_template: string | null;
+                    created_by: string | null;
+                    is_active: boolean;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    title: string;
+                    subject: string;
+                    class_level?: string | null;
+                    materials?: string | null;
+                    procedure?: string | null;
+                    observation_template?: string | null;
+                    conclusion_template?: string | null;
+                    created_by?: string | null;
+                    is_active?: boolean;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    title?: string;
+                    subject?: string;
+                    class_level?: string | null;
+                    materials?: string | null;
+                    procedure?: string | null;
+                    observation_template?: string | null;
+                    conclusion_template?: string | null;
+                    created_by?: string | null;
+                    is_active?: boolean;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+            };
+            journals: {
+                Row: {
+                    id: string;
+                    student_id: string;
+                    experiment_id: string;
+                    observations: string | null;
+                    conclusion: string | null;
+                    submitted_at: string | null;
+                    pdf_url: string | null;
+                    status: 'draft' | 'submitted' | 'reviewed' | 'approved' | 'rejected';
+                    reviewed_by: string | null;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    student_id: string;
+                    experiment_id: string;
+                    observations?: string | null;
+                    conclusion?: string | null;
+                    submitted_at?: string | null;
+                    pdf_url?: string | null;
+                    status?: 'draft' | 'submitted' | 'reviewed' | 'approved' | 'rejected';
+                    reviewed_by?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    student_id?: string;
+                    experiment_id?: string;
+                    observations?: string | null;
+                    conclusion?: string | null;
+                    submitted_at?: string | null;
+                    pdf_url?: string | null;
+                    status?: 'draft' | 'submitted' | 'reviewed' | 'approved' | 'rejected';
+                    reviewed_by?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+            };
+            simulations: {
+                Row: {
+                    id: string;
+                    title: string;
+                    subject: string;
+                    class_level: string | null;
+                    simulation_url: string;
+                    created_by: string | null;
+                    is_active: boolean;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    title: string;
+                    subject: string;
+                    class_level?: string | null;
+                    simulation_url: string;
+                    created_by?: string | null;
+                    is_active?: boolean;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    title?: string;
+                    subject?: string;
+                    class_level?: string | null;
+                    simulation_url?: string;
+                    created_by?: string | null;
+                    is_active?: boolean;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+            };
+            live_classes: {
+                Row: {
+                    id: string;
+                    course_id: string | null;
+                    faculty_id: string | null;
+                    start_time: string;
+                    end_time: string | null;
+                    status: 'scheduled' | 'live' | 'completed' | 'cancelled';
+                    meeting_url: string | null;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    course_id?: string | null;
+                    faculty_id?: string | null;
+                    start_time: string;
+                    end_time?: string | null;
+                    status?: 'scheduled' | 'live' | 'completed' | 'cancelled';
+                    meeting_url?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    course_id?: string | null;
+                    faculty_id?: string | null;
+                    start_time?: string;
+                    end_time?: string | null;
+                    status?: 'scheduled' | 'live' | 'completed' | 'cancelled';
+                    meeting_url?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+            };
+            assignments: {
+                Row: {
+                    id: string;
+                    course_id: string;
+                    title: string;
+                    description: string | null;
+                    due_date: string | null;
+                    created_by: string | null;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    course_id: string;
+                    title: string;
+                    description?: string | null;
+                    due_date?: string | null;
+                    created_by?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    course_id?: string;
+                    title?: string;
+                    description?: string | null;
+                    due_date?: string | null;
+                    created_by?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+            };
+            submissions: {
+                Row: {
+                    id: string;
+                    assignment_id: string;
+                    student_id: string;
+                    file_url: string | null;
+                    submitted_at: string;
+                    status: 'submitted' | 'reviewed' | 'accepted' | 'rejected' | 'resubmitted';
+                    grade: number | null;
+                    feedback: string | null;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    assignment_id: string;
+                    student_id: string;
+                    file_url?: string | null;
+                    submitted_at?: string;
+                    status?: 'submitted' | 'reviewed' | 'accepted' | 'rejected' | 'resubmitted';
+                    grade?: number | null;
+                    feedback?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    assignment_id?: string;
+                    student_id?: string;
+                    file_url?: string | null;
+                    submitted_at?: string;
+                    status?: 'submitted' | 'reviewed' | 'accepted' | 'rejected' | 'resubmitted';
+                    grade?: number | null;
+                    feedback?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+            };
+            marketing_campaigns: {
+                Row: {
+                    id: string;
+                    campaign_name: string;
+                    platform: string;
+                    budget: number;
+                    start_date: string | null;
+                    end_date: string | null;
+                    status: 'draft' | 'active' | 'paused' | 'completed' | 'cancelled';
+                    created_by: string | null;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    campaign_name: string;
+                    platform: string;
+                    budget?: number;
+                    start_date?: string | null;
+                    end_date?: string | null;
+                    status?: 'draft' | 'active' | 'paused' | 'completed' | 'cancelled';
+                    created_by?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    campaign_name?: string;
+                    platform?: string;
+                    budget?: number;
+                    start_date?: string | null;
+                    end_date?: string | null;
+                    status?: 'draft' | 'active' | 'paused' | 'completed' | 'cancelled';
+                    created_by?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+            };
+            leads: {
+                Row: {
+                    id: string;
+                    campaign_id: string | null;
+                    name: string;
+                    email: string | null;
+                    phone: string | null;
+                    source: string | null;
+                    status: 'new' | 'contacted' | 'qualified' | 'converted' | 'disqualified';
+                    utm_source: string | null;
+                    utm_campaign: string | null;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    campaign_id?: string | null;
+                    name: string;
+                    email?: string | null;
+                    phone?: string | null;
+                    source?: string | null;
+                    status?: 'new' | 'contacted' | 'qualified' | 'converted' | 'disqualified';
+                    utm_source?: string | null;
+                    utm_campaign?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    campaign_id?: string | null;
+                    name?: string;
+                    email?: string | null;
+                    phone?: string | null;
+                    source?: string | null;
+                    status?: 'new' | 'contacted' | 'qualified' | 'converted' | 'disqualified';
+                    utm_source?: string | null;
+                    utm_campaign?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+            };
+            ai_interactions: {
+                Row: {
+                    id: string;
+                    user_id: string | null;
+                    query: string;
+                    response: string | null;
+                    interaction_type: string;
+                    model: string | null;
+                    metadata: Json;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    user_id?: string | null;
+                    query: string;
+                    response?: string | null;
+                    interaction_type: string;
+                    model?: string | null;
+                    metadata?: Json;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    user_id?: string | null;
+                    query?: string;
+                    response?: string | null;
+                    interaction_type?: string;
+                    model?: string | null;
+                    metadata?: Json;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+            };
+            financial_reports: {
+                Row: {
+                    id: string;
+                    report_date: string;
+                    total_revenue: number;
+                    total_donations: number;
+                    total_refunds: number;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    report_date: string;
+                    total_revenue?: number;
+                    total_donations?: number;
+                    total_refunds?: number;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    report_date?: string;
+                    total_revenue?: number;
+                    total_donations?: number;
+                    total_refunds?: number;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+            };
+            system_events: {
+                Row: {
+                    id: string;
+                    event_type: string;
+                    payload: Json;
+                    actor_id: string | null;
+                    created_at: string;
+                    updated_at: string;
+                };
+                Insert: {
+                    id?: string;
+                    event_type: string;
+                    payload?: Json;
+                    actor_id?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
+                };
+                Update: {
+                    id?: string;
+                    event_type?: string;
+                    payload?: Json;
+                    actor_id?: string | null;
+                    created_at?: string;
+                    updated_at?: string;
                 };
             };
             lectures: {
@@ -2819,12 +3397,28 @@ export type Updates<T extends keyof Database['public']['Tables']> = Database['pu
 
 // Common table row types
 export type Profile = Tables<'profiles'>;
+export type UserView = Tables<'users'>;
 export type StudentProfile = Tables<'student_profiles'>;
 export type Exam = Tables<'exams'>;
 export type Subject = Tables<'subjects'>;
 export type Chapter = Tables<'chapters'>;
 export type Topic = Tables<'topics'>;
 export type Faculty = Tables<'faculties'>;
+export type FacultyProfile = Tables<'faculty'>;
+export type Student = Tables<'students'>;
+export type Parent = Tables<'parents'>;
+export type Lesson = Tables<'lessons'>;
+export type Experiment = Tables<'experiments'>;
+export type Journal = Tables<'journals'>;
+export type Simulation = Tables<'simulations'>;
+export type LiveClass = Tables<'live_classes'>;
+export type Assignment = Tables<'assignments'>;
+export type Submission = Tables<'submissions'>;
+export type MarketingCampaign = Tables<'marketing_campaigns'>;
+export type Lead = Tables<'leads'>;
+export type AiInteraction = Tables<'ai_interactions'>;
+export type FinancialReport = Tables<'financial_reports'>;
+export type SystemEvent = Tables<'system_events'>;
 export type Lecture = Tables<'lectures'>;
 export type LectureProgress = Tables<'lecture_progress'>;
 export type Question = Tables<'questions'>;

@@ -11,8 +11,11 @@ import {
 } from '@/lib/finance/service';
 import { generateCourseInvoicePDF } from '@/lib/pdf/course-invoice';
 import { sendEmail } from '@/lib/email/email-service';
+import { FINANCE_ROLES } from '@/lib/auth/roles';
 
 export const runtime = 'nodejs';
+
+const isFinanceRole = (role?: string | null) => !!role && FINANCE_ROLES.includes(role as (typeof FINANCE_ROLES)[number]);
 export const dynamic = 'force-dynamic';
 
 function createRequestSupabaseClient(request: NextRequest) {
@@ -107,7 +110,7 @@ export async function GET(request: NextRequest): Promise<Response> {
             .maybeSingle();
 
         const role = (profile as { role?: string } | null)?.role || null;
-        const isFinanceUser = role === 'admin' || role === 'finance_manager';
+        const isFinanceUser = isFinanceRole(role);
 
         let invoice = await getCourseInvoiceByReference({
             invoiceNumber,
@@ -199,7 +202,7 @@ export async function POST(request: NextRequest): Promise<Response> {
             .maybeSingle();
 
         const role = (profile as { role?: string } | null)?.role || null;
-        const isFinanceUser = role === 'admin' || role === 'super_admin' || role === 'finance_manager';
+        const isFinanceUser = isFinanceRole(role);
 
         if (!isFinanceUser) {
             throw createApiError(ErrorType.AUTHORIZATION, 'Only admins can generate invoices with notifications.');

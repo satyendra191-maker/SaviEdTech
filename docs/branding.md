@@ -1,6 +1,6 @@
 # SaviEduTech Brand Guidelines
 
-> **Version:** 2.0 · **Updated:** March 2026 · **Platform:** AI-powered Education (India)
+> **Version:** 3.0 · **Updated:** March 2026 · **Platform:** AI-powered Education (India)
 
 ---
 
@@ -8,77 +8,58 @@
 
 **SaviEduTech** is an AI-powered education platform for Class 6–12 students, teachers, and parents. Our brand personality is:
 
-- **Futuristic** — rooted in emerging technology (AI, 3D, neural networks)
-- **Intelligent** — data-driven, adaptive, personalized
+- **Futuristic** — rooted in modern technology (AI, analytics, automation)
+- **Intelligent** — adaptive, data-driven, personalized
 - **Trustworthy** — dependable for competitive exams (JEE/NEET/Board)
 - **Clean SaaS** — modern, uncluttered, professional
 
 ### Taglines (approved)
-1. *Future of Intelligent Learning* ← **Primary**
-2. *Where AI Meets Education*
-3. *Learn Smarter with AI*
-4. *The Intelligent Learning Platform*
+1. *Empowering Digital Learning* ← **Primary**
+2. *Future of Intelligent Learning*
+3. *Where AI Meets Education*
+4. *Learn Smarter with AI*
 5. *Next Generation Education*
 
 ---
 
 ## 2. Logo System
 
-### Logo Concept
-The logo features a **neural circuit S-form** — an abstract S-shape constructed from connected nodes and circuit lines, symbolizing:
-- The letter **S** for *Savi*
-- **Neural networks** (AI)
-- **Knowledge circuits** connecting ideas
-- A **book** element embedded in the lower-right quadrant
+### Master Logo
 
-The icon sits on a **blue-indigo-violet gradient** background (representing intelligence + creativity).
-
-### Logo Files
-
-| File | Use Case |
-|------|----------|
-| `public/branding/logo-primary.svg` | Standard full logo (icon + wordmark + tagline) |
-| `public/branding/logo-icon.svg` | Icon-only (for favicons, app icons, square contexts) |
-| `public/branding/logo-dark.svg` | Dark backgrounds (white wordmark) |
-| `public/branding/logo-light.svg` | Light backgrounds (dark wordmark) |
-| `public/branding/logo-compact.svg` | Icon + name, no tagline (navbar) |
-| `public/branding/logo-monogram.svg` | S monogram only (small spaces) |
-| `public/branding/app-icon.svg` | PWA / App Store icon (512px) |
-| `public/branding/favicon.svg` | Browser tab favicon (32px) |
-| `public/favicon.svg` | Root favicon |
+- **File:** `public/brand/logo.png`
+- **Orientation:** horizontal (icon + wordmark + tagline)
+- **Do not:** stretch, rotate, recolor, or apply filters
 
 ### React Component Usage
 
 ```tsx
 import { Logo } from '@/components/brand/Logo';
 
-// Full logo with tagline (hero, login page)
-<Logo size="lg" variant="full" showTagline={true} />
+// Navbar (priority load)
+<Logo size="md" priority />
 
-// Compact logo (navbar)
-<Logo size="md" variant="compact" />
+// Footer / dark sections (adds contrast container)
+<Logo size="lg" variant="dark" />
 
-// Icon only (mobile, small spaces)
-<Logo size="sm" variant="icon" />
-
-// Dark theme (footer, dark sections)
-<Logo size="md" variant="full" theme="dark" />
+// Auth / hero sections
+<Logo size="lg" />
 ```
 
 #### Props Reference
 
 | Prop | Options | Default | Description |
 |------|---------|---------|-------------|
-| `size` | `xs` `sm` `md` `lg` `xl` `2xl` | `md` | Controls icon + text scale |
-| `variant` | `icon` `compact` `full` | `full` | Layout variant |
-| `theme` | `light` `dark` `auto` | `light` | Color scheme |
-| `showTagline` | `boolean` | `false` | Shows tagline beneath name |
+| `size` | `sm` `md` `lg` | `md` | Controls rendered height (32 / 44 / 60px) |
+| `variant` | `light` `dark` | `light` | Adds a light container for contrast on dark backgrounds |
+| `priority` | `boolean` | `false` | Preloads the logo for faster header rendering |
+| `alt` | `string` | `SaviEduTech Official Logo` | Accessible alt text |
+| `className` | `string` | `''` | Extra classes for alignment / spacing |
 
 ---
 
 ## 3. Color Palette
 
-### Primary — Electric Blue
+### Primary — Blue
 | Token | Hex | Usage |
 |-------|-----|-------|
 | `primary-600` | `#2563EB` | Buttons, links, CTA |
@@ -86,19 +67,10 @@ import { Logo } from '@/components/brand/Logo';
 | `primary-800` | `#1E40AF` | Dark text emphasis |
 | `primary-100` | `#DBEAFE` | Backgrounds, chips |
 
-### Secondary — Cyan (AI / Tech)
+### Accent — Orange
 | Token | Hex | Usage |
 |-------|-----|-------|
-| `secondary-500` | `#06B6D4` | AI widget accents, neural nodes |
-| `secondary-400` | `#22D3EE` | Highlight glows |
-| `secondary-600` | `#0891B2` | Active secondary state |
-
-### Accent — Violet (Intelligence)
-| Token | Hex | Usage |
-|-------|-----|-------|
-| `accent-600` | `#7C3AED` | Gradient partner, premium features |
-| `accent-500` | `#8B5CF6` | Base accent |
-| `accent-400` | `#A78BFA` | Muted accent |
+| `brand-orange` | `#F58220` | Logo accent, highlights |
 
 ### Semantic
 | Name | Hex | Usage |
@@ -109,18 +81,6 @@ import { Logo } from '@/components/brand/Logo';
 | Neutral-900 | `#0F172A` | Primary text |
 | Neutral-500 | `#64748B` | Muted text |
 | Neutral-100 | `#F1F5F9` | Subtle backgrounds |
-
-### Canonical Gradients
-```css
-/* Hero / CTA */
-background: linear-gradient(135deg, #2563EB 0%, #4F46E5 50%, #7C3AED 100%);
-
-/* AI / Tech  */
-background: linear-gradient(135deg, #06B6D4 0%, #2563EB 100%);
-
-/* Knowledge */
-background: linear-gradient(135deg, #4F46E5 0%, #7C3AED 50%, #EC4899 100%);
-```
 
 ---
 
@@ -150,30 +110,25 @@ Import (already in `globals.css`):
 | Caption | Tooltips | `text-xs` / 12px | 500 | Badges, chips |
 | Micro | Fine print | `text-[10px]` / 10px | 500 | Role labels |
 
-### Wordmark Typography
-- Font: **Inter** (weight 800 "Savi" + 700 "EduTech")
-- Letter spacing: `-0.05em` (tight)
-- "Savi" — Blue gradient (`#1D4ED8 → #4338CA`)
-- "EduTech" — Dark slate (`#0F172A`)
+### Wordmark Guidance
+- The wordmark + tagline are part of the master logo asset (`public/brand/logo.png`).
+- Do not recreate the wordmark with live text in UI components.
 
 ---
 
 ## 5. Logo Usage — Do's & Don'ts
 
-### ✅ Do's
-- Use the SVG `Logo` component — never embed raster images
-- Maintain clear space equal to **1× the icon width** around the logo
-- Use `theme="dark"` on dark/colored backgrounds
-- Use `variant="icon"` in very small spaces (< 32px width)
-- Always link the logo to the homepage (`href="/"`)
+### ✅ Do
+- Use the canonical `Logo` component (`src/components/brand/Logo.tsx`) everywhere.
+- Use `variant="dark"` on dark/colored backgrounds for contrast.
+- Keep the logo linked to the homepage (`href="/"`) in headers and footers.
+- Preserve aspect ratio (no stretching).
 
-### ❌ Don'ts
-- Do **not** recolor the logo (the gradient is protected)
-- Do **not** use the old `logo.png` raster file
-- Do **not** add drop shadows or filters externally
-- Do **not** compress/stretch the logo (maintain aspect ratio)
-- Do **not** place the logo on busy photo backgrounds without overlay
-- Do **not** use any variant below `xs` size in production
+### ❌ Don't
+- Do not use raw `<img>` tags for the brand logo.
+- Do not inline SVG/logo markup in components.
+- Do not ship multiple logo files for the same mark.
+- Do not apply external filters/shadows that change brand appearance.
 
 ---
 
@@ -182,67 +137,48 @@ Import (already in `globals.css`):
 | Token | Value | Usage |
 |-------|-------|-------|
 | `--radius` | `0.75rem` (12px) | Default border radius |
-| Navbar height | 80px (`h-20`) | Desktop nav |
 | Mobile header | 56px (`h-14`) | Mobile header |
+| Desktop header | 64px (`h-16`) | Navbar / dashboard header |
 | Page max width | 1280px (`max-w-7xl`) | Content container |
 | Section padding | 56px vertical | `py-14` |
 | Card padding | 32px | `p-8` |
 
 ---
 
-## 7. Component Brand Tokens
+## 7. Responsive Logo Rules
 
-```typescript
-import { brandColors, brandGradients, semanticColors } from '@/styles/brand-colors';
-
-// Usage
-const primaryBtn = brandColors.primary[600];    // #2563EB
-const aiAccent   = brandColors.secondary[500];  // #06B6D4
-const heroGrad   = brandGradients.primary;
-```
+| Context | Size |
+|---------|------|
+| Mobile navbar/header | `sm` |
+| Desktop navbar/header | `md` |
+| Hero / login / marketing sections | `lg` |
 
 ---
 
-## 8. Responsive Logo Rules
+## 8. Animation Guidelines
 
-| Breakpoint | Variant | Size |
-|------------|---------|------|
-| Mobile (< 768px) | `compact` or `icon` | `sm` |
-| Tablet (768–1024px) | `compact` | `md` |
-| Desktop (> 1024px) | `full` | `md` or `lg` |
+- Hero logo animation: `animate-float` (subtle, 6s ease)
+- CTA hover: `translateY(-2px)` or `scale(1.01)` (200ms)
+- Page transitions: keep short (≤ 300ms)
 
 ---
 
-## 9. Animation Guidelines
-
-- Logo used in hero: `animate-float` (6s ease)
-- Node pulsing: `opacity` keyframe (subtle, 3s)
-- Page transitions: `fade-in` (0.3s ease-out)
-- CTA hover: `scale(1.02)` (0.2s)
-- Gradient shimmer: `200% auto` (2s linear)
-
----
-
-## 10. File Reference
+## 9. File Reference
 
 ```
 src/
-├── components/
-│   ├── brand/
-│   │   └── Logo.tsx          ← Canonical Logo component
-│   └── brand-logo.tsx        ← Re-export (backward compat)
-└── styles/
-    └── brand-colors.ts       ← Color system tokens
+└── components/
+    └── brand/
+        └── Logo.tsx           ← Canonical Logo component
 
 public/
-├── favicon.svg               ← Root favicon
+├── brand/
+│   └── logo.png              ← Master logo (used by Logo component)
+├── favicon.svg               ← Browser favicon (icon mark)
+├── icons/
+│   ├── icon-192.png          ← PWA icon
+│   └── icon-512.png          ← PWA icon
 └── branding/
-    ├── logo-primary.svg      ← Full primary logo
-    ├── logo-icon.svg         ← Icon only
-    ├── logo-dark.svg         ← Dark variant
-    ├── logo-light.svg        ← Light variant
-    ├── logo-compact.svg      ← Compact (icon + name)
-    ├── logo-monogram.svg     ← S monogram
-    ├── app-icon.svg          ← PWA / app icon
-    └── favicon.svg           ← Favicon SVG
+    └── app-icon.svg          ← Maskable PWA icon
 ```
+

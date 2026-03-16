@@ -3,7 +3,7 @@
 import { useMemo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Bell, Search, User, LogOut } from 'lucide-react';
+import { Bell, Search, User, LogOut, ShieldCheck } from 'lucide-react';
 import { Logo } from '@/components/brand/Logo';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -31,15 +31,22 @@ export function Header() {
             <div className="max-w-6xl mx-auto">
                 <div className="flex h-16 items-center justify-between px-4">
                     {/* Logo — same as homepage navbar */}
-                    <Link href="/dashboard" className="flex items-center gap-[12px]" aria-label="SaviEduTech dashboard">
-                        {/* Desktop Version */}
-                        <Logo size="md" variant="full" className="hidden lg:block" height={32} />
-                        {/* Mobile Version (Icon Only) */}
-                        <Logo size="sm" variant="icon" className="lg:hidden" height={28} />
+                    <Link href="/dashboard" className="flex items-center gap-3 rounded-xl p-2" aria-label="SaviEduTech dashboard">
+                        <Logo size="sm" className="shrink-0 md:hidden" />
+                        <Logo size="md" className="hidden shrink-0 md:inline-flex" />
                     </Link>
 
                     {/* Right actions */}
                     <div className="flex items-center gap-2 flex-shrink-0">
+                        {process.env.NODE_ENV === 'development' && (
+                            <Link
+                                href="/admin"
+                                className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-indigo-50 text-indigo-700 rounded-xl text-xs font-bold border border-indigo-100 mr-2 hover:bg-indigo-100 transition-colors"
+                            >
+                                <ShieldCheck className="w-3.5 h-3.5" />
+                                Admin Panel
+                            </Link>
+                        )}
                         <Link
                             href="/dashboard/search"
                             className="rounded-xl p-2 transition-colors hover:bg-slate-100 active:scale-95"

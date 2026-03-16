@@ -1,13 +1,13 @@
 'use client';
 
-import { BrandLogo } from '@/components/brand-logo';
+import { Logo } from '@/components/brand/Logo';
 import { Loader2 } from 'lucide-react';
 
 export default function AuthLoadingPage() {
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex flex-col items-center justify-center p-4">
             <div className="text-center mb-8">
-                <BrandLogo size="lg" />
+                <Logo size="lg" />
             </div>
             
             <div className="bg-white rounded-2xl shadow-xl p-8 flex flex-col items-center">

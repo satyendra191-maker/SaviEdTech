@@ -1,11 +1,12 @@
 /**
  * Notifications Send API
  * Endpoint for sending transactional emails
- * Protected by admin authorization
+ * Protected by marketing/admin authorization
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminSupabaseClient } from '@/lib/supabase';
+import { MARKETING_ROLES } from '@/lib/auth/roles';
 import {
     sendEmail,
     sendBatchEmails,
@@ -45,6 +46,9 @@ interface BatchEmailRequest {
     subject: string;
     from?: string;
 }
+
+const hasRole = (roles: readonly string[], role: string | null | undefined) =>
+    !!role && roles.includes(role);
 
 /**
  * POST /api/notifications/send
@@ -239,7 +243,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
 
 /**
  * Check if the request is authorized
- * Requires admin role
+ * Requires marketing or admin role
  */
 async function checkAuthorization(request: NextRequest): Promise<{
     authorized: boolean;
@@ -267,7 +271,7 @@ async function checkAuthorization(request: NextRequest): Promise<{
         // Check user role from metadata or profiles table
         const userRole = user.user_metadata?.role || user.user_metadata?.user_role;
 
-        if (userRole === 'admin') {
+        if (hasRole(MARKETING_ROLES, userRole)) {
             return { authorized: true };
         }
 
@@ -283,11 +287,11 @@ async function checkAuthorization(request: NextRequest): Promise<{
         }
 
         const role = (profile as { role?: string }).role;
-        if (role === 'admin') {
+        if (hasRole(MARKETING_ROLES, role)) {
             return { authorized: true };
         }
 
-        return { authorized: false, error: 'Forbidden - Admin access required', status: 403 };
+        return { authorized: false, error: 'Forbidden - Marketing or admin access required', status: 403 };
     } catch (error) {
         console.error('Authorization check failed:', error);
         return { authorized: false, error: 'Authorization failed', status: 500 };

@@ -1,4 +1,5 @@
 import { createAdminSupabaseClient } from '@/lib/supabase';
+import { ADMIN_PRIVILEGED_ROLES } from '@/lib/auth/roles';
 
 export interface CommunicationThread {
     id: string;
@@ -30,6 +31,9 @@ function getAdminClient() {
     return createAdminSupabaseClient() as any;
 }
 
+const hasRole = (roles: readonly string[], role: string | null | undefined) =>
+    !!role && roles.includes(role);
+
 export async function listThreadsForUser(userId: string, role: string): Promise<CommunicationThread[]> {
     const supabase = getAdminClient();
 
@@ -48,7 +52,7 @@ export async function listThreadsForUser(userId: string, role: string): Promise<
         .eq('is_active', true)
         .order('latest_message_at', { ascending: false });
 
-    if (role !== 'admin') {
+    if (!hasRole(ADMIN_PRIVILEGED_ROLES, role)) {
         query = query.eq('internal_chat_participants.user_id', userId);
     }
 

@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import { usePathname } from 'next/navigation';
 import { X } from 'lucide-react';
 import { getSupabaseBrowserClient } from '@/lib/supabase';
+import { EMPLOYEE_ROLES } from '@/lib/auth/roles';
 
 type PopupFrequency = 'once_per_session' | 'daily' | 'weekly';
 type PopupPlacement = 'homepage' | 'student_dashboard';
@@ -233,7 +234,7 @@ export function PopupProvider({ children }: PopupProviderProps) {
                 }
 
                 const role = (profileData as { role?: string } | null)?.role || 'student';
-                if (['admin', 'super_admin', 'content_manager', 'faculty', 'hr'].includes(role)) {
+                if (EMPLOYEE_ROLES.includes(role as (typeof EMPLOYEE_ROLES)[number])) {
                     resetPopup();
                     return;
                 }

@@ -3,6 +3,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { generateAnswerKeyPDF } from '@/lib/pdf/test-pdf-generator';
+import { ADMIN_PRIVILEGED_ROLES } from '@/lib/auth/roles';
+
+const hasRole = (roles: readonly string[], role: string | null | undefined) =>
+    !!role && roles.includes(role);
 
 function inferTestType(examName?: string | null): 'JEE' | 'NEET' | 'custom' {
     const normalizedExamName = (examName || '').toLowerCase();
@@ -124,7 +128,7 @@ export async function GET(
                 .select('role')
                 .eq('id', user.id)
                 .maybeSingle();
-            const isAdmin = profile?.role === 'admin';
+            const isAdmin = hasRole(ADMIN_PRIVILEGED_ROLES, profile?.role);
             if (!isAdmin) {
                 return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
             }

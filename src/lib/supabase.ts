@@ -1,8 +1,4 @@
-/**
- * Supabase Client Configuration (Simplified)
- * Using only @supabase/supabase-js to avoid @supabase/ssr issues in Next.js 15
- */
-
+import { createBrowserClient } from '@supabase/ssr';
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/supabase';
 
@@ -17,17 +13,18 @@ let browserClient: any = null;
 
 export const createBrowserSupabaseClient = () => {
     if (typeof window === 'undefined') return null;
-    return createClient<Database>(supabaseUrl, supabaseAnonKey);
+    return createBrowserClient<Database>(supabaseUrl, supabaseAnonKey);
 };
 
 export const getSupabaseBrowserClient = () => {
     if (typeof window === 'undefined') return null;
     if (!browserClient) {
-        browserClient = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+        browserClient = createBrowserClient<Database>(supabaseUrl, supabaseAnonKey, {
             auth: {
                 persistSession: true,
                 autoRefreshToken: true,
-                detectSessionInUrl: true
+                detectSessionInUrl: false, // Recommended for Next.js 15 SSR callback routes
+                flowType: 'pkce'
             }
         });
     }
@@ -59,3 +56,20 @@ export const handleSupabaseError = (error: any) => {
 
 export const isServer = () => typeof window === 'undefined';
 export const isBrowser = () => typeof window !== 'undefined';
+
+export const getUserRole = async (userId: string): Promise<string | null> => {
+    const supabase = createServerSupabaseClient();
+    const result: { data: { role: string } | null; error: Error | null } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .single();
+    if (!result.data) return null;
+    return result.data.role ?? null;
+};
+
+export const isAuthenticated = async (): Promise<boolean> => {
+    const supabase = createServerSupabaseClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    return !!user;
+};

@@ -3,23 +3,16 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { createAdminSupabaseClient } from '@/lib/supabase';
 import type { Database } from '@/types/supabase';
+import { ADMIN_APP_ROLES } from '@/lib/auth/roles';
 
 type ProfileRole = Database['public']['Tables']['profiles']['Row']['role'];
 
-const ALLOWED_ROLES: ProfileRole[] = [
-    'student',
-    'admin',
-    'content_manager',
-    'parent',
-    'hr',
-    'finance_manager',
-];
+const ALLOWED_ROLES = new Set<string>(['student', 'parent', ...ADMIN_APP_ROLES]);
 
-function normalizeRole(value: unknown): ProfileRole {
-    if (value === 'faculty') return 'content_manager';
-    if (typeof value === 'string' && ALLOWED_ROLES.includes(value as ProfileRole)) {
-        return value as ProfileRole;
-    }
+function normalizeRole(value: unknown): string {
+    const role = typeof value === 'string' ? value.toLowerCase() : '';
+    if (role === 'faculty' || role === 'teacher') return role;
+    if (ALLOWED_ROLES.has(role)) return role;
     return 'student';
 }
 
@@ -77,6 +70,8 @@ export async function POST() {
             class_level: typeof meta.class_level === 'string' ? meta.class_level : null,
             city: typeof meta.city === 'string' ? meta.city : null,
             is_active: true,
+            is_verified: false,
+            status: 'pending',
         });
 
         if (insertError) {

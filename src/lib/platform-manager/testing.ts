@@ -10,6 +10,7 @@
  */
 
 import { getSupabaseBrowserClient, createAdminSupabaseClient, isBrowser } from '@/lib/supabase';
+import { ADMIN_PRIVILEGED_ROLES } from '@/lib/auth/roles';
 import { sendAlert } from './alerts';
 import type { Database } from '@/types/supabase';
 import type { SupabaseClient } from '@supabase/supabase-js';
@@ -82,6 +83,9 @@ const DEFAULT_CONFIG: Required<TestConfig> = {
 
 const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+
+const hasRole = (roles: readonly string[], role: string | null | undefined) =>
+    !!role && roles.includes(role);
 
 // ============================================
 // AUTHENTICATION TESTS
@@ -810,7 +814,7 @@ export async function testUserManagement(): Promise<Omit<TestResult, 'id' | 'run
                 profilesAccessible: true,
                 totalProfiles: profiles?.length ?? 0,
                 roleDistribution: roleCounts,
-                hasAdminUsers: profiles?.some((p: Record<string, unknown>) => p.role === 'admin') ?? false,
+                hasAdminUsers: profiles?.some((p: Record<string, unknown>) => hasRole(ADMIN_PRIVILEGED_ROLES, p.role as string | null)) ?? false,
             },
             executed_at: new Date().toISOString(),
         };

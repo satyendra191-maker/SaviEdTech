@@ -17,6 +17,7 @@ import {
     generateRateLimitIdentifier,
     RATE_LIMITS,
 } from '@/lib/security';
+import { ADMIN_PRIVILEGED_ROLES } from '@/lib/auth/roles';
 import { z } from 'zod';
 import { ENGINE_REGISTRY } from '@/superbrain/registry';
 
@@ -77,6 +78,9 @@ const unifiedTriggerSchema = z.object({
 });
 
 type UnifiedTriggerParams = z.infer<typeof unifiedTriggerSchema>;
+
+const hasRole = (roles: readonly string[], role: string | null | undefined) =>
+    !!role && roles.includes(role);
 
 function getClientIp(request: NextRequest): string {
     const forwarded = request.headers.get('x-forwarded-for');
@@ -260,7 +264,7 @@ export async function POST(request: NextRequest) {
                 .eq('id', userId)
                 .single() as { data: { role: string } | null };
 
-            if (!profile || profile.role !== 'admin') {
+            if (!profile || !hasRole(ADMIN_PRIVILEGED_ROLES, profile.role)) {
                 return NextResponse.json(
                     { error: 'Forbidden', message: 'Admin privileges required' },
                     { status: 403 }
@@ -441,7 +445,7 @@ export async function GET(request: NextRequest) {
             .eq('id', user.id)
             .single() as { data: { role: string } | null };
 
-        if (!profile || profile.role !== 'admin') {
+        if (!profile || !hasRole(ADMIN_PRIVILEGED_ROLES, profile.role)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 

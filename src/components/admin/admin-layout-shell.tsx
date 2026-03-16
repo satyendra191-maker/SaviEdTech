@@ -17,7 +17,7 @@ function AdminLayoutShellContent({ children, role }: AdminLayoutShellProps) {
             {/* No sidebar — full width layout */}
             <div className="min-w-0">
                 <AdminHeader role={role} />
-                <main className="p-4 lg:p-6 pb-24 lg:pb-6 max-w-6xl mx-auto">
+                <main className="p-4 lg:p-6 pb-24 lg:pb-6 max-w-7xl mx-auto">
                     <GlobalErrorBoundary>{children}</GlobalErrorBoundary>
                 </main>
             </div>

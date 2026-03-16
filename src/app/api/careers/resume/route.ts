@@ -3,6 +3,10 @@ import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import { createAdminSupabaseClient } from '@/lib/supabase';
 import type { Database } from '@/types/supabase';
+import { HR_ROLES } from '@/lib/auth/roles';
+
+const CAREERS_ADMIN_ROLES = new Set<string>([...HR_ROLES, 'content_manager']);
+const isCareersAdmin = (role?: string | null) => !!role && CAREERS_ADMIN_ROLES.has(role);
 
 const MAX_RESUME_SIZE = 1 * 1024 * 1024;
 
@@ -133,7 +137,7 @@ export async function GET(request: NextRequest) {
 
         const typedProfile = profile as { role?: string } | null;
 
-        if (profileError || !typedProfile || !['admin', 'content_manager', 'hr'].includes(typedProfile.role || '')) {
+        if (profileError || !typedProfile || !isCareersAdmin(typedProfile.role)) {
             return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
         }
 

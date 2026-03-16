@@ -48,6 +48,11 @@ export default function ParentDashboardPage() {
             return;
         }
 
+        if (process.env.NODE_ENV === 'development') {
+            fetchLinkedStudents();
+            return;
+        }
+
         if (!authLoading && user) {
             fetchLinkedStudents();
         } else if (!authLoading && !user) {
@@ -63,7 +68,7 @@ export default function ParentDashboardPage() {
 
         const { data, error } = await supabase
             .from('parent_links')
-            .select('*')
+            .select('id, student_id, student_name, student_phone, verification_status')
             .eq('parent_id', user.id)
             .eq('verification_status', 'approved')
             .order('created_at', { ascending: false }) as { data: LinkedStudent[] | null; error: any };
@@ -81,54 +86,48 @@ export default function ParentDashboardPage() {
         setError(null);
 
         try {
-            const { data: studentProfile } = await supabase
-                .from('student_profiles')
-                .select('*')
-                .eq('id', studentId)
-                .single() as { data: any };
+            const [
+                studentProfileRes,
+                lectureProgressRes,
+                dppAttemptsRes,
+                testAttemptsRes,
+                weakTopicsRes
+            ] = await Promise.all([
+                supabase.from('student_profiles').select('*').eq('id', studentId).maybeSingle(),
+                supabase.from('lecture_progress').select('*').eq('user_id', studentId),
+                supabase.from('dpp_attempts').select('*').eq('user_id', studentId),
+                supabase.from('test_attempts').select('*').eq('user_id', studentId),
+                supabase
+                    .from('topic_mastery')
+                    .select('accuracy_percent, topics:topic_id (name)')
+                    .eq('user_id', studentId)
+                    .in('strength_status', ['weak', 'average'])
+                    .order('accuracy_percent', { ascending: true })
+                    .limit(5)
+            ]);
 
-            const profile = studentProfile as any;
+            if (studentProfileRes.error) throw studentProfileRes.error;
 
-            const { data: lectureProgress } = await supabase
-                .from('lecture_progress')
-                .select('*')
-                .eq('user_id', studentId) as { data: any[] | null };
+            const profile = studentProfileRes.data;
+            const lectureProgress = lectureProgressRes.data || [];
+            const dppAttempts = dppAttemptsRes.data || [];
+            const testAttempts = testAttemptsRes.data || [];
+            const weakTopicsData = weakTopicsRes.data || [];
 
-            const completedLectures = lectureProgress?.filter((l: any) => l.is_completed)?.length || 0;
-            const totalLectures = lectureProgress?.length || 1;
+            const completedLectures = lectureProgress.filter((l: any) => l.is_completed).length;
+            const totalLectures = lectureProgress.length || 1;
             const lectureCompletion = Math.round((completedLectures / totalLectures) * 100);
 
-            const { data: dppAttempts } = await supabase
-                .from('dpp_attempts')
-                .select('*')
-                .eq('user_id', studentId) as { data: any[] | null };
-
-            const dppCount = dppAttempts?.length || 0;
-            const dppCorrect = dppAttempts?.filter((d: any) => d.is_correct)?.length || 0;
+            const dppCount = dppAttempts.length;
+            const dppCorrect = dppAttempts.filter((d: any) => d.is_correct).length;
             const dppAccuracy = dppCount > 0 ? Math.round((dppCorrect / dppCount) * 100) : 0;
 
-            const { data: testAttempts } = await supabase
-                .from('test_attempts')
-                .select('*')
-                .eq('user_id', studentId) as { data: any[] | null };
-
-            const testCount = testAttempts?.length || 0;
+            const testCount = testAttempts.length;
             const avgScore = testCount > 0
-                ? Math.round(testAttempts!.reduce((sum: number, t: any) => sum + (t.score || 0), 0) / testCount)
+                ? Math.round(testAttempts.reduce((sum: number, t: any) => sum + (t.score || 0), 0) / testCount)
                 : 0;
 
-            const { data: weakTopicsData } = await supabase
-                .from('topic_mastery')
-                .select(`
-                    accuracy_percent,
-                    topics:topic_id (name)
-                `)
-                .eq('user_id', studentId)
-                .in('strength_status', ['weak', 'average'])
-                .order('accuracy_percent', { ascending: true })
-                .limit(5);
-
-            const weakTopics = (weakTopicsData || []).map((item: any) => ({
+            const weakTopics = weakTopicsData.map((item: any) => ({
                 topic: item.topics?.name || 'Unknown',
                 accuracy: item.accuracy_percent || 0
             }));

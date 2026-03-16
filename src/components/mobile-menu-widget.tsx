@@ -32,9 +32,11 @@ import {
     Menu,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import type { UserRole } from '@/types';
+import { ADMIN_APP_ROLES } from '@/lib/auth/roles';
 
 interface MobileMenuWidgetProps {
-    role?: 'student' | 'parent' | 'admin';
+    role?: UserRole | null;
 }
 
 const studentMenuItems = [
@@ -86,7 +88,8 @@ export function MobileMenuWidget({ role = 'student' }: MobileMenuWidgetProps) {
 
     const [isOpen, setIsOpen] = useState(false);
 
-    const menuItems = role === 'admin' ? adminMenuItems : role === 'parent' ? parentMenuItems : studentMenuItems;
+    const isAdmin = role ? ADMIN_APP_ROLES.includes(role) : false;
+    const menuItems = isAdmin ? adminMenuItems : role === 'parent' ? parentMenuItems : studentMenuItems;
 
     return (
         <>

@@ -6,6 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { ChevronDown, LayoutDashboard, LogOut, Menu, X, Sparkles } from 'lucide-react';
 import { Logo } from '@/components/brand/Logo';
 import { useAuth } from '@/hooks/useAuth';
+import authService from '@/lib/auth/authService';
 
 const courseLinks = [
     { name: 'Foundation', href: '/foundation' },
@@ -51,18 +52,7 @@ export function Navbar() {
     }
 
     const getDashboardLink = () => {
-        switch (role) {
-            case 'admin':
-                return '/admin';
-            case 'content_manager':
-                return '/admin/courses';
-            case 'finance_manager':
-                return '/admin/finance';
-            case 'parent':
-                return '/dashboard/parent';
-            default:
-                return '/dashboard';
-        }
+        return authService.getRoleBasedRedirect(role || 'student');
     };
 
     const handleLogout = async () => {
@@ -75,11 +65,9 @@ export function Navbar() {
     return (
         <nav className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/90 backdrop-blur-xl h-[64px] flex items-center">
             <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-                <Link href="/" className="flex items-center gap-[24px]" aria-label="SaviEduTech home">
-                    {/* Desktop Version */}
-                    <Logo size="md" variant="full" className="hidden lg:block" height={36} />
-                    {/* Mobile Version (Icon Only) */}
-                    <Logo size="sm" variant="icon" className="lg:hidden" height={28} />
+                <Link href="/" className="flex items-center gap-3 rounded-xl p-2" aria-label="SaviEduTech home">
+                    <Logo size="sm" className="shrink-0 md:hidden" priority />
+                    <Logo size="md" className="hidden shrink-0 md:inline-flex" priority />
                 </Link>
 
                 <div className="hidden items-center gap-1 lg:flex">

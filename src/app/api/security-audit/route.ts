@@ -16,6 +16,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import type { Database } from '@/types/supabase';
+import { SUPPORT_ROLES } from '@/lib/auth/roles';
 import {
     generateSecurityReport,
     auditRLSPolicies,
@@ -37,8 +38,11 @@ import {
 // Cache duration in seconds
 const CACHE_DURATION = 300; // 5 minutes
 
+const hasRole = (roles: readonly string[], role: string | null | undefined) =>
+    !!role && roles.includes(role);
+
 /**
- * Check if user has admin access
+ * Check if user has security audit access
  */
 async function checkAdminAccess(request: NextRequest): Promise<boolean> {
     const supabase = createServerClient<Database>(
@@ -72,7 +76,7 @@ async function checkAdminAccess(request: NextRequest): Promise<boolean> {
         return false;
     }
 
-    return profile.role === 'admin';
+    return hasRole(SUPPORT_ROLES, profile.role);
 }
 
 /**
@@ -87,7 +91,7 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
             return NextResponse.json(
                 {
                     error: 'Unauthorized',
-                    message: 'Super-admin access required for security audit',
+                    message: 'Admin or support access required for security audit',
                 },
                 { status: 403 }
             );
@@ -426,7 +430,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
             return NextResponse.json(
                 {
                     error: 'Unauthorized',
-                    message: 'Super-admin access required',
+                    message: 'Admin or support access required',
                 },
                 { status: 403 }
             );

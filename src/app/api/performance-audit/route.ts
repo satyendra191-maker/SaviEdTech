@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
 import { createAdminSupabaseClient } from '@/lib/supabase';
 import type { Database } from '@/types/supabase';
+import { ADMIN_PRIVILEGED_ROLES } from '@/lib/auth/roles';
 import {
     // Query Optimizer
     analyzeSlowQueries,
@@ -61,6 +62,9 @@ const corsHeaders = {
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
+const hasRole = (roles: readonly string[], role: string | null | undefined) =>
+    !!role && roles.includes(role);
+
 /**
  * Check if user has admin access
  */
@@ -96,7 +100,7 @@ async function checkAdminAccess(request: NextRequest): Promise<boolean> {
         return false;
     }
 
-    return profile.role === 'admin';
+    return hasRole(ADMIN_PRIVILEGED_ROLES, profile.role);
 }
 
 /**

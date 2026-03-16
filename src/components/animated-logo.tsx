@@ -3,12 +3,13 @@
 import { useEffect, useState } from 'react';
 import { Logo } from '@/components/brand/Logo';
 
-type LogoSize = 'sm' | 'md' | 'lg' | 'custom';
+type LogoSize = 'sm' | 'md' | 'lg';
 
 interface AnimatedLogoProps {
     size?:        LogoSize;
     showText?:    boolean;
     showTagline?: boolean;
+    variant?:     'light' | 'dark';
     className?:   string;
 }
 
@@ -18,8 +19,7 @@ interface AnimatedLogoProps {
  */
 export function AnimatedLogo({
     size        = 'md',
-    showText    = true,
-    showTagline = false,
+    variant     = 'light',
     className   = '',
 }: AnimatedLogoProps) {
     const [mounted, setMounted] = useState(false);
@@ -28,8 +28,6 @@ export function AnimatedLogo({
         setMounted(true);
     }, []);
 
-    const variant = showText ? 'full' : 'icon';
-
     return (
         <div
             className={`inline-flex items-center gap-3 ${mounted ? 'animate-float' : ''} ${className}`}
@@ -37,7 +35,6 @@ export function AnimatedLogo({
             <Logo
                 size={size}
                 variant={variant}
-                theme="light"
             />
         </div>
     );

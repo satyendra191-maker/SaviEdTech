@@ -2,6 +2,42 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import type { Database } from '@/types/supabase';
+import {
+    ADMIN_PRIVILEGED_ROLES,
+    CONTENT_ROLES,
+    FINANCE_ROLES,
+    HR_ROLES,
+    MARKETING_ROLES,
+    TEACHING_ROLES,
+    SUPPORT_ROLES,
+} from '@/lib/auth/roles';
+
+const hasRole = (roles: readonly string[], role: string | null) => !!role && roles.includes(role);
+
+function resolveRoleRedirect(role: string | null): string {
+    if (hasRole(ADMIN_PRIVILEGED_ROLES, role) || hasRole(SUPPORT_ROLES, role)) {
+        return '/admin';
+    }
+    if (hasRole(FINANCE_ROLES, role)) {
+        return '/admin/finance';
+    }
+    if (hasRole(HR_ROLES, role)) {
+        return '/admin/hr';
+    }
+    if (hasRole(MARKETING_ROLES, role)) {
+        return '/admin/leads';
+    }
+    if (role === 'faculty' || role === 'teacher') {
+        return '/admin/faculty';
+    }
+    if (hasRole(CONTENT_ROLES, role)) {
+        return '/admin/content';
+    }
+    if (role === 'parent') {
+        return '/dashboard/parent';
+    }
+    return '/dashboard';
+}
 
 export async function GET(request: NextRequest) {
     const requestUrl = new URL(request.url);
@@ -66,13 +102,7 @@ export async function GET(request: NextRequest) {
             const profile = profileResponse.data as { role?: string } | null;
             const role = profile?.role || 'student';
             
-            if (role === 'admin' || role === 'content_manager') {
-                redirectPath = '/admin';
-            } else if (role === 'finance_manager') {
-                redirectPath = '/admin/finance';
-            } else if (role === 'parent') {
-                redirectPath = '/dashboard/parent';
-            }
+            redirectPath = resolveRoleRedirect(role);
         }
 
         return NextResponse.redirect(`${requestUrl.origin}${redirectPath}`);

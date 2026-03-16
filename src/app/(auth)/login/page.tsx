@@ -19,6 +19,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Eye, EyeOff, Mail, Lock, Loader2, ArrowLeft, CheckCircle, Link as LinkIcon, MessageSquare, Apple as AppleIcon, ExternalLink } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
+import authService from '@/lib/auth/authService';
 import { hasAuthCallbackArtifacts, sanitizeInternalRedirect } from '@/lib/auth/redirects';
 import { emailSchema, containsSuspiciousPatterns } from '@/lib/security';
 import { Logo } from '@/components/brand/Logo';
@@ -140,6 +141,7 @@ function LoginForm() {
     }
 
     if (isAuthenticated) {
+      if (process.env.NODE_ENV === 'development') return;
       const requestedRedirect = searchParams.get('redirect') ?? searchParams.get('next');
       if (requestedRedirect) {
         const redirect = sanitizeInternalRedirect(requestedRedirect);
@@ -148,27 +150,8 @@ function LoginForm() {
         return;
       }
 
-      // Role-based redirection
-      switch (role) {
-        case 'admin':
-          router.replace('/admin');
-          break;
-        case 'finance_manager':
-          router.replace('/admin/finance');
-          break;
-        case 'faculty':
-          router.replace('/dashboard');
-          break;
-        case 'content_manager':
-          router.replace('/admin/courses');
-          break;
-        case 'parent':
-          router.replace('/dashboard/parent');
-          break;
-        default:
-          router.replace('/dashboard');
-          break;
-      }
+      const redirectPath = authService.getRoleBasedRedirect(role);
+      router.replace(redirectPath);
       router.refresh();
     }
   }, [isAuthenticated, role, authLoading, mounted, router, searchParams]);
@@ -255,8 +238,8 @@ function LoginForm() {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <Link href="/" className="inline-flex">
-              <Logo size="lg" variant="full" />
+            <Link href="/" className="inline-flex rounded-xl p-2" aria-label="SaviEduTech home">
+              <Logo size="lg" />
             </Link>
           </div>
 
@@ -350,8 +333,8 @@ function LoginForm() {
       <div className="w-full max-w-md">
         {/* Logo */}
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex">
-            <Logo size="lg" variant="full" />
+          <Link href="/" className="inline-flex rounded-xl p-2" aria-label="SaviEduTech home">
+            <Logo size="lg" />
           </Link>
         </div>
 
@@ -528,8 +511,8 @@ function LoginFormFallback() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex">
-            <Logo size="lg" variant="full" />
+          <Link href="/" className="inline-flex rounded-xl p-2" aria-label="SaviEduTech home">
+            <Logo size="lg" />
           </Link>
         </div>
         <div className="bg-white rounded-2xl shadow-xl p-8 flex items-center justify-center">

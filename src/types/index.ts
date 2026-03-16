@@ -1,5 +1,29 @@
 // User Types
-export type UserRole = 'student' | 'admin' | 'content_manager' | 'parent' | 'hr' | 'faculty' | 'finance_manager';
+export type UserRole =
+    | 'student'
+    | 'parent'
+    | 'faculty'
+    | 'teacher'
+    | 'admin'
+    | 'super_admin'
+    | 'platform_admin'
+    | 'academic_director'
+    | 'content_manager'
+    | 'video_production_manager'
+    | 'ai_content_trainer'
+    | 'ai_trainer'
+    | 'hr'
+    | 'hr_manager'
+    | 'finance'
+    | 'finance_manager'
+    | 'accounts_manager'
+    | 'marketing'
+    | 'marketing_manager'
+    | 'social_media_manager'
+    | 'technical_support'
+    | 'support'
+    | 'compliance'
+    | 'compliance_team';
 
 // Exam target types
 export type ExamTarget = 'JEE' | 'NEET' | 'Both' | 'JEE Mains' | 'JEE Advanced' | 'CBSE Board' | 'Foundation';
@@ -22,6 +46,9 @@ export interface User {
     updated_at: string;
     last_active_at: string;
     is_active: boolean;
+    status?: string | null;
+    is_verified?: boolean | null;
+    parent_student_id?: string | null;
 }
 
 export interface StudentProfile extends User {

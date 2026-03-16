@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -17,7 +17,6 @@ type MagicLinkFormData = z.infer<typeof magicLinkSchema>;
 
 export default function MagicLinkPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
   const [submitError, setSubmitError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -66,8 +65,8 @@ export default function MagicLinkPage() {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <Link href="/" className="inline-flex">
-              <Logo size="md" variant="full" />
+            <Link href="/" className="inline-flex rounded-xl p-2" aria-label="SaviEduTech home">
+              <Logo size="md" />
             </Link>
           </div>
           <div className="bg-white rounded-2xl shadow-xl p-8 flex items-center justify-center">
@@ -83,8 +82,8 @@ export default function MagicLinkPage() {
       <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
         <div className="w-full max-w-md">
           <div className="text-center mb-8">
-            <Link href="/" className="inline-flex">
-              <Logo size="md" variant="full" />
+            <Link href="/" className="inline-flex rounded-xl p-2" aria-label="SaviEduTech home">
+              <Logo size="md" />
             </Link>
           </div>
 
@@ -115,8 +114,8 @@ export default function MagicLinkPage() {
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Link href="/" className="inline-flex">
-            <Logo size="lg" variant="full" />
+          <Link href="/" className="inline-flex rounded-xl p-2" aria-label="SaviEduTech home">
+            <Logo size="lg" />
           </Link>
         </div>
 

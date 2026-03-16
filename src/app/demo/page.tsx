@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { ArrowLeft, Play } from 'lucide-react';
 import ReactPlayer from 'react-player';
-import { BrandLogo } from '@/components/brand-logo';
+import { Logo } from '@/components/brand/Logo';
 
 const DEMO_VIDEO_URL = 'https://www.youtube.com/watch?v=3Rlv_wB6vYA';
 const DEMO_TITLE = 'SaviEduTech Platform Demo';
@@ -30,8 +30,8 @@ export default function DemoPage() {
                         <ArrowLeft className="h-4 w-4" />
                         Back to Home
                     </Link>
-                    <Link href="/" className="shrink-0">
-                        <BrandLogo size="md" />
+                    <Link href="/" className="inline-flex shrink-0 rounded-xl" aria-label="SaviEduTech home">
+                        <Logo size="md" variant="dark" />
                     </Link>
                     <div className="w-24" />
                 </div>

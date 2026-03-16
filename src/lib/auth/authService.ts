@@ -2,9 +2,11 @@
 
 import { getSupabaseBrowserClient } from '@/lib/supabase';
 
+import type { UserRole } from '@/types';
+
 export type OAuthProvider = 'google' | 'apple' | 'azure';
 export type AuthProvider = OAuthProvider | 'email' | 'phone';
-export type UserRole = 'admin' | 'teacher' | 'student' | 'parent' | 'faculty' | 'content_manager' | 'finance_manager';
+export type { UserRole };
 
 interface SignUpData {
   email: string;
@@ -36,10 +38,7 @@ function getBaseUrl(): string {
   if (typeof window !== 'undefined') {
     return window.location.origin;
   }
-  if (process.env.NODE_ENV === 'development') {
-    return 'http://localhost:3000';
-  }
-  return 'https://saviedutech.com';
+  return process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
 }
 
 async function withTimeout<T>(
@@ -365,18 +364,37 @@ export const authService = {
   getRoleBasedRedirect(role: string | null): string {
     switch (role) {
       case 'admin':
+      case 'super_admin':
+      case 'platform_admin':
+      case 'academic_director':
+      case 'technical_support':
+      case 'support':
+      case 'compliance':
+      case 'compliance_team':
         return '/admin';
+      case 'finance':
       case 'finance_manager':
+      case 'accounts_manager':
         return '/admin/finance';
+      case 'hr':
+      case 'hr_manager':
+        return '/admin/hr';
+      case 'marketing':
+      case 'marketing_manager':
+      case 'social_media_manager':
+        return '/admin/leads';
       case 'faculty':
-      case 'content_manager':
-        return '/dashboard';
       case 'teacher':
-        return '/teacher/dashboard';
+        return '/admin/faculty';
+      case 'content_manager':
+      case 'video_production_manager':
+      case 'ai_content_trainer':
+      case 'ai_trainer':
+        return '/admin/content';
       case 'student':
         return '/dashboard';
       case 'parent':
-        return '/parent/dashboard';
+        return '/dashboard/parent';
       default:
         return '/dashboard';
     }

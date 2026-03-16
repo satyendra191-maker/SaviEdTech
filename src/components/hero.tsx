@@ -65,7 +65,7 @@ export function Hero() {
                                         <p className="text-xs font-semibold uppercase tracking-[0.24em] text-sky-300">Platform Focus</p>
                                         <h2 className="mt-2 text-2xl font-bold text-white">Everything You Need to Succeed</h2>
                                     </div>
-                                    <AnimatedLogo size="md" showText={false} />
+                                    <AnimatedLogo size="sm" variant="dark" />
                                 </div>
 
                                 <div className="grid gap-3">

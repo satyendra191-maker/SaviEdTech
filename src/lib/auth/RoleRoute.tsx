@@ -4,8 +4,9 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from './AuthProvider';
 import { UserRole } from './authService';
+import { ADMIN_APP_ROLES, TEACHING_ROLES } from './roles';
 
-type Role = UserRole | UserRole[];
+type Role = UserRole | readonly UserRole[];
 
 interface RoleRouteProps {
   children: React.ReactNode;
@@ -18,7 +19,7 @@ export function RoleRoute({ children, role, fallback, redirectTo }: RoleRoutePro
   const { role: userRole, isLoading } = useAuth();
   const router = useRouter();
 
-  const allowedRoles = Array.isArray(role) ? role : [role];
+  const allowedRoles = Array.isArray(role) ? [...role] : [role];
 
   useEffect(() => {
     if (isLoading) {
@@ -55,7 +56,7 @@ export function RoleRoute({ children, role, fallback, redirectTo }: RoleRoutePro
 
 export function AdminRoute({ children, fallback }: { children: React.ReactNode; fallback?: React.ReactNode }) {
   return (
-    <RoleRoute role="admin" redirectTo="/unauthorized" fallback={fallback}>
+    <RoleRoute role={ADMIN_APP_ROLES} redirectTo="/unauthorized" fallback={fallback}>
       {children}
     </RoleRoute>
   );
@@ -63,7 +64,7 @@ export function AdminRoute({ children, fallback }: { children: React.ReactNode; 
 
 export function TeacherRoute({ children, fallback }: { children: React.ReactNode; fallback?: React.ReactNode }) {
   return (
-    <RoleRoute role={['teacher', 'admin', 'content_manager']} redirectTo="/unauthorized" fallback={fallback}>
+    <RoleRoute role={TEACHING_ROLES} redirectTo="/unauthorized" fallback={fallback}>
       {children}
     </RoleRoute>
   );

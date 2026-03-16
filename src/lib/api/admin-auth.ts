@@ -1,9 +1,10 @@
 import { createServerClient } from '@supabase/ssr';
 import type { NextRequest } from 'next/server';
 import type { Database } from '@/types/supabase';
+import { ADMIN_PRIVILEGED_ROLES, FINANCE_ROLES } from '@/lib/auth/roles';
 
-const DEFAULT_ADMIN_ROLES = ['admin'] as const;
-const FINANCE_ADMIN_ROLES = ['admin', 'finance_manager'] as const;
+const DEFAULT_ADMIN_ROLES = ADMIN_PRIVILEGED_ROLES;
+const FINANCE_ADMIN_ROLES = FINANCE_ROLES;
 
 export interface AdminRequestContext {
     userId: string;
