@@ -12,6 +12,8 @@ import {
     ReceiptText,
     RefreshCw,
     ShieldCheck,
+    Calculator,
+    ChevronRight,
 } from 'lucide-react';
 import {
     Bar,
@@ -230,6 +232,24 @@ export default function AdminFinancePage() {
                 <MetricCard icon={ShieldCheck} label="Net Revenue" value={formatCurrency(data?.metrics.netRevenue || 0)} accent="bg-emerald-50 text-emerald-700" />
                 <MetricCard icon={BarChart3} label="Refunded Txns" value={String(data?.metrics.refundedTransactions || 0)} accent="bg-slate-100 text-slate-700" />
             </div>
+
+            <Link
+                href="/admin/finance/accounting"
+                className="flex items-center justify-between p-6 rounded-2xl border-2 border-dashed border-indigo-300 bg-indigo-50 hover:bg-indigo-100 transition-colors"
+            >
+                <div className="flex items-center gap-4">
+                    <div className="p-3 bg-indigo-600 rounded-xl">
+                        <Calculator className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                        <h3 className="text-lg font-bold text-indigo-900">Tally-like Accounting</h3>
+                        <p className="text-sm text-indigo-700">Access ledgers, vouchers, trial balance, P&L, and balance sheet</p>
+                    </div>
+                </div>
+                <div className="flex items-center gap-2 text-indigo-600 font-medium">
+                    Open Accounting <ChevronRight className="w-5 h-5" />
+                </div>
+            </Link>
 
             <div className="grid gap-6 xl:grid-cols-2">
                 <ChartCard title="Daily Revenue Trend">
